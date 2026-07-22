@@ -1,0 +1,2 @@
+# oshicap
+app for oshikatsu
