@@ -1,2 +1,2 @@
-# oshicap
-app for oshikatsu
+# oshicappu
+web app for oshikatsu
