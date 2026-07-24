@@ -1,7 +1,24 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
+import { useAuth } from "@/components/AuthContext";
 
 export default function Home() {
+  const { isLoggedIn } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      router.push("/login");
+    }
+  }, [isLoggedIn, router]);
+
+  if (!isLoggedIn) {
+    return null;
+  }
+
   return (
     <main>
       {/* Mobile view */}

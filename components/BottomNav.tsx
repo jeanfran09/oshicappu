@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-
+import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@/components/AuthContext";
 import { 
   Home, 
   Search, 
@@ -11,17 +11,21 @@ import {
   User 
 } from "lucide-react";
 
-/**
- * 
- * TODO: add filled icons and redirecing
- */
-
 export default function BottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { isLoggedIn } = useAuth();
+
+  const handleNav = (href: string) => {
+    if (!isLoggedIn) {
+      router.push("/login");
+    }
+    // Otherwise let the Link handle navigation naturally
+  };
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 h-16 bg-accent flex justify-around items-center">
-      <Link href="/">
+      <Link href="/" onClick={() => handleNav("/")}>
         <Home
           size={24}
           fill={
@@ -32,7 +36,7 @@ export default function BottomNav() {
         />
       </Link>
 
-      <Link href="/search">
+      <Link href="/search" onClick={() => handleNav("/search")}>
         <Search
           size={24}
           fill={
@@ -43,7 +47,7 @@ export default function BottomNav() {
         />
       </Link>
 
-      <Link href="/community">
+      <Link href="/community" onClick={() => handleNav("/community")}>
         <Users
           size={24}
           fill={
@@ -54,7 +58,7 @@ export default function BottomNav() {
         />
       </Link>
 
-      <Link href="/notification">
+      <Link href="/notification" onClick={() => handleNav("/notification")}>
         <Bell
           size={24}
           fill={
@@ -65,7 +69,7 @@ export default function BottomNav() {
         />
       </Link>
 
-      <Link href="/profile">
+      <Link href="/profile" onClick={() => handleNav("/profile")}>
         <User
           size={24}
           fill={
