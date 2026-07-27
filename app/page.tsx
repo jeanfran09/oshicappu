@@ -15,7 +15,7 @@ export default function HomePage() {
       </h1>
 
       {/* Following / For You Tabs */}
-      <div className="flex pb-4">
+      <div className="flex">
         <button
           onClick={() => setActiveTab("following")}
           className={`flex-1 py-3 relative ${
