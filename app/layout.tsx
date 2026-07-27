@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Sacramento } from "next/font/google";
 import "./globals.css";
+import BottomNav from "@/components/BottomNav";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,8 +38,20 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${sacramento.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex-col">
-        {children}
+      <body>
+        {/* Mobile view */}
+        <div className="md:hidden min-h-screen flex flex-col">
+          <div className="flex-1 pb-16">
+            {children}
+          </div>
+
+          <BottomNav />
+        </div>
+
+        {/* Desktop view */}
+        <div className="hidden md:flex min-h-screen items-center justify-center">
+          <h1>This app only works on mobile devices.</h1>
+        </div>
       </body>
     </html>
   );

@@ -35,10 +35,10 @@ export default function BottomNav() {
       <Link href="/search">
         <Search
           size={24}
-          fill={
+          strokeWidth={
             pathname === "/search"
-              ? "#616161"
-              : "none"
+              ? "4"
+              : "2"
           }
         />
       </Link>
@@ -54,11 +54,11 @@ export default function BottomNav() {
         />
       </Link>
 
-      <Link href="/notification">
+      <Link href="/notifs">
         <Bell
           size={24}
           fill={
-            pathname === "/notification"
+            pathname === "/notifs"
               ? "#616161"
               : "none"
           }
