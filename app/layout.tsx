@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Sacramento, Barlow } from "next/font/google";
+import { Geist, Geist_Mono, Sacramento, Patrick_Hand } from "next/font/google";
 import "./globals.css";
 import BottomNav from "@/components/BottomNav";
 
@@ -19,9 +19,9 @@ const sacramento = Sacramento({
   subsets: ["latin"],
 });
 
-const barlow = Barlow({
+const patrickHand = Patrick_Hand({
   weight: "400",
-  variable: "--font-barlow",
+  variable: "--font-patrick-hand",
   subsets: ["latin"],
 });
 
@@ -42,7 +42,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${sacramento.variable} ${barlow.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${sacramento.variable} ${patrickHand.variable} h-full antialiased`}
     >
       <body>
         {/* Mobile view */}

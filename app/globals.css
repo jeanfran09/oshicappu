@@ -15,7 +15,7 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-sacramento: var(--font-sacramento);
-  --font-barlow: var(--font-barlow);
+  --font-patrick-hand: var(--font-patrick-hand);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -28,5 +28,6 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-barlow), Arial, Helvetica, sans-serif;
+  font-family: var(--font-patrick-hand), Arial, Helvetica, sans-serif;
+  font-size: 20px;
 }
