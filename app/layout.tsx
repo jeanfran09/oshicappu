@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Sacramento } from "next/font/google";
+import { Geist, Geist_Mono, Sacramento, Barlow } from "next/font/google";
 import "./globals.css";
 import BottomNav from "@/components/BottomNav";
 
@@ -16,6 +16,12 @@ const geistMono = Geist_Mono({
 const sacramento = Sacramento({
   weight: "400",
   variable: "--font-sacramento",
+  subsets: ["latin"],
+});
+
+const barlow = Barlow({
+  weight: "400",
+  variable: "--font-barlow",
   subsets: ["latin"],
 });
 
@@ -36,7 +42,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${sacramento.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${sacramento.variable} ${barlow.variable} h-full antialiased`}
     >
       <body>
         {/* Mobile view */}
