@@ -1,5 +1,6 @@
 "use client";
 
+import { formatCount } from "@/utils/formatNumber";
 import { useState } from "react";
 import Image from "next/image";
 import {
@@ -66,7 +67,7 @@ export default function Post({
             alt="Post"
             width={800}
             height={800}
-            className="w-full aspect-square object-cover"
+            className="w-full h-auto"
         />
 
             {/* Actions */}
@@ -85,7 +86,7 @@ export default function Post({
                     className="flex items-center gap-1"
                 >
                 <Heart size={24} className={liked ? "fill-red-500 text-red-500" : "" }/>
-                {likeCount !== undefined && likeCount > 0 && (<span className="text-sm font-medium pl-1">{likeCount}</span>)}
+                {likeCount !== undefined && likeCount > 0 && (<span className="text-sm font-medium pl-1">{formatCount(likeCount)}</span>)}
                 </button>
 
                 <button className="flex items-center gap-1">

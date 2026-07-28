@@ -19,6 +19,7 @@ export default function FollowingFeed(){
                 username="oshicappu"
                 avatar="/avatars/banri.png"
                 image="/posts/post2.jpg"
+                likes={1000000}
                 caption="あざとい"
                 time="2 HOURS AGO"
             />
