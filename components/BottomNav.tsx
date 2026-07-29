@@ -11,11 +11,6 @@ import {
   User 
 } from "lucide-react";
 
-/**
- * 
- * TODO: add filled icons and redirecing
- */
-
 export default function BottomNav() {
   const pathname = usePathname();
 

@@ -70,13 +70,13 @@ export default function Notification({
         />
       )}
 
-      {/* Follow icon */}
+      {/* Follow icon
       {type === "follow" && (
         <UserPlus
           size={22}
           className="text-foreground"
         />
-      )}
+      )} */}
     </div>
   );
 }

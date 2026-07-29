@@ -3,7 +3,14 @@
 import Divider from "@/components/Divider"
 import FollowingFeed from "@/components/FollowingFeed";
 import ForYouFeed from "@/components/ForYouFeed";
+import PullToRefresh from "@/components/PullToRefresh";
 import { useState } from "react";
+
+async function refreshFeed() {
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  // fetch posts here
+}
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<"following" | "foryou">("foryou");
@@ -54,12 +61,16 @@ export default function HomePage() {
 
       {/* Feed */}
       <div className="flex-1 overflow-y-auto">
-        {activeTab === "following" ? (
-          <FollowingFeed/>
-        ) : (
-          <ForYouFeed/>
-        )}
-      </div> 
+        <PullToRefresh onRefresh={refreshFeed}>
+          <div className="min-h-[625px]">
+            {activeTab === "following" ? (
+              <FollowingFeed />
+            ) : (
+              <ForYouFeed />
+            )}
+          </div>
+        </PullToRefresh>
+      </div>
     </main>
   );
 }
