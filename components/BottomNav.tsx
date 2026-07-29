@@ -7,6 +7,7 @@ import {
   Home, 
   Search, 
   Users, 
+  SquarePlus,
   Bell, 
   User 
 } from "lucide-react";
@@ -37,6 +38,17 @@ export default function BottomNav() {
           }
         />
       </Link>
+
+      {/* <Link href="/create_post">
+        <SquarePlus
+          size={24}
+          strokeWidth={
+            pathname === "/create_post"
+              ? "3"
+              : "2"
+          }
+        />
+      </Link> */}
 
       <Link href="/community">
         <Users

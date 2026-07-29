@@ -10,7 +10,7 @@ export default function ForYouFeed(){
                 location="bed"
                 image="/posts/post1.png"
                 caption="sogo"
-                likes={2543}
+                likes={2599}
                 comments={3}
                 time="2 HOURS AGO"
             />
