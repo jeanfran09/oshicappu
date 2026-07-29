@@ -1,10 +1,12 @@
 "use client";
 
-import Divider from "@/components/Divider"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import FollowingFeed from "@/components/FollowingFeed";
 import ForYouFeed from "@/components/ForYouFeed";
+import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
+import Divider from "@/components/Divider"
 import PullToRefresh from "@/components/PullToRefresh";
-import { useState } from "react";
 
 async function refreshFeed() {
   await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -14,6 +16,26 @@ async function refreshFeed() {
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<"following" | "foryou">("foryou");
+  const { isLoggedIn, isLoading } = useSupabaseAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && !isLoggedIn) {
+      router.push("/login");
+    }
+  }, [isLoggedIn, isLoading, router]);
+
+  if (isLoading) {
+    return (
+      <main className="pb-4 flex items-center justify-center min-h-screen">
+        <p className="text-foreground">Loading...</p>
+      </main>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return null;
+  }
 
   return (
     <main className="pb-4">

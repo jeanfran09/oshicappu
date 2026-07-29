@@ -1,23 +1,32 @@
-"use client";
+ "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-
-import { 
-  Home, 
-  Search, 
-  Users, 
+import { usePathname, useRouter } from "next/navigation";
+import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
+import {
+  Home,
+  Search,
+  Users,
   SquarePlus,
-  Bell, 
-  User 
+  Bell,
+  User
 } from "lucide-react";
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { isLoggedIn } = useSupabaseAuth();
+
+  const handleNav = (href: string) => {
+    if (!isLoggedIn) {
+      router.push("/login");
+    }
+    // Otherwise let the Link handle navigation naturally
+  };
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 h-16 bg-accent flex justify-around items-center">
-      <Link href="/">
+      <Link href="/" onClick={() => handleNav("/")}>
         <Home
           size={24}
           fill={
@@ -28,7 +37,7 @@ export default function BottomNav() {
         />
       </Link>
 
-      <Link href="/search">
+      <Link href="/search" onClick={() => handleNav("/search")}>
         <Search
           size={24}
           strokeWidth={
@@ -50,7 +59,7 @@ export default function BottomNav() {
         />
       </Link> */}
 
-      <Link href="/community">
+      <Link href="/community" onClick={() => handleNav("/community")}>
         <Users
           size={24}
           fill={
@@ -61,7 +70,7 @@ export default function BottomNav() {
         />
       </Link>
 
-      <Link href="/notifs">
+      <Link href="/notifs" onClick={() => handleNav("/notifs")}>
         <Bell
           size={24}
           fill={
@@ -72,7 +81,7 @@ export default function BottomNav() {
         />
       </Link>
 
-      <Link href="/profile">
+      <Link href="/profile" onClick={() => handleNav("/profile")}>
         <User
           size={24}
           fill={
