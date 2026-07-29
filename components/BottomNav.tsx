@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useAuth } from "@/components/AuthContext";
+import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
 import { 
   Home, 
   Search, 
@@ -14,7 +14,7 @@ import {
 export default function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn } = useSupabaseAuth();
 
   const handleNav = (href: string) => {
     if (!isLoggedIn) {
@@ -39,10 +39,10 @@ export default function BottomNav() {
       <Link href="/search" onClick={() => handleNav("/search")}>
         <Search
           size={24}
-          fill={
+          strokeWidth={
             pathname === "/search"
-              ? "#616161"
-              : "none"
+              ? "4"
+              : "2"
           }
         />
       </Link>
@@ -58,11 +58,11 @@ export default function BottomNav() {
         />
       </Link>
 
-      <Link href="/notification" onClick={() => handleNav("/notification")}>
+      <Link href="/notifs" onClick={() => handleNav("/notifs")}>
         <Bell
           size={24}
           fill={
-            pathname === "/notification"
+            pathname === "/notifs"
               ? "#616161"
               : "none"
           }

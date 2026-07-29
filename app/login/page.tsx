@@ -2,14 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/components/AuthContext";
+import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
+import Link from "next/link";
 
 export default function LoginPage() {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const [isSignup, setIsSignup] = useState(false);
+  const [username, setUsername] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const { login, signup } = useSupabaseAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -17,16 +21,24 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    // Simulate a small delay for UX
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    try {
+      let result;
+      if (isSignup) {
+        result = await signup(email, password, username, displayName);
+      } else {
+        result = await login(email, password);
+      }
 
-    const success = login(username, password);
-    if (success) {
-      router.push("/");
-    } else {
-      setError("Please enter a valid username and password");
+      if (result.error) {
+        setError(result.error);
+      } else {
+        router.push("/");
+      }
+    } catch (err) {
+      setError("An unexpected error occurred");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -38,21 +50,64 @@ export default function LoginPage() {
         </h1>
 
         <div className="w-full max-w-sm bg-accent/50 rounded-2xl p-6 shadow-sm">
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-semibold text-foreground">
+              {isSignup ? "Create Account" : "Sign In"}
+            </h2>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {isSignup && (
+              <>
+                <div>
+                  <label
+                    htmlFor="username"
+                    className="block text-sm font-medium text-foreground mb-1"
+                  >
+                    Username
+                  </label>
+                  <input
+                    id="username"
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Choose a username"
+                    className="w-full px-4 py-3 rounded-xl bg-background border border-accent focus:border-foreground focus:outline-none text-foreground placeholder:text-foreground/40 transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="displayName"
+                    className="block text-sm font-medium text-foreground mb-1"
+                  >
+                    Display Name
+                  </label>
+                  <input
+                    id="displayName"
+                    type="text"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="Your display name"
+                    className="w-full px-4 py-3 rounded-xl bg-background border border-accent focus:border-foreground focus:outline-none text-foreground placeholder:text-foreground/40 transition-colors"
+                  />
+                </div>
+              </>
+            )}
+
             <div>
               <label
-                htmlFor="username"
+                htmlFor="email"
                 className="block text-sm font-medium text-foreground mb-1"
               >
-                Username
+                Email
               </label>
               <input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your username"
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
                 className="w-full px-4 py-3 rounded-xl bg-background border border-accent focus:border-foreground focus:outline-none text-foreground placeholder:text-foreground/40 transition-colors"
               />
             </div>
@@ -83,11 +138,25 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full py-3 bg-foreground text-background font-medium rounded-xl hover:opacity-90 disabled:opacity-50 transition-opacity"
             >
-              {loading ? "Signing in..." : "Sign In"}
+              {loading ? (isSignup ? "Creating account..." : "Signing in...") : (isSignup ? "Sign Up" : "Sign In")}
             </button>
           </form>
-        </div>
 
+          <div className="mt-6 text-center">
+            <p className="text-sm text-foreground/60">
+              {isSignup ? "Already have an account?" : "Don't have an account?"}
+            </p>
+            <button
+              onClick={() => {
+                setIsSignup(!isSignup);
+                setError("");
+              }}
+              className="text-sm font-medium text-foreground hover:underline mt-1"
+            >
+              {isSignup ? "Sign In" : "Sign Up"}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
