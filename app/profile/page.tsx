@@ -7,6 +7,7 @@ import { LogOut, User as UserIcon } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import CreatePostButton from "@/components/CreatePostButton";
 
 interface Post {
   id: string;
@@ -154,8 +155,8 @@ export default function ProfilePage() {
           )}
         </div>
       </div>
-
-      <BottomNav />
+      
+      <CreatePostButton />
     </div>
   );
 }

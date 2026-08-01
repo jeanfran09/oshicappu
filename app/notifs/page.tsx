@@ -1,5 +1,6 @@
 "use client";
 
+import CreatePostButton from "@/components/CreatePostButton";
 import Divider from "@/components/Divider";
 import Notification from "@/components/Notification";
 import PullToRefresh from "@/components/PullToRefresh";
@@ -102,6 +103,8 @@ export default function NotifsPage() {
           time="1 hour ago"
         />
       </PullToRefresh>
+      
+      <CreatePostButton />
     </main>    
   );
 }

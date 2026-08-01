@@ -2,129 +2,414 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { X } from "lucide-react";
+
 import { supabase } from "@/lib/supabase";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
-import BottomNav from "@/components/BottomNav";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
+
+import ImagePreview from "@/components/CreatePost/ImagePreview";
+import ThumbnailStrip from "@/components/CreatePost/ThumbnailStrip";
+import CaptionInput from "@/components/CreatePost/CaptionInput";
+import PostButton from "@/components/CreatePost/PostButton";
+import ImageCropper from "@/components/CreatePost/ImageCropper";
+
+
+type CropData = {
+  crop: {
+    x: number;
+    y: number;
+  };
+  zoom: number;
+};
+
 
 export default function CreatePostPage() {
-  const [content, setContent] = useState("");
+
+  const MAX_IMAGES = 10;
+
+  const [images, setImages] = useState<File[]>([]);
+  const [originalImages, setOriginalImages] = useState<File[]>([]);
+  const [cropData, setCropData] = useState<CropData[]>([]);
+  const [pendingImages, setPendingImages] = useState<File[]>([]);
+  const [cropImage, setCropImage] = useState<string | null>(null);
+  // final image array index
+  const [cropIndex, setCropIndex] = useState(0);
+  // upload queue index
+  const [pendingIndex, setPendingIndex] = useState(0);
+  const [aspectRatio, setAspectRatio] = useState(1);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [caption, setCaption] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const { user, isLoggedIn, isLoading } = useSupabaseAuth();
+  const [message, setMessage] = useState("");
+  const {
+    user,
+    isLoggedIn,
+    isLoading
+  } = useSupabaseAuth();
   const router = useRouter();
 
-  // Redirect if not logged in
   if (!isLoading && !isLoggedIn) {
     router.push("/login");
     return null;
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const canPost =
+    caption.trim().length > 0 || !loading;
+
+  function handleSelectImages(
+    e: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const selected = Array.from(e.target.files ?? []);
+
+    if (!selected.length) {
+      return;
+    }
+
+    const remaining = MAX_IMAGES - originalImages.length;
+
+
+    if (remaining <= 0) {
+      setMessage("You can only upload up to 10 photos");
+
+      setTimeout(() => {
+        setMessage("");
+      }, 2500);
+
+      e.target.value = "";
+      return;
+    }
+
+
+    if (selected.length > remaining) {
+      setMessage(
+        `You can only select ${remaining} more photo${remaining === 1 ? "" : "s"}`
+      );
+
+      setTimeout(() => {
+        setMessage("");
+      }, 2500);
+
+      e.target.value = "";
+      return;
+    }
+
+
+    // Accept images
+    const startIndex = originalImages.length;
+
+
+    setOriginalImages(prev => [
+      ...prev,
+      ...selected
+    ]);
+
+
+    setPendingImages(selected);
+
+
+    setCropIndex(startIndex);
+
+
+    setCropImage(
+      URL.createObjectURL(selected[0])
+    );
+
+
+    e.target.value = "";
+  }
+
+
+  function handleEditImage() {
+    const original = originalImages[currentIndex];
+
+    if (!original)
+      return;
+
+    setPendingImages([]);
+    setPendingIndex(0);
+    setCropIndex(currentIndex);
+    setCropImage(
+      URL.createObjectURL(original)
+    );
+
+  }
+
+  function handleCropComplete(
+    croppedFile: File
+  ) {
+    setImages(prev => {
+      const updated =
+        [...prev];
+      // Replace existing image
+      if (cropIndex < updated.length) {
+        updated[cropIndex] =
+          croppedFile;
+      }
+
+      // Add new image
+      else {
+        updated.push(croppedFile);
+      }
+
+      return updated;
+    });
+
+    const nextPending =
+      pendingIndex + 1;
+
+    // Continue cropping selected images
+    if (
+      nextPending < pendingImages.length
+    ) {
+      setPendingIndex(nextPending);
+      setCropIndex(prev =>
+        prev + 1
+      );
+      setCropImage(
+        URL.createObjectURL(
+          pendingImages[nextPending]
+        )
+      );
+    }
+
+    else {
+      setCropImage(null);
+      setPendingImages([]);
+      setPendingIndex(0);
+    }
+
+  }
+
+  function cancelCrop() {
+    setCropImage(null);
+    setPendingImages([]);
+    setPendingIndex(0);
+
+  }
+
+  async function handleSubmit() {
+
+
     setError("");
-    setLoading(true);
+
+
 
     if (!user) {
-      setError("You must be logged in to create a post");
-      setLoading(false);
+
+      setError(
+        "You must be logged in to create a post"
+      );
+
       return;
     }
 
-    if (!content.trim()) {
-      setError("Post content cannot be empty");
-      setLoading(false);
+    if (!canPost) {
+
+      setError(
+        "Post cannot be empty"
+      );
+
       return;
     }
-
+    setLoading(true);
     try {
-      const { error: insertError } = await supabase.from("posts").insert({
-        user_id: user.id,
-        content: content.trim(),
-      });
+      const {
+        error: insertError
+      } =
+        await supabase
+          .from("posts")
+          .insert({
 
-      if (insertError) {
-        setError(insertError.message);
-      } else {
-        setContent("");
-        // Redirect to profile to see the new post
-        router.push("/profile");
+            user_id:user.id,
+
+            content:
+              caption.trim(),
+
+          });
+
+      if(insertError){
+
+        setError(
+          insertError.message
+        );
+
+        return;
+
       }
-    } catch (err) {
-      setError("An unexpected error occurred");
+
+      setImages([]);
+
+      setOriginalImages([]);
+
+      setCropData([]);
+
+      setCaption("");
+
+      setCurrentIndex(0);
+
+      router.push("/profile");
+    } catch {
+      setError(
+        "An unexpected error occurred"
+      );
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  if (isLoading) {
+  if(isLoading){
     return (
-      <div className="md:hidden min-h-screen flex flex-col items-center justify-center">
-        <p className="text-foreground">Loading...</p>
+      <div className="
+        md:hidden
+        min-h-screen
+        flex
+        items-center
+        justify-center
+      ">
+        Loading...
       </div>
     );
   }
 
   return (
     <div className="md:hidden min-h-screen flex flex-col">
-      {/* Header */}
-      <div className="pt-4 pb-2 px-4 flex items-center gap-3">
-        <Link href="/">
-          <ArrowLeft size={24} className="text-foreground" />
-        </Link>
-        <h1 className="font-sacramento text-3xl text-foreground">
+      {cropImage && (
+        <ImageCropper
+          image={cropImage}
+          aspectRatio={aspectRatio}
+
+          isFirstImage={
+            images.length === 0
+          }
+
+          initialCrop={
+            cropData[cropIndex]
+          }
+
+          onCropChange={(data)=>{
+            setCropData(prev=>{
+              const updated =
+                [...prev];
+              updated[cropIndex] =
+                data;
+              return updated;
+            });
+          }}
+
+          onRatioChange={
+            setAspectRatio
+          }
+
+          onComplete={
+            handleCropComplete
+          }
+
+          onCancel={
+            cancelCrop
+          }
+        />
+
+      )}
+      {message && (
+        <div
+          className="
+            fixed
+            top-20
+            left-1/2
+            -translate-x-1/2
+            z-[200]
+            rounded-full
+            bg-black/50
+            px-4
+            py-3
+            text-sm
+            text-white
+            text-center
+            whitespace-nowrap
+            shadow-lg
+          "
+        >
+          {message}
+        </div>
+      )}
+      <header className="
+        flex
+        items-center
+        justify-between
+        px-4
+        pt-4
+        pb-3
+      ">
+        <h1 className="text-3xl">
           Create Post
         </h1>
-      </div>
+        <button
+          onClick={() =>
+            router.push("/")
+          }
+          className="h-10 w-10 rounded-full bg-accent/50 flex items-center justify-center"
+        >
+          <X size={20}/>
+        </button>
+      </header>
 
-      {/* Form Content */}
-      <div className="flex-1 pb-20 px-4 overflow-y-auto">
-        <form onSubmit={handleSubmit} className="space-y-4 mt-6">
-          <div>
-            <label
-              htmlFor="content"
-              className="block text-sm font-medium text-foreground mb-2"
-            >
-              What's on your mind?
-            </label>
-            <textarea
-              id="content"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Share your thoughts about your favorite idols..."
-              className="w-full px-4 py-3 rounded-xl bg-accent/30 border border-accent focus:border-foreground focus:outline-none text-foreground placeholder:text-foreground/40 transition-colors min-h-40 resize-none"
-            />
-            <p className="text-xs text-foreground/50 mt-1">
-              {content.length} characters
-            </p>
-          </div>
+      <main className="flex-1 overflow-y-auto px-4">
+        <div className="
+          mt-4
+          space-y-5
+        ">
+          <ImagePreview
+            images={images}
+            currentIndex={currentIndex}
+            setCurrentIndex={setCurrentIndex}
+            onEdit={handleEditImage}
+            aspectRatio={aspectRatio}
+          />
+
+          <ThumbnailStrip
+            images={images}
+            currentIndex={currentIndex}
+            setCurrentIndex={setCurrentIndex}
+            setImages={setImages}
+            onSelectImages={handleSelectImages}
+          />
+          <CaptionInput
+            caption={caption}
+            setCaption={setCaption}
+          />
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500 rounded-xl p-3">
-              <p className="text-red-500 text-sm">{error}</p>
+            <div className="
+              rounded-xl
+              border
+              border-red-500
+              bg-red-500/10
+              p-3
+            ">
+              <p className="
+                text-sm
+                text-red-500
+              ">
+                {error}
+              </p>
             </div>
           )}
+        </div>
+      </main>
 
-          <button
-            type="submit"
-            disabled={loading || !content.trim()}
-            className="w-full py-3 bg-foreground text-background font-medium rounded-xl hover:opacity-90 disabled:opacity-50 transition-opacity"
-          >
-            {loading ? "Posting..." : "Post"}
-          </button>
+      {!cropImage && (
 
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="w-full py-3 bg-accent/30 text-foreground font-medium rounded-xl border border-accent hover:opacity-90 transition-opacity"
-          >
-            Cancel
-          </button>
-        </form>
-      </div>
+        <PostButton
 
-      <BottomNav />
+          disabled={!canPost}
+
+          loading={loading}
+
+          onClick={handleSubmit}
+
+        />
+      )}
     </div>
   );
 }

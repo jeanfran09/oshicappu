@@ -7,6 +7,7 @@ import ForYouFeed from "@/components/ForYouFeed";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
 import Divider from "@/components/Divider"
 import PullToRefresh from "@/components/PullToRefresh";
+import CreatePostButton from "@/components/CreatePostButton";
 
 async function refreshFeed() {
   await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -93,6 +94,8 @@ export default function HomePage() {
           </div>
         </PullToRefresh>
       </div>
+      
+      <CreatePostButton />
     </main>
   );
 }

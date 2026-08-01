@@ -1,3 +1,5 @@
+import CreatePostButton from "@/components/CreatePostButton";
+
 export default function SearchPage() {
   return (
     <main className="p-4">
@@ -18,6 +20,8 @@ export default function SearchPage() {
           Find users, fandoms, events, and posts.
         </p>
       </div>
+      
+      <CreatePostButton />
     </main>
   );
 }
