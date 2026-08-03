@@ -12,6 +12,8 @@ import ThumbnailStrip from "@/components/CreatePost/ThumbnailStrip";
 import CaptionInput from "@/components/CreatePost/CaptionInput";
 import PostButton from "@/components/CreatePost/PostButton";
 import ImageCropper from "@/components/CreatePost/ImageCropper";
+import TagInput from "@/components/CreatePost/TagInput";
+import OshiPicker from "@/components/CreatePost/OshiPicker";
 
 
 type CropData = {
@@ -42,6 +44,27 @@ export default function CreatePostPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+
+  const [hashtags, setHashtags] = useState<string[]>([]);
+  const [fandoms, setFandoms] = useState<string[]>([]);
+
+  const [selectedOshis, setSelectedOshis] = useState<string[]>([]);
+  const [showOshiModal, setShowOshiModal] = useState(false);//temp
+
+  //TODO: change to db oshis 
+  const oshis = [
+    {
+      id: "1",
+      name: "sogo",
+      image: "/posts/post1.png",
+    },
+    {
+      id: "2",
+      name: "abe-chan",
+      image: "/posts/post2.jpg",
+    },
+  ];
+
   const {
     user,
     isLoggedIn,
@@ -354,29 +377,52 @@ export default function CreatePostPage() {
         </button>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-4">
-        <div className="
-          mt-4
-          space-y-5
-        ">
-          <ImagePreview
+      <main className="flex-1 overflow-y-auto px-4 pb-6">
+        <div className="mt-4">
+          <div className="space-y-4 pb-4">
+            <ImagePreview
             images={images}
             currentIndex={currentIndex}
             setCurrentIndex={setCurrentIndex}
             onEdit={handleEditImage}
             aspectRatio={aspectRatio}
-          />
+            />
 
-          <ThumbnailStrip
-            images={images}
-            currentIndex={currentIndex}
-            setCurrentIndex={setCurrentIndex}
-            setImages={setImages}
-            onSelectImages={handleSelectImages}
-          />
+            <ThumbnailStrip
+              images={images}
+              currentIndex={currentIndex}
+              setCurrentIndex={setCurrentIndex}
+              setImages={setImages}
+              onSelectImages={handleSelectImages}
+            />
+          </div>
+
           <CaptionInput
             caption={caption}
             setCaption={setCaption}
+          />
+
+          <TagInput
+            label="Hashtags"
+            placeholder="Add a hashtag"
+            items={hashtags}
+            setItems={setHashtags}
+            maxItems={10}
+            prefix="#"
+          />
+
+          <TagInput
+            label="Fandoms"
+            placeholder="Add a fandom"
+            items={fandoms}
+            setItems={setFandoms}
+            maxItems={5}
+          />
+          <OshiPicker
+            oshis={oshis}
+            selected={selectedOshis}
+            setSelected={setSelectedOshis}
+            onAdd={() => setShowOshiModal(true)}
           />
 
           {error && (

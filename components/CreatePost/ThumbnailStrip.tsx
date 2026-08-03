@@ -96,7 +96,7 @@ export default function ThumbnailStrip({
 
   return (
 
-    <div className="flex overflow-x-">
+    <div className="flex gap-3 overflow-x-auto">
       {images.map((file,index)=>(
         <button
           key={index}
