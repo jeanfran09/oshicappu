@@ -14,7 +14,7 @@ import PostButton from "@/components/CreatePost/PostButton";
 import ImageCropper from "@/components/CreatePost/ImageCropper";
 import TagInput from "@/components/CreatePost/TagInput";
 import OshiPicker from "@/components/CreatePost/OshiPicker";
-
+import OshiModal from "@/components/OshiModal";
 
 type CropData = {
   crop: {
@@ -424,6 +424,14 @@ export default function CreatePostPage() {
             setSelected={setSelectedOshis}
             onAdd={() => setShowOshiModal(true)}
           />
+
+          {showOshiModal && (
+            <OshiModal
+              onClose={() =>
+                setShowOshiModal(false)
+              }
+            />
+          )}
 
           {error && (
             <div className="

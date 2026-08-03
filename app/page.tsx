@@ -85,7 +85,7 @@ export default function HomePage() {
       {/* Feed */}
       <div className="flex-1 overflow-y-auto">
         <PullToRefresh onRefresh={refreshFeed}>
-          <div className="min-h-[625px]">
+          <div className="min-h-[70vh]">
             {activeTab === "following" ? (
               <FollowingFeed />
             ) : (
