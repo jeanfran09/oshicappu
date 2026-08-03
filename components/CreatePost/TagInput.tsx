@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X } from "lucide-react";
+import { X, Plus } from "lucide-react";
 
 type TagInputProps = {
   label: string;
@@ -124,7 +124,7 @@ export default function TagInput({
             active:scale-95
           "
         >
-          +
+          <Plus size={20} />
         </button>
       </div>
 

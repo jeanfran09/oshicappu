@@ -356,22 +356,37 @@ export default function CreatePostPage() {
           {message}
         </div>
       )}
-      <header className="
-        flex
-        items-center
-        justify-between
-        px-4
-        pt-4
-        pb-3
-      ">
-        <h1 className="text-3xl">
+      <header
+        className="
+          sticky
+          top-0
+          z-50
+          flex
+          items-center
+          justify-between
+          px-4
+          pt-4
+          pb-3
+          bg-background
+          border-b
+          border-foreground/30
+        "
+      >
+        <h1 className="text-2xl">
           Create Post
         </h1>
+
         <button
-          onClick={() =>
-            router.push("/")
-          }
-          className="h-10 w-10 rounded-full bg-accent/50 flex items-center justify-center"
+          onClick={() => router.push("/")}
+          className="
+            h-10
+            w-10
+            rounded-full
+            bg-accent/50
+            flex
+            items-center
+            justify-center
+          "
         >
           <X size={20}/>
         </button>
