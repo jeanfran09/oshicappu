@@ -70,6 +70,7 @@ export default function CreatePostPage() {
     isLoggedIn,
     isLoading
   } = useSupabaseAuth();
+  
   const router = useRouter();
 
   if (!isLoading && !isLoggedIn) {
@@ -77,8 +78,7 @@ export default function CreatePostPage() {
     return null;
   }
 
-  const canPost =
-    caption.trim().length > 0 || !loading;
+  const canPost = caption.trim().length > 0 || !loading;
 
   function handleSelectImages(
     e: React.ChangeEvent<HTMLInputElement>
@@ -212,12 +212,8 @@ export default function CreatePostPage() {
   }
 
   async function handleSubmit() {
-
-
     setError("");
-
-
-
+    
     if (!user) {
 
       setError(
