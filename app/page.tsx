@@ -8,6 +8,7 @@ import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
 import Divider from "@/components/Divider"
 import PullToRefresh from "@/components/PullToRefresh";
 import CreatePostButton from "@/components/CreatePostButton";
+import BottomSheet from "@/components/BottomSheet";
 
 async function refreshFeed() {
   await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -19,6 +20,8 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState<"following" | "foryou">("foryou");
   const { isLoggedIn, isLoading } = useSupabaseAuth();
   const router = useRouter();
+  const [showComments, setShowComments] = useState(false);
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoading && !isLoggedIn) {
@@ -36,6 +39,11 @@ export default function HomePage() {
 
   if (!isLoggedIn) {
     return null;
+  }
+
+  function openComments(postId: string) {
+    setSelectedPostId(postId);
+    setShowComments(true);
   }
 
   return (
@@ -87,14 +95,21 @@ export default function HomePage() {
         <PullToRefresh onRefresh={refreshFeed}>
           <div className="min-h-[70vh]">
             {activeTab === "following" ? (
-              <FollowingFeed />
+              <FollowingFeed onCommentClick={openComments}/>
             ) : (
-              <ForYouFeed />
+              <ForYouFeed onCommentClick={openComments}/>
             )}
           </div>
         </PullToRefresh>
       </div>
-      
+      {showComments && (
+        <BottomSheet
+          title="Comments"
+          onClose={() => setShowComments(false)}
+        >
+          Comments
+        </BottomSheet>
+      )}
       <CreatePostButton />
     </main>
   );

@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import CreatePostButton from "@/components/CreatePostButton";
 import OshiList from "@/components/Profile/OshiList";
-import OshiModal from "@/components/OshiModal";
+import BottomSheet from "@/components/BottomSheet";
 import ProfileTabs from "@/components/Profile/ProfileTabs";
 import PullToRefresh from "@/components/PullToRefresh";
 import PostGrid from "@/components/Profile/PostGrid";
@@ -30,7 +30,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
-  const [showOshiModal, setShowOshiModal] = useState(false);//temp
+  const [showBottomSheet, setShowBottomSheet] = useState(false);//temp
   const [activeTab, setActiveTab] = useState<"posts" | "saved" | "liked">("posts");
 
   //change later
@@ -188,7 +188,7 @@ export default function ProfilePage() {
 
           <OshiList
             oshis={dummyOshis}
-            onAdd={() => setShowOshiModal(true)}
+            onAdd={() => setShowBottomSheet(true)}
           />
         </div>
 
@@ -211,12 +211,13 @@ export default function ProfilePage() {
 
       <CreatePostButton />
 
-      {showOshiModal && (
-        <OshiModal
-          onClose={() =>
-            setShowOshiModal(false)
-          }
-        />
+      {showBottomSheet && (
+        <BottomSheet
+          title="Add Oshi"
+          onClose={() => setShowBottomSheet(false)}
+        >
+          add form
+        </BottomSheet>
       )}
     </div>
   );

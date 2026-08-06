@@ -1,14 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { ReactNode, useState } from "react";
 import { X } from "lucide-react";
 import { motion } from "framer-motion";
 
 type Props = {
+  title?: string;
+  children: ReactNode;
   onClose: () => void;
 };
 
-export default function OshiModal({
+export default function BottomSheet({
+  title,
+  children,
   onClose,
 }: Props) {
 
@@ -25,7 +29,7 @@ export default function OshiModal({
 
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-end bg-black/50 duration-200" onClick={closeModal}>
+    <div className="fixed inset-0 z-[999] flex items-end bg-black/50 duration-200" onClick={closeModal}>
       <motion.div
         initial={{ y: "100%" }}
         animate={{
@@ -53,13 +57,7 @@ export default function OshiModal({
 
         }}
 
-        className="
-          w-full
-          rounded-t-3xl
-          bg-background
-          p-6
-          min-h-[85vh]
-        "
+        className="w-full rounded-t-3xl bg-background p-6 min-h-[90vh]"
 
         onClick={(e) =>
           e.stopPropagation()
@@ -71,27 +69,16 @@ export default function OshiModal({
 
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold">
-            Add Oshi
+            {title ?? ""}
           </h2>
 
-          <button
-            onClick={closeModal}
-            className="
-              flex
-              h-8
-              w-8
-              items-center
-              justify-center
-              rounded-full
-              bg-accent
-            "
-          >
-            <X size={18}/>
+          <button onClick={closeModal} className="flex h-8 w-8 items-center justify-center rounded-full bg-accent">
+            <X size={18} />
           </button>
         </div>
 
         <div className="flex h-40 items-center justify-center text-foreground/60">
-          Add Oshi Form Here
+          {children}
         </div>
       </motion.div>
     </div>

@@ -14,7 +14,7 @@ import PostButton from "@/components/CreatePost/PostButton";
 import ImageCropper from "@/components/CreatePost/ImageCropper";
 import TagInput from "@/components/CreatePost/TagInput";
 import OshiPicker from "@/components/CreatePost/OshiPicker";
-import OshiModal from "@/components/OshiModal";
+import BottomSheet from "@/components/BottomSheet";
 
 type CropData = {
   crop: {
@@ -49,7 +49,7 @@ export default function CreatePostPage() {
   const [fandoms, setFandoms] = useState<string[]>([]);
 
   const [selectedOshis, setSelectedOshis] = useState<string[]>([]);
-  const [showOshiModal, setShowOshiModal] = useState(false);//temp
+  const [showBottomSheet, setShowBottomSheet] = useState(false);//temp
 
   //TODO: change to db oshis 
   const oshis = [
@@ -433,15 +433,16 @@ export default function CreatePostPage() {
             oshis={oshis}
             selected={selectedOshis}
             setSelected={setSelectedOshis}
-            onAdd={() => setShowOshiModal(true)}
+            onAdd={() => setShowBottomSheet(true)}
           />
 
-          {showOshiModal && (
-            <OshiModal
-              onClose={() =>
-                setShowOshiModal(false)
-              }
-            />
+          {showBottomSheet && (
+            <BottomSheet
+              title="Add Oshi"
+              onClose={() => setShowBottomSheet(false)}
+            >
+              add form
+            </BottomSheet>
           )}
 
           {error && (
