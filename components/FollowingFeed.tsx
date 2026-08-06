@@ -16,7 +16,7 @@ export default function FollowingFeed({
                 username="oshicappu"
                 avatar="/avatars/banri.png"
                 location="bed"
-                image="/posts/post1.png"
+                images={["/posts/post1.png"]}
                 caption="sogo"
                 likes={2543}
                 comments={3}
@@ -28,7 +28,7 @@ export default function FollowingFeed({
                 id="2"
                 username="oshicappu"
                 avatar="/avatars/banri.png"
-                image="/posts/post2.jpg"
+                images={["/posts/post2.jpg"]}
                 likes={1000000}
                 caption="あざとい"
                 time="2 HOURS AGO"

@@ -16,8 +16,8 @@ export default function ForYouFeed({
         username="oshicappu"
         avatar="/avatars/banri.png"
         location="bed"
-        image="/posts/post1.png"
-        caption="sogo"
+        images={["/posts/post1.png", "/posts/post2.jpg", "/posts/post1.png"]}
+        caption="sogo and abe-chan"
         likes={2599}
         comments={3}
         time="2 HOURS AGO"
