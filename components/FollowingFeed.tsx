@@ -22,6 +22,7 @@ export default function FollowingFeed({
                 comments={3}
                 time="2 HOURS AGO"
                 onCommentClick={() => onCommentClick("1")}
+                priority
             />
             <Divider/>
             <Post

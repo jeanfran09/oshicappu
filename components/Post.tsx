@@ -22,6 +22,7 @@ type PostProps = {
   time: string;
   location?: string;
   onCommentClick: () => void;
+  priority?: boolean;
 };
 
 export default function Post({
@@ -35,6 +36,7 @@ export default function Post({
   time,
   location,
   onCommentClick,
+  priority = false,
 }: PostProps) {
     const [liked, setLiked] = useState(false);
     const [likeCount, setLikeCount] = useState(likes ?? 0);
@@ -64,6 +66,7 @@ export default function Post({
                     width={40}
                     height={40}
                     className="rounded-full object-cover"
+                    priority={priority}
                 />
 
                 <div>
@@ -115,6 +118,7 @@ export default function Post({
                             fill
                             className="object-cover"
                             sizes="100vw"
+                            priority={priority && index === 0}
                         />
                         </div>
                     ))}

@@ -24,6 +24,7 @@ export default function ForYouFeed({
         onCommentClick={() =>
           onCommentClick("1")
         }
+        priority
       />
     </div>
   );

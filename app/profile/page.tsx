@@ -12,10 +12,14 @@ import BottomSheet from "@/components/BottomSheet";
 import ProfileTabs from "@/components/Profile/ProfileTabs";
 import PullToRefresh from "@/components/PullToRefresh";
 import PostGrid from "@/components/Profile/PostGrid";
+import PostModal from "@/components/Profile/PostModal";
+import { formatTimeAgo, parsePostImages } from "@/utils/formatNumber";
 
 interface Post {
   id: string;
+  user_id: string;
   content: string;
+  image_url: string | null;
   created_at: string;
 }
 
@@ -32,6 +36,7 @@ export default function ProfilePage() {
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [showBottomSheet, setShowBottomSheet] = useState(false);//temp
   const [activeTab, setActiveTab] = useState<"posts" | "saved" | "liked">("posts");
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
 
   //change later
   const dummyOshis = [
@@ -47,16 +52,20 @@ export default function ProfilePage() {
     },
   ];
 
-  const dummyPosts = [
-    {
-      id: "1",
-      image: "/posts/post1.png",
-    },
-    {
-      id: "2",
-      image: "/posts/post2.jpg",
-    },
-  ];
+  // Real posts created by this user, mapped to the grid's shape.
+  // Uses the first image (if any) as the thumbnail.
+  const userPosts = posts.map((post) => ({
+    id: post.id,
+    image: parsePostImages(post.image_url)[0] ?? null,
+  }));
+
+  // Same posts, mapped to the shape PostModal's scrollable feed expects.
+  const profileFeedPosts = posts.map((post) => ({
+    id: post.id,
+    images: parsePostImages(post.image_url),
+    caption: post.content,
+    time: formatTimeAgo(post.created_at),
+  }));
 
   const savedPosts = [
     {
@@ -197,7 +206,10 @@ export default function ProfilePage() {
           setActiveTab={setActiveTab}
         />
         {activeTab === "posts" && (
-          <PostGrid posts={dummyPosts} />
+          <PostGrid
+            posts={userPosts}
+            onPostClick={setSelectedPostId}
+          />
         )}
 
         {activeTab === "saved" && (
@@ -218,6 +230,16 @@ export default function ProfilePage() {
         >
           add form
         </BottomSheet>
+      )}
+
+      {selectedPostId && (
+        <PostModal
+          posts={profileFeedPosts}
+          initialPostId={selectedPostId}
+          username={profile?.username ?? "username"}
+          avatar={profile?.avatar_url || "/icons/temp.jpg"}
+          onClose={() => setSelectedPostId(null)}
+        />
       )}
     </div>
   );
