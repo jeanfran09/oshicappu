@@ -96,12 +96,14 @@ export default function ImagePreview({
       }}
     >
 
-      <Image
-        src={previewUrl!}
-        alt={`Preview ${currentIndex + 1}`}
-        fill
-        className="object-cover"
-      />
+      {previewUrl && (
+        <Image
+          src={previewUrl}
+          alt={`Preview ${currentIndex + 1}`}
+          fill
+          className="object-cover"
+        />
+      )}
 
 
       {/* Edit button */}

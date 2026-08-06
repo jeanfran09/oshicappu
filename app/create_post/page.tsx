@@ -78,7 +78,8 @@ export default function CreatePostPage() {
     return null;
   }
 
-  const canPost = caption.trim().length > 0 || !loading;
+  const canPost =
+    (caption.trim().length > 0 || images.length > 0) && !loading;
 
   function handleSelectImages(
     e: React.ChangeEvent<HTMLInputElement>
@@ -211,9 +212,41 @@ export default function CreatePostPage() {
 
   }
 
+  async function uploadImages(userId: string): Promise<string[]> {
+    const uploadedUrls: string[] = [];
+
+    for (let i = 0; i < images.length; i++) {
+      const file = images[i];
+
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${userId}/${Date.now()}-${i}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("posts")
+        .upload(path, file, {
+          cacheControl: "3600",
+          upsert: false,
+          contentType: file.type || `image/${ext}`,
+        });
+
+      if (uploadError) {
+        console.error("Image upload failed:", uploadError);
+        throw new Error(uploadError.message);
+      }
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("posts").getPublicUrl(path);
+
+      uploadedUrls.push(publicUrl);
+    }
+
+    return uploadedUrls;
+  }
+
   async function handleSubmit() {
     setError("");
-    
+
     if (!user) {
 
       setError(
@@ -233,6 +266,18 @@ export default function CreatePostPage() {
     }
     setLoading(true);
     try {
+      // Upload all selected/cropped images to the "posts" storage bucket first.
+      let imageUrls: string[] = [];
+
+      if (images.length > 0) {
+        imageUrls = await uploadImages(user.id);
+      }
+
+      // NOTE: the `posts` table only has a single `image_url text` column
+      // (no array/table for multiple images yet), so multiple image URLs
+      // are stored as a JSON-stringified array. When rendering posts,
+      // parse this back out, e.g.:
+      //   const images = post.image_url ? JSON.parse(post.image_url) : [];
       const {
         error: insertError
       } =
@@ -240,14 +285,28 @@ export default function CreatePostPage() {
           .from("posts")
           .insert({
 
-            user_id:user.id,
+            user_id: user.id,
 
             content:
               caption.trim(),
 
+            image_url:
+              imageUrls.length > 0
+                ? JSON.stringify(imageUrls)
+                : null,
+
           });
 
+      // TODO: once tables exist for hashtags, fandoms, and oshi tags,
+      // insert `hashtags`, `fandoms`, and `selectedOshis` here (linked
+      // to the new post's id) after the posts insert succeeds above.
+
       if(insertError){
+
+        console.error(
+          "Post insert failed:",
+          insertError
+        );
 
         setError(
           insertError.message
@@ -268,9 +327,12 @@ export default function CreatePostPage() {
       setCurrentIndex(0);
 
       router.push("/profile");
-    } catch {
+    } catch (err) {
+      console.error("Post creation failed:", err);
       setError(
-        "An unexpected error occurred"
+        err instanceof Error
+          ? err.message
+          : "An unexpected error occurred"
       );
     } finally {
       setLoading(false);

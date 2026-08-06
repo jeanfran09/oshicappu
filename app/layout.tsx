@@ -45,7 +45,7 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${sacramento.variable} ${patrickHand.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex-col">
+      <body className="min-h-full flex-col" suppressHydrationWarning>
         <SupabaseAuthProvider>
           {/* Mobile view */}
           <div className="md:hidden min-h-screen flex flex-col">
