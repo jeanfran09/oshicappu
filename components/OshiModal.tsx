@@ -25,25 +25,7 @@ export default function OshiModal({
 
 
   return (
-    <div
-      className={`
-        fixed
-        inset-0
-        z-[200]
-        flex
-        items-end
-        bg-black/50
-        ${
-          closing
-            ? "opacity-0"
-            : "opacity-100"
-        }
-        transition-opacity
-        duration-200
-      `}
-      onClick={closeModal}
-    >
-
+    <div className="fixed inset-0 z-[200] flex items-end bg-black/50 duration-200" onClick={closeModal}>
       <motion.div
         initial={{ y: "100%" }}
         animate={{

@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import BottomNav from "@/components/BottomNav";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
 import { LogOut, User as UserIcon } from "lucide-react";
 import Image from "next/image";
