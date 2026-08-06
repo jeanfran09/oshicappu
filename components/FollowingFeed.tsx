@@ -28,7 +28,7 @@ export default function FollowingFeed({
                 id="2"
                 username="oshicappu"
                 avatar="/avatars/banri.png"
-                images={["/posts/post2.jpg"]}
+                images={["/posts/post2.jpg", "/posts/post2.jpg"]}
                 likes={1000000}
                 caption="あざとい"
                 time="2 HOURS AGO"

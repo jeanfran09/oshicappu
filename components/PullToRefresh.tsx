@@ -12,7 +12,7 @@ type PullToRefreshProps = {
 export default function PullToRefresh({
   children,
   onRefresh,
-  threshold = 80,
+  threshold = 120,
 }: PullToRefreshProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -35,13 +35,15 @@ export default function PullToRefresh({
 
     const delta = e.touches[0].clientY - startY.current;
 
+    const startThreshold = 15
+
     if (delta <= 0) {
       setPullDistance(0);
       return;
     }
 
     // slow the pull for a natural feel
-    setPullDistance(Math.min(delta * 0.45, 120));
+    setPullDistance(Math.min(delta-startThreshold * 0.3, 120));
   }
 
   async function handleTouchEnd() {
@@ -84,12 +86,12 @@ export default function PullToRefresh({
             {refreshing ? (
               <Loader2
                 size={20}
-                className="animate-spin text-accent"
+                className="animate-spin text-foreground"
               />
             ) : (
               <ChevronDown
                 size={20}
-                className="text-accent transition-transform"
+                className="text-foreground transition-transform"
                 style={{
                   transform: `rotate(${Math.min(
                     pullDistance * 2,
