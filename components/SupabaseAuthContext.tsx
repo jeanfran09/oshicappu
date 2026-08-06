@@ -10,6 +10,8 @@ interface UserProfile {
   display_name: string;
   email: string;
   avatar_url: string | null;
+  bio: string | null;
+  banner_url: string | null;
 }
 
 interface SupabaseAuthContextType {
@@ -20,6 +22,7 @@ interface SupabaseAuthContextType {
   login: (email: string, password: string) => Promise<{ error: string | null }>;
   signup: (email: string, password: string, username: string, displayName: string) => Promise<{ error: string | null }>;
   logout: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const SupabaseAuthContext = createContext<SupabaseAuthContextType | undefined>(undefined);
@@ -123,6 +126,12 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const refreshProfile = async () => {
+    if (user) {
+      await fetchProfile(user.id);
+    }
+  };
+
   return (
     <SupabaseAuthContext.Provider
       value={{
@@ -133,6 +142,7 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
         login,
         signup,
         logout,
+        refreshProfile,
       }}
     >
       {isHydrated ? children : null}
