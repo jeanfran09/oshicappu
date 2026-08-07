@@ -16,38 +16,91 @@ export default function PullToRefresh({
 }: PullToRefreshProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const startX = useRef(0);
   const startY = useRef(0);
+
   const pulling = useRef(false);
+  const decided = useRef(false);
 
   const [pullDistance, setPullDistance] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
-  function handleTouchStart(e: React.TouchEvent<HTMLDivElement>) {
+  function handleTouchStart(
+    e: React.TouchEvent<HTMLDivElement>
+  ) {
     if (refreshing) return;
 
+    startX.current = e.touches[0].clientX;
     startY.current = e.touches[0].clientY;
+
     pulling.current =
       (containerRef.current?.scrollTop ?? 0) <= 0;
+
+    decided.current = false;
   }
 
-  function handleTouchMove(e: React.TouchEvent<HTMLDivElement>) {
+
+  function handleTouchMove(
+    e: React.TouchEvent<HTMLDivElement>
+  ) {
     if (!pulling.current || refreshing) return;
 
-    const delta = e.touches[0].clientY - startY.current;
 
-    const startThreshold = 15
+    const deltaY =
+      e.touches[0].clientY - startY.current;
 
-    if (delta <= 0) {
+    const deltaX =
+      e.touches[0].clientX - startX.current;
+
+
+    // Wait until direction is obvious
+    if (!decided.current) {
+
+      if (Math.abs(deltaY) < 15) {
+        return;
+      }
+
+
+      decided.current = true;
+
+
+      // If horizontal swipe or scrolling upward,
+      // cancel pull-to-refresh
+      if (
+        deltaY < 0 ||
+        Math.abs(deltaX) > Math.abs(deltaY)
+      ) {
+        pulling.current = false;
+        setPullDistance(0);
+        return;
+      }
+    }
+
+
+    const startThreshold = 20;
+
+
+    if (deltaY <= startThreshold) {
       setPullDistance(0);
       return;
     }
 
-    // slow the pull for a natural feel
-    setPullDistance(Math.min(delta-startThreshold * 0.3, 120));
+
+    // resistance
+    setPullDistance(
+      Math.min(
+        (deltaY - startThreshold) * 0.3,
+        120
+      )
+    );
   }
 
   async function handleTouchEnd() {
-    if (!pulling.current) return;
+    if (!pulling.current) {
+      decided.current = false;
+      return;
+    }
+
 
     if (
       pullDistance >= threshold &&
@@ -62,7 +115,9 @@ export default function PullToRefresh({
     }
 
     setPullDistance(0);
+
     pulling.current = false;
+    decided.current = false;
   }
 
   return (
@@ -86,12 +141,12 @@ export default function PullToRefresh({
             {refreshing ? (
               <Loader2
                 size={20}
-                className="animate-spin text-foreground"
+                className="animate-spin text-accent"
               />
             ) : (
               <ChevronDown
                 size={20}
-                className="text-foreground transition-transform"
+                className="text-accent transition-transform"
                 style={{
                   transform: `rotate(${Math.min(
                     pullDistance * 2,
@@ -104,6 +159,7 @@ export default function PullToRefresh({
         )}
 
         {children}
+
       </div>
     </div>
   );

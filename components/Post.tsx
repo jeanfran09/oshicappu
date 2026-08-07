@@ -11,6 +11,12 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 
+type Oshi = {
+  id: string;
+  name: string;
+  image: string;
+};
+
 type PostProps = {
   id: string;
   username: string;
@@ -23,6 +29,8 @@ type PostProps = {
   location?: string;
   onCommentClick: () => void;
   priority?: boolean;
+  oshis?: Oshi[];
+  hashtags?: string[];
 };
 
 export default function Post({
@@ -37,6 +45,8 @@ export default function Post({
   location,
   onCommentClick,
   priority = false,
+  oshis = [],
+  hashtags = [],
 }: PostProps) {
     const [liked, setLiked] = useState(false);
     const [likeCount, setLikeCount] = useState(likes ?? 0);
@@ -181,7 +191,7 @@ export default function Post({
             </div>
 
             {/* Caption */}
-            <div className="px-3 pt-1">
+            <div className="px-3 pt-1 whitespace-pre-line break-words leading-tight">
                 <span className="font-semibold mr-2">
                 {username}
                 </span>
@@ -189,6 +199,54 @@ export default function Post({
                 <span>{caption}</span>
             </div>
 
+            {/* Oshis */}
+            {oshis.length > 0 && (
+            <div className="px-3 pt-2">
+                <div className="flex flex-wrap gap-2">
+                {oshis.map((oshi) => (
+                    <div
+                    key={oshi.id}
+                    className="
+                        flex
+                        items-center
+                        gap-2
+                        rounded-full
+                        bg-accent
+                        pl-1.5
+                        pr-2.5
+                        py-1.5
+                    "
+                    >
+                    <div className="relative h-5 w-5 overflow-hidden rounded-full">
+                        <Image
+                            src={oshi.image}
+                            alt={oshi.name}
+                            fill
+                            className="rounded-full object-cover"
+                        />
+                    </div>
+
+                    <span className="text-base font-medium">
+                        {oshi.name}
+                    </span>
+                    </div>
+                ))}
+                </div>
+            </div>
+            )}
+
+            {/* Hashtags */}
+            {hashtags.length > 0 && (
+            <div className="px-3 pt-2 flex flex-wrap gap-x-3 gap-y-1">
+                {hashtags.map((tag) => (
+                <span key={tag} className="text-base  font-medium">
+                    #{tag}
+                </span>
+                ))}
+            </div>
+            )}
+
+            
             {/* Time */}
             <div className="px-3 pt-2 pb-4">
                 <p className="text-xs text-gray-500 uppercase">

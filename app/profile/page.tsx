@@ -238,14 +238,10 @@ export default function ProfilePage() {
           )}
 
           <div className="mt-4 space-y-1">
-            <p className="font-semibold">
-              {profile?.display_name}
-            </p>
+            <p className="font-semibold">{profile?.display_name}</p>
 
             {profile?.bio &&(
-              <p className="text-sm text-foreground/70">
-              {profile?.bio}
-            </p>
+              <p className="text-sm text-foreground/70">{profile?.bio}</p>
             )}
             
           </div>
