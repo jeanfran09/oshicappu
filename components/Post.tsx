@@ -9,7 +9,11 @@ import {
   Send,
   Bookmark,
   MoreHorizontal,
+  Pencil,
+  Trash2
 } from "lucide-react";
+import BottomSheet from "./BottomSheet";
+import Divider from "./Divider";
 
 type Oshi = {
   id: string;
@@ -51,6 +55,7 @@ export default function Post({
     const [liked, setLiked] = useState(false);
     const [likeCount, setLikeCount] = useState(likes ?? 0);
     const [currentImage, setCurrentImage] = useState(0);
+    const [showMore, setShowMore] = useState(false);
 
     function handleImageScroll(
         e: React.UIEvent<HTMLDivElement>
@@ -88,7 +93,7 @@ export default function Post({
                 </div>
                 </div>
 
-                <button>
+                <button  onClick={() => setShowMore(true)}>
                     <MoreHorizontal size={20} />
                 </button>
             </div>
@@ -253,6 +258,65 @@ export default function Post({
                 {time}
                 </p>
             </div>
+
+
+            {showMore && (
+            <BottomSheet
+                title="Options"
+                onClose={() => setShowMore(false)}
+                size="small"
+            >
+                <div className="w-full space-y-3">
+
+                <button
+                    className="
+                    flex
+                    w-full
+                    rounded-xl
+                    text-left
+                    text-base
+                    text-foreground
+                    items-center
+                    "
+                    onClick={() => {
+                    setShowMore(false);
+                    // open edit modal here
+                    }}
+                >
+                    <div className="flex h-9 w-9 mr-3 items-center justify-center rounded-full bg-accent">
+                        <Pencil size={18} />
+                    </div>
+                    <span>Edit Post</span>
+                </button>
+
+                <Divider/>
+
+                <button
+                    className="
+                    flex
+                    w-full
+                    rounded-xl
+                    text-left
+                    text-base
+                    font-medium
+                    text-red-500
+                    items-center
+                    "
+                    onClick={() => {
+                    setShowMore(false);
+                    // delete post here
+                    }}
+                >
+                    <div className="flex h-9 w-9 mr-3 items-center justify-center rounded-full bg-red-500/15">
+                        <Trash2 size={18} className="text-red-500"/>
+                    </div>
+
+                    <span>Delete Post</span>
+                </button>
+
+                </div>
+            </BottomSheet>
+            )}
         </article>
         </>
     );
