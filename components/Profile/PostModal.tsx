@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import Post from "@/components/Post";
-import CommentsSheet from "@/components/Profile/CommentsSheet";
+import CommentsSheet from "@/components/CommentsSheet";
 
 export type ProfilePost = {
   id: string;

@@ -242,9 +242,12 @@ export default function ProfilePage() {
               {profile?.display_name}
             </p>
 
-            <p className="text-sm text-foreground/70">
-              {profile?.bio || "Your bio goes here..."}
+            {profile?.bio &&(
+              <p className="text-sm text-foreground/70">
+              {profile?.bio}
             </p>
+            )}
+            
           </div>
 
           <button
