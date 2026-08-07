@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 
@@ -10,10 +10,12 @@ import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
 import ImagePreview from "@/components/CreatePost/ImagePreview";
 import ThumbnailStrip from "@/components/CreatePost/ThumbnailStrip";
 import CaptionInput from "@/components/CreatePost/CaptionInput";
+import LocationInput from "@/components/CreatePost/LocationInput";
 import PostButton from "@/components/CreatePost/PostButton";
 import ImageCropper from "@/components/CreatePost/ImageCropper";
 import TagInput from "@/components/CreatePost/TagInput";
-import OshiPicker from "@/components/CreatePost/OshiPicker";
+import OshiPicker, { type Oshi } from "@/components/CreatePost/OshiPicker";
+import AddOshiForm from "@/components/CreatePost/AddOshiForm";
 import BottomSheet from "@/components/BottomSheet";
 
 type CropData = {
@@ -47,23 +49,13 @@ export default function CreatePostPage() {
 
   const [hashtags, setHashtags] = useState<string[]>([]);
   const [fandoms, setFandoms] = useState<string[]>([]);
+  const [location, setLocation] = useState("");
 
   const [selectedOshis, setSelectedOshis] = useState<string[]>([]);
-  const [showBottomSheet, setShowBottomSheet] = useState(false);//temp
+  const [showBottomSheet, setShowBottomSheet] = useState(false);
 
-  //TODO: change to db oshis 
-  const oshis = [
-    {
-      id: "1",
-      name: "sogo",
-      image: "/posts/post1.png",
-    },
-    {
-      id: "2",
-      name: "abe-chan",
-      image: "/posts/post2.jpg",
-    },
-  ];
+  const [oshis, setOshis] = useState<Oshi[]>([]);
+  const [oshisLoading, setOshisLoading] = useState(true);
 
   const {
     user,
@@ -72,6 +64,36 @@ export default function CreatePostPage() {
   } = useSupabaseAuth();
   
   const router = useRouter();
+
+  useEffect(() => {
+    if (!user) return;
+
+    async function fetchOshis() {
+      setOshisLoading(true);
+
+      const { data, error: fetchError } = await supabase
+        .from("oshis")
+        .select("id, name, image_url")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: true });
+
+      if (fetchError) {
+        console.error("Error fetching oshis:", fetchError);
+      } else {
+        setOshis(
+          (data ?? []).map((o) => ({
+            id: o.id,
+            name: o.name,
+            image: o.image_url ?? "/icons/temp.jpg",
+          }))
+        );
+      }
+
+      setOshisLoading(false);
+    }
+
+    fetchOshis();
+  }, [user]);
 
   if (!isLoading && !isLoggedIn) {
     router.push("/login");
@@ -244,6 +266,69 @@ export default function CreatePostPage() {
     return uploadedUrls;
   }
 
+  async function insertHashtags(postId: string) {
+    for (const rawTag of hashtags) {
+      const tag = rawTag.trim().toLowerCase();
+      if (!tag) continue;
+
+      // Reuse the hashtag row if it already exists, otherwise create it.
+      let hashtagId: string;
+
+      const { data: existing, error: lookupError } = await supabase
+        .from("hashtags")
+        .select("id")
+        .eq("tag", tag)
+        .maybeSingle();
+
+      if (lookupError) {
+        console.error("Error looking up hashtag:", lookupError);
+        continue;
+      }
+
+      if (existing) {
+        hashtagId = existing.id;
+      } else {
+        const { data: created, error: createError } = await supabase
+          .from("hashtags")
+          .insert({ tag })
+          .select("id")
+          .single();
+
+        if (createError || !created) {
+          console.error("Error creating hashtag:", createError);
+          continue;
+        }
+
+        hashtagId = created.id;
+      }
+
+      const { error: linkError } = await supabase
+        .from("post_hashtags")
+        .insert({ post_id: postId, hashtag_id: hashtagId });
+
+      if (linkError) {
+        console.error("Error linking hashtag to post:", linkError);
+      }
+    }
+  }
+
+  async function insertOshiTags(postId: string) {
+    if (selectedOshis.length === 0) return;
+
+    const rows = selectedOshis.map((oshiId) => ({
+      post_id: postId,
+      oshi_id: oshiId,
+    }));
+
+    const { error: oshiLinkError } = await supabase
+      .from("post_oshis")
+      .insert(rows);
+
+    if (oshiLinkError) {
+      console.error("Error linking oshis to post:", oshiLinkError);
+    }
+  }
+
   async function handleSubmit() {
     setError("");
 
@@ -279,6 +364,7 @@ export default function CreatePostPage() {
       // parse this back out, e.g.:
       //   const images = post.image_url ? JSON.parse(post.image_url) : [];
       const {
+        data: insertedPost,
         error: insertError
       } =
         await supabase
@@ -295,13 +381,14 @@ export default function CreatePostPage() {
                 ? JSON.stringify(imageUrls)
                 : null,
 
-          });
+            location:
+              location.trim() || null,
 
-      // TODO: once tables exist for hashtags, fandoms, and oshi tags,
-      // insert `hashtags`, `fandoms`, and `selectedOshis` here (linked
-      // to the new post's id) after the posts insert succeeds above.
+          })
+          .select("id")
+          .single();
 
-      if(insertError){
+      if(insertError || !insertedPost){
 
         console.error(
           "Post insert failed:",
@@ -309,12 +396,19 @@ export default function CreatePostPage() {
         );
 
         setError(
-          insertError.message
+          insertError?.message ?? "Failed to create post"
         );
 
         return;
 
       }
+
+      // Attach hashtags and tagged oshis now that we have the new post's id.
+      // TODO: once a `fandoms` table exists, insert `fandoms` here too.
+      await Promise.all([
+        insertHashtags(insertedPost.id),
+        insertOshiTags(insertedPost.id),
+      ]);
 
       setImages([]);
 
@@ -323,6 +417,12 @@ export default function CreatePostPage() {
       setCropData([]);
 
       setCaption("");
+
+      setLocation("");
+
+      setHashtags([]);
+
+      setSelectedOshis([]);
 
       setCurrentIndex(0);
 
@@ -475,6 +575,11 @@ export default function CreatePostPage() {
             setCaption={setCaption}
           />
 
+          <LocationInput
+            location={location}
+            setLocation={setLocation}
+          />
+
           <TagInput
             label="Hashtags"
             placeholder="Add a hashtag"
@@ -491,19 +596,28 @@ export default function CreatePostPage() {
             setItems={setFandoms}
             maxItems={5}
           />
-          <OshiPicker
-            oshis={oshis}
-            selected={selectedOshis}
-            setSelected={setSelectedOshis}
-            onAdd={() => setShowBottomSheet(true)}
-          />
+          {oshisLoading ? (
+            <p className="text-sm text-foreground/50">Loading oshis...</p>
+          ) : (
+            <OshiPicker
+              oshis={oshis}
+              selected={selectedOshis}
+              setSelected={setSelectedOshis}
+              onAdd={() => setShowBottomSheet(true)}
+            />
+          )}
 
           {showBottomSheet && (
             <BottomSheet
               title="Add Oshi"
               onClose={() => setShowBottomSheet(false)}
             >
-              add form
+              <AddOshiForm
+                onCreated={(newOshi) =>
+                  setOshis((prev) => [...prev, newOshi])
+                }
+                onClose={() => setShowBottomSheet(false)}
+              />
             </BottomSheet>
           )}
 

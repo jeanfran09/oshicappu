@@ -14,6 +14,8 @@ import PullToRefresh from "@/components/PullToRefresh";
 import PostGrid from "@/components/Profile/PostGrid";
 import PostModal from "@/components/Profile/PostModal";
 import EditProfileModal from "@/components/Profile/EditProfileModal";
+import AddOshiForm from "@/components/CreatePost/AddOshiForm";
+import type { Oshi } from "@/components/CreatePost/OshiPicker";
 import { formatTimeAgo, parsePostImages } from "@/utils/formatNumber";
 
 interface Post {
@@ -39,20 +41,8 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<"posts" | "saved" | "liked">("posts");
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [showEditProfile, setShowEditProfile] = useState(false);
-
-  //change later
-  const dummyOshis = [
-    {
-      id: "1",
-      name: "sogo",
-      image: "/posts/post1.png",
-    },
-    {
-      id: "2",
-      name: "abe-chan",
-      image: "/posts/post2.jpg",
-    },
-  ];
+  const [oshis, setOshis] = useState<Oshi[]>([]);
+  const [oshisLoading, setOshisLoading] = useState(true);
 
   // Real posts created by this user, mapped to the grid's shape.
   // Uses the first image (if any) as the thumbnail.
@@ -90,8 +80,38 @@ export default function ProfilePage() {
   useEffect(() => {
     if (user) {
       fetchUserPosts();
+      fetchUserOshis();
     }
   }, [user]);
+
+  const fetchUserOshis = async () => {
+    if (!user) return;
+    try {
+      setOshisLoading(true);
+
+      const { data, error } = await supabase
+        .from("oshis")
+        .select("id, name, image_url")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: true });
+
+      if (error) {
+        console.error("Error fetching oshis:", error);
+      } else {
+        setOshis(
+          (data ?? []).map((o) => ({
+            id: o.id,
+            name: o.name,
+            image: o.image_url ?? "/icons/temp.jpg",
+          }))
+        );
+      }
+    } catch (error) {
+      console.error("Error fetching oshis:", error);
+    } finally {
+      setOshisLoading(false);
+    }
+  };
 
   const fetchUserPosts = async () => {
     if (!user) return;
@@ -148,8 +168,7 @@ export default function ProfilePage() {
 
       <PullToRefresh onRefresh={refreshFeed}>
         {/* Banner (only rendered when the user has set one).
-            Avatar overlaps the bottom-left of the banner, same as
-            the edit profile screen. */}
+            Sits above the profile content, no overlap. */}
         {profile?.banner_url && (
           <div className="relative h-32 w-full bg-accent/20">
             <Image
@@ -158,92 +177,54 @@ export default function ProfilePage() {
               fill
               className="object-cover"
             />
-
-            <div className="absolute -bottom-10 left-4 h-20 w-20 overflow-hidden rounded-full border-4 border-background bg-accent/20">
-              {profile?.avatar_url ? (
-                <Image
-                  src={profile.avatar_url}
-                  alt={`${profile.display_name}'s avatar`}
-                  width={80}
-                  height={80}
-                  className="object-cover"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center">
-                  <UserIcon size={32} className="text-foreground/20" />
-                </div>
-              )}
-            </div>
           </div>
         )}
 
         {/* Profile Content */}
         <div className="px-4">
-          {profile?.banner_url ? (
-            // Banner layout: avatar already sits above (overlapping
-            // the banner), so just clear enough space for it and
-            // show the stats on their own below.
-            <div className="mt-12 flex justify-around">
-              <div className="text-center">
-                <p className="font-semibold">{posts.length}</p>
-                <p className="text-xs">Posts</p>
-              </div>
-
-              <div className="text-center">
-                <p className="font-semibold">8</p>
-                <p className="text-xs">Followers</p>
-              </div>
-
-              <div className="text-center">
-                <p className="font-semibold">24</p>
-                <p className="text-xs">Following</p>
-              </div>
+          <div className="mt-5 flex items-center gap-6">
+            <div className="h-24 w-24 overflow-hidden rounded-full bg-accent/20">
+              {profile?.avatar_url ? (
+                <Image
+                  src={profile.avatar_url}
+                  alt={`${profile.display_name}'s avatar`}
+                  width={96}
+                  height={96}
+                  className="object-cover"
+                />
+              ) : (
+                <UserIcon size={48} className="text-foreground/20" />
+              )}
             </div>
-          ) : (
-            // No-banner layout: avatar and stats side by side, as before.
-            <div className="mt-5 flex items-center gap-6">
-              <div className="h-24 w-24 overflow-hidden rounded-full bg-accent/20">
-                {profile?.avatar_url ? (
-                  <Image
-                    src={profile.avatar_url}
-                    alt={`${profile.display_name}'s avatar`}
-                    width={96}
-                    height={96}
-                    className="object-cover"
-                  />
-                ) : (
-                  <UserIcon size={48} className="text-foreground/20" />
-                )}
-              </div>
 
-              <div className="flex-1">
-                <div className="flex justify-around">
-                  <div className="text-center">
-                    <p className="font-semibold">{posts.length}</p>
-                    <p className="text-xs">Posts</p>
-                  </div>
+            <div className="flex-1">
+              <div className="flex justify-around">
+                <div className="text-center">
+                  <p className="font-semibold">{posts.length}</p>
+                  <p className="text-xs">Posts</p>
+                </div>
 
-                  <div className="text-center">
-                    <p className="font-semibold">8</p>
-                    <p className="text-xs">Followers</p>
-                  </div>
+                <div className="text-center">
+                  <p className="font-semibold">8</p>
+                  <p className="text-xs">Followers</p>
+                </div>
 
-                  <div className="text-center">
-                    <p className="font-semibold">24</p>
-                    <p className="text-xs">Following</p>
-                  </div>
+                <div className="text-center">
+                  <p className="font-semibold">24</p>
+                  <p className="text-xs">Following</p>
                 </div>
               </div>
             </div>
-          )}
+          </div>
 
           <div className="mt-4 space-y-1">
-            <p className="font-semibold">{profile?.display_name}</p>
+            <p className="font-semibold">
+              {profile?.display_name}
+            </p>
 
-            {profile?.bio &&(
-              <p className="text-sm text-foreground/70">{profile?.bio}</p>
-            )}
-            
+            <p className="text-sm text-foreground/70">
+              {profile?.bio || "Your bio goes here..."}
+            </p>
           </div>
 
           <button
@@ -253,10 +234,12 @@ export default function ProfilePage() {
             Edit Profile
           </button>
 
-          <OshiList
-            oshis={dummyOshis}
-            onAdd={() => setShowBottomSheet(true)}
-          />
+          {!oshisLoading && (
+            <OshiList
+              oshis={oshis}
+              onAdd={() => setShowBottomSheet(true)}
+            />
+          )}
         </div>
 
         <ProfileTabs
@@ -286,7 +269,12 @@ export default function ProfilePage() {
           title="Add Oshi"
           onClose={() => setShowBottomSheet(false)}
         >
-          add form
+          <AddOshiForm
+            onCreated={(newOshi) =>
+              setOshis((prev) => [...prev, newOshi])
+            }
+            onClose={() => setShowBottomSheet(false)}
+          />
         </BottomSheet>
       )}
 
