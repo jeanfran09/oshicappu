@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion, useDragControls } from "framer-motion";
+import { motion } from "framer-motion";
 import { X, Send, User as UserIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
@@ -19,20 +19,24 @@ type CommentWithAuthor = {
 type Props = {
   postId: string;
   onClose: () => void;
+  size?: "small" | "large";
 };
 
-export default function CommentsSheet({ postId, onClose }: Props) {
+export default function CommentsSheet({
+  postId,
+  onClose,
+  size = "large",
+}: Props) {
   const { user } = useSupabaseAuth();
   const [closing, setClosing] = useState(false);
   const [comments, setComments] = useState<CommentWithAuthor[]>([]);
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState("");
   const [posting, setPosting] = useState(false);
-  const dragControls = useDragControls();
 
   function closeSheet() {
     setClosing(true);
-    setTimeout(onClose, 250);
+    setTimeout(onClose, 150);
   }
 
   useEffect(() => {
@@ -121,23 +125,20 @@ export default function CommentsSheet({ postId, onClose }: Props) {
       <motion.div
         initial={{ y: "100%" }}
         animate={{ y: closing ? "100%" : 0 }}
-        transition={{ duration: 0.25, ease: "easeOut" }}
+        transition={{ duration: 0.15, ease: "easeOut" }}
         drag="y"
-        dragControls={dragControls}
-        dragListener={false}
         dragConstraints={{ top: 0, bottom: 300 }}
-        dragElastic={0.2}
+        dragElastic={0.1}
         onDragEnd={(_, info) => {
           if (info.offset.y > 120) closeSheet();
         }}
-        className="relative flex h-[67vh] w-full flex-col rounded-t-3xl bg-background"
+        className={`relative flex w-full flex-col overflow-hidden rounded-t-3xl bg-background ${
+          size === "small" ? "h-[67vh]" : "h-[90vh]"
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drag handle */}
-        <div
-          className="flex cursor-grab justify-center pb-1 pt-3 active:cursor-grabbing"
-          onPointerDown={(e) => dragControls.start(e)}
-        >
+        <div className="flex cursor-grab justify-center pb-1 pt-3 active:cursor-grabbing">
           <div className="h-1.5 w-12 rounded-full bg-foreground/30" />
         </div>
 
@@ -153,7 +154,7 @@ export default function CommentsSheet({ postId, onClose }: Props) {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 py-3">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
           {loading ? (
             <p className="py-8 text-center text-sm text-foreground/50">
               Loading comments...
@@ -197,25 +198,27 @@ export default function CommentsSheet({ postId, onClose }: Props) {
         </div>
 
         {user && (
-          <div className="flex items-center gap-2 border-t border-foreground/10 px-4 py-3">
-            <input
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Add a comment..."
-              className="flex-1 rounded-full border border-foreground/20 bg-transparent px-4 py-2 text-sm outline-none"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handlePostComment();
-              }}
-            />
+          <div className="shrink-0 border-t border-foreground/10 px-4 py-3">
+            <div className="flex items-center gap-2">
+              <input
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Add a comment..."
+                className="flex-1 rounded-full border border-foreground/20 bg-transparent px-4 py-2 text-sm outline-none"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handlePostComment();
+                }}
+              />
 
-            <button
-              type="button"
-              onClick={handlePostComment}
-              disabled={!newComment.trim() || posting}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-secondary text-white disabled:opacity-40"
-            >
-              <Send size={16} />
-            </button>
+              <button
+                type="button"
+                onClick={handlePostComment}
+                disabled={!newComment.trim() || posting}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-secondary text-white disabled:opacity-40"
+              >
+                <Send size={16} />
+              </button>
+            </div>
           </div>
         )}
       </motion.div>
