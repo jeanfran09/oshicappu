@@ -17,8 +17,11 @@ export default function AddOshiForm({ onCreated, onClose }: Props) {
   const [name, setName] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [anniversary, setAnniversary] = useState("");
+  const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const canSave = name.trim() !== "";
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -95,22 +98,11 @@ export default function AddOshiForm({ onCreated, onClose }: Props) {
   }
 
   return (
-    <div className="space-y-4 pb-4">
-      <div className="flex items-center justify-between gap-4 rounded-2xl bg-accent/10 p-4">
-        <div className="min-w-0 flex-1">
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Name"
-            className="w-full truncate bg-transparent text-2xl font-semibold outline-none placeholder:text-foreground/30"
-          />
-          <p className="mt-1 text-xs text-foreground/40">
-            Your oshi&apos;s name
-          </p>
-        </div>
-
+    <div className="space-y-3">
+      {/* Oshi Photo */}
+      <div className="flex justify-center">
         <div className="relative shrink-0">
-          <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-accent/20">
+          <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-accent/20">
             {imagePreview ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -119,16 +111,31 @@ export default function AddOshiForm({ onCreated, onClose }: Props) {
                 className="h-full w-full object-cover"
               />
             ) : (
-              <UserIcon size={24} className="text-foreground/30" />
+              <UserIcon
+                size={32}
+                className="text-foreground/30"
+              />
             )}
           </div>
 
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-accent-secondary text-white"
+            className="
+              absolute
+              bottom-0
+              right-0
+              flex
+              h-7
+              w-7
+              items-center
+              justify-center
+              rounded-full
+              bg-accent-secondary
+              text-white
+            "
           >
-            <Camera size={12} />
+            <Camera size={14} />
           </button>
 
           <input
@@ -141,13 +148,112 @@ export default function AddOshiForm({ onCreated, onClose }: Props) {
         </div>
       </div>
 
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {/* Name */}
+      <div className="space-y-2">
+        <label
+          htmlFor="oshi-name"
+          className="text-sm font-semibold text-foreground"
+        >
+          Name
+        </label>
 
+        <input
+          id="oshi-name"
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Enter name"
+          className="
+            h-11
+            w-full
+            rounded-xl
+            border
+            border-foreground/10
+            bg-accent/10
+            px-4
+            outline-none
+            focus:border-accent
+          "
+        />
+      </div>
+
+      {/* Oshi Anniversary */}
+      <div className="space-y-2">
+        <label
+          htmlFor="oshi-anniversary"
+          className="text-sm font-semibold text-foreground"
+        >
+          Oshi Anniversary
+        </label>
+
+        <p className="text-xs text-foreground/60">
+          The date you started considering them your oshi.
+        </p>
+
+        <input
+          id="oshi-anniversary"
+          type="date"
+          value={anniversary}
+          onChange={(e) => setAnniversary(e.target.value)}
+          className="
+            h-11
+            w-full
+            rounded-xl
+            border
+            border-foreground/10
+            bg-accent/10
+            px-4
+            outline-none
+            focus:border-accent
+          "
+        />
+      </div>
+
+      {/* Notes / Bio */}
+      <div className="space-y-2">
+        <label
+          htmlFor="oshi-notes"
+          className="text-sm font-semibold text-foreground"
+        >
+          Notes
+        </label>
+
+        <textarea
+          id="oshi-notes"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Write something about your oshi..."
+          rows={4}
+          className="
+            w-full
+            resize-none
+            rounded-xl
+            border
+            border-foreground/10
+            bg-accent/10
+            px-4
+            py-3
+            outline-none
+            focus:border-accent
+          "
+        />
+      </div>
+
+      {/* Save */}
       <button
         type="button"
         onClick={handleSave}
-        disabled={saving}
-        className="h-10 w-full rounded-lg bg-accent-secondary font-medium text-white disabled:opacity-40"
+        disabled={!canSave || saving}
+        className="
+          h-11
+          w-full
+          rounded-xl
+          bg-accent-secondary
+          font-medium
+          text-white
+          transition-opacity
+          disabled:opacity-40
+        "
       >
         {saving ? "Saving..." : "Add Oshi"}
       </button>

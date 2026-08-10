@@ -14,7 +14,7 @@ import PullToRefresh from "@/components/PullToRefresh";
 import PostGrid from "@/components/Profile/PostGrid";
 import PostModal from "@/components/Profile/PostModal";
 import EditProfileModal from "@/components/Profile/EditProfileModal";
-import AddOshiForm from "@/components/CreatePost/AddOshiForm";
+import AddOshiForm from "@/components/AddOshiForm";
 import type { Oshi } from "@/components/CreatePost/OshiPicker";
 import { formatTimeAgo, parsePostImages } from "@/utils/formatNumber";
 
@@ -222,9 +222,11 @@ export default function ProfilePage() {
               {profile?.display_name}
             </p>
 
-            <p className="text-sm text-foreground/70">
-              {profile?.bio || "Your bio goes here..."}
-            </p>
+            {profile?.bio && (
+              <p className="text-sm text-foreground/70">
+                {profile.bio}
+              </p>
+            )}
           </div>
 
           <button

@@ -77,9 +77,7 @@ export default function BottomSheet({
       >
 
         {/* Drag handle */}
-        <div
-          className="flex cursor-grab justify-center pb-1 pt-3 active:cursor-grabbing"
-        >
+        <div className="flex cursor-grab justify-center pb-1 pt-3 active:cursor-grabbing">
           <div className="h-1.5 w-12 rounded-full bg-foreground/30" />
         </div>
 
@@ -95,7 +93,7 @@ export default function BottomSheet({
           </div>
         )}
 
-        <div className="flex items-center justify-center text-foreground/60 px-3 py-3">
+        <div className="w-full text-foreground/60 px-3 py-3">
           {children}
         </div>
       </motion.div>

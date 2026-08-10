@@ -15,7 +15,7 @@ import PostButton from "@/components/CreatePost/PostButton";
 import ImageCropper from "@/components/CreatePost/ImageCropper";
 import TagInput from "@/components/CreatePost/TagInput";
 import OshiPicker, { type Oshi } from "@/components/CreatePost/OshiPicker";
-import AddOshiForm from "@/components/CreatePost/AddOshiForm";
+import AddOshiForm from "@/components/AddOshiForm";
 import BottomSheet from "@/components/BottomSheet";
 
 type CropData = {
