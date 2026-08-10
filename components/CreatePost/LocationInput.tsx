@@ -12,7 +12,7 @@ export default function LocationInput({
   setLocation,
 }: LocationInputProps) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 pb-2">
       <label className="text-sm font-semibold">Location</label>
 
       <div className="relative">

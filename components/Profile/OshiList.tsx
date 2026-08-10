@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { Plus } from "lucide-react";
+import Link from "next/link";
 
 type Oshi = {
   id: string;
@@ -27,23 +28,31 @@ export default function OshiList({
       </h3>
       <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
         {oshis.map((oshi) => (
-          <button key={oshi.id} type="button" className="flex flex-col items-center gap-2 flex-shrink-0">
-            <div className="relative h-16 w-16 overflow-hidden rounded-full border-2 border-accent/30">
+          <Link
+            key={oshi.id}
+            href={`/oshi/${oshi.id}`}
+            className="
+              flex
+              flex-col
+              items-center
+              gap-2
+              flex-shrink-0
+            "
+          >
+            <div className="h-16 w-16 overflow-hidden rounded-full bg-accent/20">
               <Image
                 src={oshi.image}
                 alt={oshi.name}
-                fill
-                sizes="64px"
-                className="object-cover"
+                width={64}
+                height={64}
+                className="h-full w-full object-cover"
               />
             </div>
 
             <span className="max-w-16 truncate text-xs">
               {oshi.name}
             </span>
-
-          </button>
-
+          </Link>
         ))}
 
 

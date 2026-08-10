@@ -250,7 +250,8 @@ export default function AddOshiForm({ onCreated, onClose }: Props) {
           rounded-xl
           bg-accent-secondary
           font-medium
-          text-white
+          text-foreground
+          font-semibold
           transition-opacity
           disabled:opacity-40
         "
