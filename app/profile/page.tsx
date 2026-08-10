@@ -17,6 +17,7 @@ import EditProfileModal from "@/components/Profile/EditProfileModal";
 import AddOshiForm from "@/components/AddOshiForm";
 import type { Oshi } from "@/components/CreatePost/OshiPicker";
 import { formatTimeAgo, parsePostImages } from "@/utils/formatNumber";
+import { AnimatePresence } from "framer-motion";
 
 interface Post {
   id: string;
@@ -290,9 +291,11 @@ export default function ProfilePage() {
         />
       )}
 
+      <AnimatePresence>
       {showEditProfile && (
         <EditProfileModal onClose={() => setShowEditProfile(false)} />
       )}
+      </AnimatePresence>
     </div>
   );
 }

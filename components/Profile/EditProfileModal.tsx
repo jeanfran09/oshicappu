@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { ArrowLeft, Camera, User as UserIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
+import { motion } from "framer-motion";
 
 type Props = {
   onClose: () => void;
@@ -121,7 +122,16 @@ export default function EditProfileModal({ onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-[999] flex flex-col bg-background">
+    <motion.div
+      initial={{ x: "100%" }}
+      animate={{ x: 0 }}
+      exit={{ x: "100%" }}
+      transition={{
+        duration: 0.25,
+        ease: "easeOut",
+      }}
+      className="fixed inset-0 z-[999] flex flex-col bg-background"
+    >
       {/* Header */}
       <div className="sticky top-0 z-10 flex items-center justify-between border-b border-foreground/10 bg-background px-3 py-3">
         <div className="flex items-center gap-3">
@@ -269,6 +279,6 @@ export default function EditProfileModal({ onClose }: Props) {
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
