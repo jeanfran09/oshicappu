@@ -6,11 +6,28 @@ import { useState } from "react";
 import Post from "@/components/Post";
 import CommentsSheet from "@/components/CommentsSheet";
 
+type Oshi = {
+  id: string;
+  name: string;
+  image: string;
+};
+
+type Fandom = {
+  id: string;
+  name: string;
+};
+
 export type ProfilePost = {
   id: string;
   images: string[];
   caption: string;
   time: string;
+  location?: string;
+  likes?: number;
+  comments?: number;
+  oshis?: Oshi[];
+  fandoms?: Fandom[];
+  hashtags?: string[];
 };
 
 type PostModalProps = {
@@ -104,6 +121,12 @@ export default function PostModal({
                 images={post.images}
                 caption={post.caption}
                 time={post.time}
+                location={post.location}
+                likes={post.likes}
+                comments={post.comments}
+                oshis={post.oshis}
+                fandoms={post.fandoms}
+                hashtags={post.hashtags}
                 onCommentClick={() =>
                   setActiveCommentsPostId(post.id)
                 }

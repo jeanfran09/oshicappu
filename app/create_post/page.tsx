@@ -490,6 +490,85 @@ export default function CreatePostPage() {
   }
 
   /*
+   * Insert fandoms
+   */
+  async function insertFandoms(
+    postId: string
+  ) {
+    for (const rawFandom of fandoms) {
+      const name =
+        rawFandom.trim();
+
+      if (!name) continue;
+
+      let fandomId: string;
+
+      const {
+        data: existing,
+        error: lookupError,
+      } = await supabase
+        .from("fandoms")
+        .select("id")
+        .ilike("name", name)
+        .maybeSingle();
+
+      if (lookupError) {
+        console.error(
+          "Error looking up fandom:",
+          lookupError
+        );
+
+        continue;
+      }
+
+      if (existing) {
+        fandomId = existing.id;
+      } else {
+        const {
+          data: created,
+          error: createError,
+        } = await supabase
+          .from("fandoms")
+          .insert({ name })
+          .select("id")
+          .single();
+
+        if (
+          createError ||
+          !created
+        ) {
+          console.error(
+            "Error creating fandom:",
+            createError
+          );
+
+          continue;
+        }
+
+        fandomId =
+          created.id;
+      }
+
+      const {
+        error: linkError,
+      } = await supabase
+        .from("post_fandoms")
+        .insert({
+          post_id: postId,
+          fandom_id:
+            fandomId,
+        });
+
+      if (linkError) {
+        console.error(
+          "Error linking fandom to post:",
+          linkError
+        );
+      }
+    }
+  }
+
+  /*
    * Insert Oshi tags
    */
   async function insertOshiTags(
@@ -599,6 +678,9 @@ export default function CreatePostPage() {
 
       await Promise.all([
         insertHashtags(
+          insertedPost.id
+        ),
+        insertFandoms(
           insertedPost.id
         ),
         insertOshiTags(

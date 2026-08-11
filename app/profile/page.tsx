@@ -26,6 +26,12 @@ interface Post {
   content: string;
   image_url: string | null;
   created_at: string;
+  location: string | null;
+  likes_count: number;
+  comments_count: number;
+  oshis: { id: string; name: string; image: string }[];
+  fandoms: { id: string; name: string }[];
+  hashtags: string[];
 }
 
 async function refreshFeed() {
@@ -78,6 +84,12 @@ export default function ProfilePage() {
     images: parsePostImages(post.image_url),
     caption: post.content,
     time: formatTimeAgo(post.created_at),
+    location: post.location ?? undefined,
+    likes: post.likes_count,
+    comments: post.comments_count,
+    oshis: post.oshis,
+    fandoms: post.fandoms,
+    hashtags: post.hashtags,
   }));
 
   const savedPosts = [
@@ -153,7 +165,16 @@ export default function ProfilePage() {
 
       const { data, error } = await supabase
         .from("posts")
-        .select("*")
+        .select(
+          `
+          *,
+          likes(count),
+          comments(count),
+          post_oshis(oshis(id, name, image_url)),
+          post_fandoms(fandoms(id, name)),
+          post_hashtags(hashtags(tag))
+          `
+        )
         .eq("user_id", user.id)
         .order("created_at", {
           ascending: false,
@@ -165,7 +186,38 @@ export default function ProfilePage() {
           error
         );
       } else {
-        setPosts(data || []);
+        setPosts(
+          (data || []).map((post: any) => ({
+            id: post.id,
+            user_id: post.user_id,
+            content: post.content,
+            image_url: post.image_url,
+            created_at: post.created_at,
+            location: post.location,
+            likes_count:
+              post.likes?.[0]?.count ?? 0,
+            comments_count:
+              post.comments?.[0]?.count ?? 0,
+            oshis: (post.post_oshis ?? []).map(
+              (po: any) => ({
+                id: po.oshis.id,
+                name: po.oshis.name,
+                image:
+                  po.oshis.image_url ??
+                  "/icons/temp.jpg",
+              })
+            ),
+            fandoms: (post.post_fandoms ?? []).map(
+              (pf: any) => ({
+                id: pf.fandoms.id,
+                name: pf.fandoms.name,
+              })
+            ),
+            hashtags: (post.post_hashtags ?? []).map(
+              (ph: any) => ph.hashtags.tag
+            ),
+          }))
+        );
       }
     } catch (error) {
       console.error(
