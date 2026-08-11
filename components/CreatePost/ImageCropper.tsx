@@ -189,12 +189,19 @@ export default function ImageCropper({
 
   return (
 
-    <div className="
-      fixed
-      inset-0
-      z-[100]
-      bg-black
-    ">
+    <div 
+      data-cropper
+      className="fixed inset-0 z-[9999] bg-black"
+      style={{
+        touchAction: "none",
+      }}
+      onPointerDown={(e) => e.stopPropagation()}
+      onPointerMove={(e) => e.stopPropagation()}
+      onPointerUp={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
+      onTouchMove={(e) => e.stopPropagation()}
+      onTouchEnd={(e) => e.stopPropagation()}
+    >
 
 
       <Cropper

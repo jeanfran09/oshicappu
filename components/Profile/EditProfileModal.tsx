@@ -231,7 +231,7 @@ export default function EditProfileModal({ onClose }: Props) {
           )}
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-foreground/60">
+            <label className="mb-1 block text-sm font-semibold text-foreground">
               Display Name
             </label>
             <input
@@ -243,7 +243,7 @@ export default function EditProfileModal({ onClose }: Props) {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-foreground/60">
+            <label className="mb-1 block text-sm font-semibold text-foreground">
               Username
             </label>
             <div className="flex items-center rounded-lg border border-foreground/20">
@@ -262,7 +262,7 @@ export default function EditProfileModal({ onClose }: Props) {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-foreground/60">
+            <label className="mb-1 block text-sm font-semibold text-foreground">
               Bio
             </label>
             <textarea

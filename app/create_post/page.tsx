@@ -14,7 +14,9 @@ import LocationInput from "@/components/CreatePost/LocationInput";
 import PostButton from "@/components/CreatePost/PostButton";
 import ImageCropper from "@/components/CreatePost/ImageCropper";
 import TagInput from "@/components/CreatePost/TagInput";
-import OshiPicker, { type Oshi } from "@/components/CreatePost/OshiPicker";
+import OshiPicker, {
+  type Oshi,
+} from "@/components/CreatePost/OshiPicker";
 import AddOshiForm from "@/components/AddOshiForm";
 import BottomSheet from "@/components/BottomSheet";
 
@@ -26,9 +28,7 @@ type CropData = {
   zoom: number;
 };
 
-
 export default function CreatePostPage() {
-
   const MAX_IMAGES = 10;
 
   const [images, setImages] = useState<File[]>([]);
@@ -36,12 +36,16 @@ export default function CreatePostPage() {
   const [cropData, setCropData] = useState<CropData[]>([]);
   const [pendingImages, setPendingImages] = useState<File[]>([]);
   const [cropImage, setCropImage] = useState<string | null>(null);
-  // final image array index
+
+  // Final image array index
   const [cropIndex, setCropIndex] = useState(0);
-  // upload queue index
+
+  // Upload queue index
   const [pendingIndex, setPendingIndex] = useState(0);
+
   const [aspectRatio, setAspectRatio] = useState(1);
   const [currentIndex, setCurrentIndex] = useState(0);
+
   const [caption, setCaption] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -52,39 +56,64 @@ export default function CreatePostPage() {
   const [location, setLocation] = useState("");
 
   const [selectedOshis, setSelectedOshis] = useState<string[]>([]);
-  const [showBottomSheet, setShowBottomSheet] = useState(false);
+
+  const [showBottomSheet, setShowBottomSheet] =
+    useState(false);
 
   const [oshis, setOshis] = useState<Oshi[]>([]);
   const [oshisLoading, setOshisLoading] = useState(true);
 
+  /*
+   * Add Oshi cropper state
+   */
+  const [showOshiCropper, setShowOshiCropper] =
+    useState(false);
+
+  const [oshiCropImage, setOshiCropImage] =
+    useState<string | null>(null);
+
+  const [croppedOshiImage, setCroppedOshiImage] =
+    useState<File | null>(null);
+
   const {
     user,
     isLoggedIn,
-    isLoading
+    isLoading,
   } = useSupabaseAuth();
-  
+
   const router = useRouter();
 
+  /*
+   * Fetch user's oshis
+   */
   useEffect(() => {
     if (!user) return;
 
     async function fetchOshis() {
       setOshisLoading(true);
 
-      const { data, error: fetchError } = await supabase
-        .from("oshis")
-        .select("id, name, image_url")
-        .eq("user_id", user!.id)
-        .order("created_at", { ascending: true });
+      const { data, error: fetchError } =
+        await supabase
+          .from("oshis")
+          .select("id, name, image_url")
+          .eq("user_id", user!.id)
+          .order("created_at", {
+            ascending: true,
+          });
 
       if (fetchError) {
-        console.error("Error fetching oshis:", fetchError);
+        console.error(
+          "Error fetching oshis:",
+          fetchError
+        );
       } else {
         setOshis(
           (data ?? []).map((o) => ({
             id: o.id,
             name: o.name,
-            image: o.image_url ?? "/icons/temp.jpg",
+            image:
+              o.image_url ??
+              "/icons/temp.jpg",
           }))
         );
       }
@@ -95,41 +124,39 @@ export default function CreatePostPage() {
     fetchOshis();
   }, [user]);
 
+  /*
+   * Redirect if not logged in
+   */
   if (!isLoading && !isLoggedIn) {
     router.push("/login");
     return null;
   }
 
   const canPost =
-    (caption.trim().length > 0 || images.length > 0) && !loading;
+    (caption.trim().length > 0 ||
+      images.length > 0) &&
+    !loading;
 
+  /*
+   * Select post images
+   */
   function handleSelectImages(
     e: React.ChangeEvent<HTMLInputElement>
   ) {
-    const selected = Array.from(e.target.files ?? []);
+    const selected = Array.from(
+      e.target.files ?? []
+    );
 
     if (!selected.length) {
       return;
     }
 
-    const remaining = MAX_IMAGES - originalImages.length;
-
+    const remaining =
+      MAX_IMAGES - originalImages.length;
 
     if (remaining <= 0) {
-      setMessage("You can only upload up to 10 photos");
-
-      setTimeout(() => {
-        setMessage("");
-      }, 2500);
-
-      e.target.value = "";
-      return;
-    }
-
-
-    if (selected.length > remaining) {
       setMessage(
-        `You can only select ${remaining} more photo${remaining === 1 ? "" : "s"}`
+        "You can only upload up to 10 photos"
       );
 
       setTimeout(() => {
@@ -140,61 +167,71 @@ export default function CreatePostPage() {
       return;
     }
 
+    if (selected.length > remaining) {
+      setMessage(
+        `You can only select ${remaining} more photo${
+          remaining === 1 ? "" : "s"
+        }`
+      );
 
-    // Accept images
-    const startIndex = originalImages.length;
+      setTimeout(() => {
+        setMessage("");
+      }, 2500);
 
+      e.target.value = "";
+      return;
+    }
 
-    setOriginalImages(prev => [
+    const startIndex =
+      originalImages.length;
+
+    setOriginalImages((prev) => [
       ...prev,
-      ...selected
+      ...selected,
     ]);
-
 
     setPendingImages(selected);
 
-
     setCropIndex(startIndex);
-
 
     setCropImage(
       URL.createObjectURL(selected[0])
     );
 
-
     e.target.value = "";
   }
 
-
+  /*
+   * Edit an existing post image
+   */
   function handleEditImage() {
-    const original = originalImages[currentIndex];
+    const original =
+      originalImages[currentIndex];
 
-    if (!original)
-      return;
+    if (!original) return;
 
     setPendingImages([]);
     setPendingIndex(0);
     setCropIndex(currentIndex);
+
     setCropImage(
       URL.createObjectURL(original)
     );
-
   }
 
+  /*
+   * Finish cropping a post image
+   */
   function handleCropComplete(
     croppedFile: File
   ) {
-    setImages(prev => {
-      const updated =
-        [...prev];
-      // Replace existing image
+    setImages((prev) => {
+      const updated = [...prev];
+
       if (cropIndex < updated.length) {
         updated[cropIndex] =
           croppedFile;
-      }
-
-      // Add new image
-      else {
+      } else {
         updated.push(croppedFile);
       }
 
@@ -204,61 +241,168 @@ export default function CreatePostPage() {
     const nextPending =
       pendingIndex + 1;
 
-    // Continue cropping selected images
     if (
-      nextPending < pendingImages.length
+      nextPending <
+      pendingImages.length
     ) {
       setPendingIndex(nextPending);
-      setCropIndex(prev =>
+
+      setCropIndex((prev) =>
         prev + 1
       );
+
       setCropImage(
         URL.createObjectURL(
           pendingImages[nextPending]
         )
       );
-    }
+    } else {
+      if (cropImage) {
+        URL.revokeObjectURL(cropImage);
+      }
 
-    else {
       setCropImage(null);
       setPendingImages([]);
       setPendingIndex(0);
     }
-
   }
 
+  /*
+   * Cancel post image cropping
+   */
   function cancelCrop() {
+    if (cropImage) {
+      URL.revokeObjectURL(cropImage);
+    }
+
     setCropImage(null);
     setPendingImages([]);
     setPendingIndex(0);
-
   }
 
-  async function uploadImages(userId: string): Promise<string[]> {
+  /*
+   * Open the Oshi cropper.
+   *
+   * The BottomSheet stays open.
+   */
+  function handleOpenOshiCropper(
+    imageUrl: string
+  ) {
+    setOshiCropImage(imageUrl);
+    setShowOshiCropper(true);
+
+    // DO NOT close the BottomSheet.
+  }
+
+  /*
+   * Finish cropping the Oshi image.
+   *
+   * The BottomSheet remains open.
+   */
+  function handleOshiCropComplete(
+    croppedFile: File
+  ) {
+    setCroppedOshiImage(
+      croppedFile
+    );
+
+    setShowOshiCropper(false);
+
+    if (oshiCropImage) {
+      URL.revokeObjectURL(
+        oshiCropImage
+      );
+    }
+
+    setOshiCropImage(null);
+  }
+
+  /*
+   * Cancel Oshi cropping.
+   *
+   * The BottomSheet remains open.
+   */
+  function handleCancelOshiCropper() {
+    if (oshiCropImage) {
+      URL.revokeObjectURL(
+        oshiCropImage
+      );
+    }
+
+    setOshiCropImage(null);
+    setShowOshiCropper(false);
+  }
+
+  /*
+   * Close the Add Oshi sheet
+   * and completely reset its state.
+   */
+  function resetOshiForm() {
+    setShowBottomSheet(false);
+
+    setCroppedOshiImage(null);
+
+    if (oshiCropImage) {
+      URL.revokeObjectURL(
+        oshiCropImage
+      );
+    }
+
+    setOshiCropImage(null);
+    setShowOshiCropper(false);
+  }
+
+  /*
+   * Upload post images
+   */
+  async function uploadImages(
+    userId: string
+  ): Promise<string[]> {
     const uploadedUrls: string[] = [];
 
-    for (let i = 0; i < images.length; i++) {
+    for (
+      let i = 0;
+      i < images.length;
+      i++
+    ) {
       const file = images[i];
 
-      const ext = file.name.split(".").pop() || "jpg";
-      const path = `${userId}/${Date.now()}-${i}.${ext}`;
+      const ext =
+        file.name.split(".").pop() ||
+        "jpg";
 
-      const { error: uploadError } = await supabase.storage
+      const path =
+        `${userId}/${Date.now()}-${i}.${ext}`;
+
+      const {
+        error: uploadError,
+      } = await supabase.storage
         .from("posts")
         .upload(path, file, {
           cacheControl: "3600",
           upsert: false,
-          contentType: file.type || `image/${ext}`,
+          contentType:
+            file.type ||
+            `image/${ext}`,
         });
 
       if (uploadError) {
-        console.error("Image upload failed:", uploadError);
-        throw new Error(uploadError.message);
+        console.error(
+          "Image upload failed:",
+          uploadError
+        );
+
+        throw new Error(
+          uploadError.message
+        );
       }
 
       const {
         data: { publicUrl },
-      } = supabase.storage.from("posts").getPublicUrl(path);
+      } =
+        supabase.storage
+          .from("posts")
+          .getPublicUrl(path);
 
       uploadedUrls.push(publicUrl);
     }
@@ -266,74 +410,126 @@ export default function CreatePostPage() {
     return uploadedUrls;
   }
 
-  async function insertHashtags(postId: string) {
+  /*
+   * Insert hashtags
+   */
+  async function insertHashtags(
+    postId: string
+  ) {
     for (const rawTag of hashtags) {
-      const tag = rawTag.trim().toLowerCase();
+      const tag =
+        rawTag.trim().toLowerCase();
+
       if (!tag) continue;
 
-      // Reuse the hashtag row if it already exists, otherwise create it.
       let hashtagId: string;
 
-      const { data: existing, error: lookupError } = await supabase
+      const {
+        data: existing,
+        error: lookupError,
+      } = await supabase
         .from("hashtags")
         .select("id")
         .eq("tag", tag)
         .maybeSingle();
 
       if (lookupError) {
-        console.error("Error looking up hashtag:", lookupError);
+        console.error(
+          "Error looking up hashtag:",
+          lookupError
+        );
+
         continue;
       }
 
       if (existing) {
         hashtagId = existing.id;
       } else {
-        const { data: created, error: createError } = await supabase
+        const {
+          data: created,
+          error: createError,
+        } = await supabase
           .from("hashtags")
           .insert({ tag })
           .select("id")
           .single();
 
-        if (createError || !created) {
-          console.error("Error creating hashtag:", createError);
+        if (
+          createError ||
+          !created
+        ) {
+          console.error(
+            "Error creating hashtag:",
+            createError
+          );
+
           continue;
         }
 
-        hashtagId = created.id;
+        hashtagId =
+          created.id;
       }
 
-      const { error: linkError } = await supabase
+      const {
+        error: linkError,
+      } = await supabase
         .from("post_hashtags")
-        .insert({ post_id: postId, hashtag_id: hashtagId });
+        .insert({
+          post_id: postId,
+          hashtag_id:
+            hashtagId,
+        });
 
       if (linkError) {
-        console.error("Error linking hashtag to post:", linkError);
+        console.error(
+          "Error linking hashtag to post:",
+          linkError
+        );
       }
     }
   }
 
-  async function insertOshiTags(postId: string) {
-    if (selectedOshis.length === 0) return;
+  /*
+   * Insert Oshi tags
+   */
+  async function insertOshiTags(
+    postId: string
+  ) {
+    if (
+      selectedOshis.length === 0
+    ) {
+      return;
+    }
 
-    const rows = selectedOshis.map((oshiId) => ({
-      post_id: postId,
-      oshi_id: oshiId,
-    }));
+    const rows =
+      selectedOshis.map(
+        (oshiId) => ({
+          post_id: postId,
+          oshi_id: oshiId,
+        })
+      );
 
-    const { error: oshiLinkError } = await supabase
+    const {
+      error: oshiLinkError,
+    } = await supabase
       .from("post_oshis")
       .insert(rows);
 
     if (oshiLinkError) {
-      console.error("Error linking oshis to post:", oshiLinkError);
+      console.error(
+        "Error linking oshis to post:",
+        oshiLinkError
+      );
     }
   }
 
+  /*
+   * Submit post
+   */
   async function handleSubmit() {
     setError("");
 
     if (!user) {
-
       setError(
         "You must be logged in to create a post"
       );
@@ -342,93 +538,91 @@ export default function CreatePostPage() {
     }
 
     if (!canPost) {
-
       setError(
         "Post cannot be empty"
       );
 
       return;
     }
+
     setLoading(true);
+
     try {
-      // Upload all selected/cropped images to the "posts" storage bucket first.
       let imageUrls: string[] = [];
 
       if (images.length > 0) {
-        imageUrls = await uploadImages(user.id);
+        imageUrls =
+          await uploadImages(
+            user.id
+          );
       }
 
-      // NOTE: the `posts` table only has a single `image_url text` column
-      // (no array/table for multiple images yet), so multiple image URLs
-      // are stored as a JSON-stringified array. When rendering posts,
-      // parse this back out, e.g.:
-      //   const images = post.image_url ? JSON.parse(post.image_url) : [];
       const {
         data: insertedPost,
-        error: insertError
+        error: insertError,
       } =
         await supabase
           .from("posts")
           .insert({
-
             user_id: user.id,
-
             content:
               caption.trim(),
-
             image_url:
               imageUrls.length > 0
-                ? JSON.stringify(imageUrls)
+                ? JSON.stringify(
+                    imageUrls
+                  )
                 : null,
-
             location:
-              location.trim() || null,
-
+              location.trim() ||
+              null,
           })
           .select("id")
           .single();
 
-      if(insertError || !insertedPost){
-
+      if (
+        insertError ||
+        !insertedPost
+      ) {
         console.error(
           "Post insert failed:",
           insertError
         );
 
         setError(
-          insertError?.message ?? "Failed to create post"
+          insertError?.message ??
+            "Failed to create post"
         );
 
         return;
-
       }
 
-      // Attach hashtags and tagged oshis now that we have the new post's id.
-      // TODO: once a `fandoms` table exists, insert `fandoms` here too.
       await Promise.all([
-        insertHashtags(insertedPost.id),
-        insertOshiTags(insertedPost.id),
+        insertHashtags(
+          insertedPost.id
+        ),
+        insertOshiTags(
+          insertedPost.id
+        ),
       ]);
 
       setImages([]);
-
       setOriginalImages([]);
-
       setCropData([]);
-
       setCaption("");
-
       setLocation("");
-
       setHashtags([]);
-
+      setFandoms([]);
       setSelectedOshis([]);
-
       setCurrentIndex(0);
 
       router.push("/profile");
     } catch (err) {
-      console.error("Post creation failed:", err);
+      console.error(
+        "Post creation failed:",
+        err
+      );
+
       setError(
         err instanceof Error
           ? err.message
@@ -439,15 +633,17 @@ export default function CreatePostPage() {
     }
   }
 
-  if(isLoading){
+  if (isLoading) {
     return (
-      <div className="
-        md:hidden
-        min-h-screen
-        flex
-        items-center
-        justify-center
-      ">
+      <div
+        className="
+          md:hidden
+          min-h-screen
+          flex
+          items-center
+          justify-center
+        "
+      >
         Loading...
       </div>
     );
@@ -455,43 +651,41 @@ export default function CreatePostPage() {
 
   return (
     <div className="md:hidden min-h-screen flex flex-col">
+
+      {/* Post Image Cropper */}
       {cropImage && (
         <ImageCropper
           image={cropImage}
           aspectRatio={aspectRatio}
-
           isFirstImage={
             images.length === 0
           }
-
           initialCrop={
             cropData[cropIndex]
           }
+          onCropChange={(data) => {
+            setCropData((prev) => {
+              const updated = [
+                ...prev,
+              ];
 
-          onCropChange={(data)=>{
-            setCropData(prev=>{
-              const updated =
-                [...prev];
               updated[cropIndex] =
                 data;
+
               return updated;
             });
           }}
-
           onRatioChange={
             setAspectRatio
           }
-
           onComplete={
             handleCropComplete
           }
-
-          onCancel={
-            cancelCrop
-          }
+          onCancel={cancelCrop}
         />
-
       )}
+
+      {/* Message */}
       {message && (
         <div
           className="
@@ -514,6 +708,8 @@ export default function CreatePostPage() {
           {message}
         </div>
       )}
+
+      {/* Header */}
       <header
         className="
           sticky
@@ -535,7 +731,9 @@ export default function CreatePostPage() {
         </h1>
 
         <button
-          onClick={() => router.push("/")}
+          onClick={() =>
+            router.push("/")
+          }
           className="
             h-10
             w-10
@@ -546,27 +744,38 @@ export default function CreatePostPage() {
             justify-center
           "
         >
-          <X size={20}/>
+          <X size={20} />
         </button>
       </header>
 
       <main className="flex-1 overflow-y-auto px-4 pb-6">
         <div className="mt-4">
           <div className="space-y-4 pb-4">
+
             <ImagePreview
-            images={images}
-            currentIndex={currentIndex}
-            setCurrentIndex={setCurrentIndex}
-            onEdit={handleEditImage}
-            aspectRatio={aspectRatio}
+              images={images}
+              currentIndex={currentIndex}
+              setCurrentIndex={
+                setCurrentIndex
+              }
+              onEdit={
+                handleEditImage
+              }
+              aspectRatio={
+                aspectRatio
+              }
             />
 
             <ThumbnailStrip
               images={images}
               currentIndex={currentIndex}
-              setCurrentIndex={setCurrentIndex}
+              setCurrentIndex={
+                setCurrentIndex
+              }
               setImages={setImages}
-              onSelectImages={handleSelectImages}
+              onSelectImages={
+                handleSelectImages
+              }
             />
           </div>
 
@@ -596,43 +805,93 @@ export default function CreatePostPage() {
             setItems={setFandoms}
             maxItems={5}
           />
+
           {oshisLoading ? (
-            <p className="text-sm text-foreground/50">Loading oshis...</p>
+            <p className="text-sm text-foreground/50">
+              Loading oshis...
+            </p>
           ) : (
             <OshiPicker
               oshis={oshis}
-              selected={selectedOshis}
-              setSelected={setSelectedOshis}
-              onAdd={() => setShowBottomSheet(true)}
+              selected={
+                selectedOshis
+              }
+              setSelected={
+                setSelectedOshis
+              }
+              onAdd={() =>
+                setShowBottomSheet(
+                  true
+                )
+              }
             />
           )}
 
+          {/* Add Oshi Bottom Sheet */}
           {showBottomSheet && (
             <BottomSheet
               title="Add Oshi"
-              onClose={() => setShowBottomSheet(false)}
+              onClose={
+                resetOshiForm
+              }
             >
               <AddOshiForm
                 onCreated={(newOshi) =>
-                  setOshis((prev) => [...prev, newOshi])
+                  setOshis((prev) => [
+                    ...prev,
+                    newOshi,
+                  ])
                 }
-                onClose={() => setShowBottomSheet(false)}
+                onClose={
+                  resetOshiForm
+                }
+                onOpenCropper={
+                  handleOpenOshiCropper
+                }
+                croppedImage={
+                  croppedOshiImage
+                }
               />
             </BottomSheet>
           )}
 
+          {/* Oshi Image Cropper */}
+          {showOshiCropper &&
+            oshiCropImage && (
+              <ImageCropper
+                image={
+                  oshiCropImage
+                }
+                aspectRatio={1}
+                isFirstImage={true}
+                onCropChange={() => {}}
+                onRatioChange={() => {}}
+                onComplete={
+                  handleOshiCropComplete
+                }
+                onCancel={
+                  handleCancelOshiCropper
+                }
+              />
+            )}
+
+          {/* Error */}
           {error && (
-            <div className="
-              rounded-xl
-              border
-              border-red-500
-              bg-red-500/10
-              p-3
-            ">
-              <p className="
-                text-sm
-                text-red-500
-              ">
+            <div
+              className="
+                rounded-xl
+                border
+                border-red-500
+                bg-red-500/10
+                p-3
+              "
+            >
+              <p
+                className="
+                  text-sm
+                  text-red-500
+                "
+              >
                 {error}
               </p>
             </div>
@@ -641,15 +900,12 @@ export default function CreatePostPage() {
       </main>
 
       {!cropImage && (
-
         <PostButton
-
           disabled={!canPost}
-
           loading={loading}
-
-          onClick={handleSubmit}
-
+          onClick={
+            handleSubmit
+          }
         />
       )}
     </div>
