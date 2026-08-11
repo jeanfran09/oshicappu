@@ -44,7 +44,7 @@ export default function CaptionInput({
         overflow-hidden
         rounded-xl
         border
-        border-foreground/50
+        border-foreground/25
         bg-background
         p-4
         pb-8

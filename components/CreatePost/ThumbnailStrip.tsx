@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { X, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Reorder } from "framer-motion";
 
 type ThumbnailStripProps = {
   images: File[];
@@ -14,7 +15,6 @@ type ThumbnailStripProps = {
   ) => void;
 };
 
-
 export default function ThumbnailStrip({
   images,
   currentIndex,
@@ -22,99 +22,88 @@ export default function ThumbnailStrip({
   setImages,
   onSelectImages,
 }: ThumbnailStripProps) {
-
-
   const [urls, setUrls] = useState<string[]>([]);
 
   const MAX_IMAGES = 10;
 
-
-
   useEffect(() => {
-
-    const newUrls =
-      images.map((file) =>
-        URL.createObjectURL(file)
-      );
-
+    const newUrls = images.map((file) =>
+      URL.createObjectURL(file)
+    );
 
     setUrls(newUrls);
 
-
-
     return () => {
-
       newUrls.forEach((url) =>
         URL.revokeObjectURL(url)
       );
-
     };
-
-
   }, [images]);
 
-
-
-
-
-
-  function removeImage(index:number) {
-
-
-    setImages(prev => {
-
-      const updated =
-        prev.filter(
-          (_,i)=>i !== index
-        );
-
+  function removeImage(index: number) {
+    setImages((prev) => {
+      const updated = prev.filter(
+        (_, i) => i !== index
+      );
 
       return updated;
-
     });
 
-
-
-    setCurrentIndex(prev => {
-
-      if(prev > index)
+    setCurrentIndex((prev) => {
+      if (prev > index) {
         return prev - 1;
+      }
 
-
-      if(prev === index)
-        return Math.max(
-          0,
-          prev - 1
-        );
-
+      if (prev === index) {
+        return Math.max(0, prev - 1);
+      }
 
       return prev;
-
     });
+  }
 
+  function handleReorder(newOrder: File[]) {
+    const currentFile = images[currentIndex];
+
+    setImages(newOrder);
+
+    // Keep the currently selected image selected
+    const newIndex = newOrder.indexOf(currentFile);
+
+    if (newIndex !== -1) {
+      setCurrentIndex(newIndex);
+    }
   }
 
   return (
-
-    <div className="flex gap-3 overflow-x-auto">
-      {images.map((file,index)=>(
-        <button
-          key={index}
-          type="button"
-          onClick={() =>
-            setCurrentIndex(index)
-          }
-          className={`relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border-2
+    <Reorder.Group
+      axis="x"
+      values={images}
+      onReorder={handleReorder}
+      className="flex gap-3 overflow-x-auto no-scrollbar"
+    >
+      {images.map((file, index) => (
+        <Reorder.Item
+          key={`${file.name}-${file.lastModified}`}
+          value={file}
+          className={`
+            relative
+            h-20
+            w-20
+            flex-shrink-0
+            overflow-hidden
+            rounded-xl
+            border-2
             ${
               currentIndex === index
-              ? "border-foreground"
-              : "border-transparent"
+                ? "border-foreground"
+                : "border-transparent"
             }
           `}
-
+          onClick={() => setCurrentIndex(index)}
         >
+          {/* Thumbnail */}
           {urls[index] && (
-
             <Image
               src={urls[index]}
               alt={`Image ${index + 1}`}
@@ -124,20 +113,38 @@ export default function ThumbnailStrip({
             />
           )}
 
-          <span
-            onClick={(e)=>{
+          {/* Remove button */}
+          <button
+            type="button"
+            onPointerDown={(e) =>
+              e.stopPropagation()
+            }
+            onClick={(e) => {
               e.stopPropagation();
               removeImage(index);
             }}
-            className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white"
+            className="
+              absolute
+              right-1
+              top-1
+              z-10
+              flex
+              h-5
+              w-5
+              items-center
+              justify-center
+              rounded-full
+              bg-black/60
+              text-white
+            "
           >
-            <X size={12}/>
-          </span>
-        </button>
+            <X size={12} />
+          </button>
+        </Reorder.Item>
       ))}
 
+      {/* Add image */}
       {images.length < MAX_IMAGES && (
-
         <label
           className="
             flex
@@ -150,26 +157,28 @@ export default function ThumbnailStrip({
             rounded-xl
             border-2
             border-dashed
-            border-accent
+            border-foreground/25
           "
         >
-          <Plus size={24}  className="text-foreground/75"/>
+          <Plus
+            size={24}
+            className="text-foreground/75"
+          />
+
           <input
             type="file"
             accept="image/*"
             multiple
             hidden
-            onChange={(e)=>{
-
+            onChange={(e) => {
               onSelectImages(e);
 
-              // allow selecting same images again
+              // Allow selecting the same images again
               e.target.value = "";
-
             }}
           />
         </label>
       )}
-    </div>
+    </Reorder.Group>
   );
 }

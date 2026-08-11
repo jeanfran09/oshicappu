@@ -54,7 +54,7 @@ export default function ImagePreview({
         gap-3
         rounded-xl
         border
-        border-foreground/50
+        border-foreground/25
         bg-accent/20
         text-foreground/75
       ">

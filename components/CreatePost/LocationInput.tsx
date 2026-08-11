@@ -30,7 +30,7 @@ export default function LocationInput({
             w-full
             rounded-xl
             border
-            border-foreground/50
+            border-foreground/25
             bg-background
             py-3
             pl-11

@@ -102,7 +102,7 @@ export default function AddOshiForm({ onCreated, onClose }: Props) {
       {/* Oshi Photo */}
       <div className="flex justify-center">
         <div className="relative shrink-0">
-          <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-accent/20">
+          <div className="flex h-30 w-30 items-center justify-center overflow-hidden rounded-full bg-accent/50">
             {imagePreview ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img

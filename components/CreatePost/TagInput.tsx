@@ -102,7 +102,7 @@ export default function TagInput({
             rounded-xl
             border
             bg-background
-            border-foreground/50
+            border-foreground/25
             px-4
             py-3
             text-sm

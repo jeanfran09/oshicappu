@@ -63,12 +63,12 @@ export default function OshiPicker({
               transition
               ${
                 selected.length === 0
-                  ? "border-accent"
-                  : "border-accent/30"
+                  ? "border-accent bg-accent/35"
+                  : "border-accent/50"
               }
             `}
           >
-            <span className="text-xl font-semibold">
+            <span className="text-xl font-semibold text-foreground">
               —
             </span>
 
