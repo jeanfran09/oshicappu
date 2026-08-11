@@ -14,11 +14,17 @@ import {
 } from "lucide-react";
 import BottomSheet from "./BottomSheet";
 import Divider from "./Divider";
+import Link from "next/link";
 
 type Oshi = {
   id: string;
   name: string;
   image: string;
+};
+
+type Fandom = {
+  id: string;
+  name: string;
 };
 
 type PostProps = {
@@ -34,6 +40,7 @@ type PostProps = {
   onCommentClick: () => void;
   priority?: boolean;
   oshis?: Oshi[];
+  fandoms?: Fandom[];
   hashtags?: string[];
 };
 
@@ -50,6 +57,7 @@ export default function Post({
   onCommentClick,
   priority = false,
   oshis = [],
+  fandoms = [],
   hashtags = [],
 }: PostProps) {
     const [liked, setLiked] = useState(false);
@@ -209,8 +217,9 @@ export default function Post({
             <div className="px-3 pt-2">
                 <div className="flex flex-wrap gap-2">
                 {oshis.map((oshi) => (
-                    <div
+                    <Link
                     key={oshi.id}
+                    href={`/oshi/${oshi.id}`}
                     className="
                         flex
                         items-center
@@ -234,7 +243,34 @@ export default function Post({
                     <span className="text-base font-medium">
                         {oshi.name}
                     </span>
-                    </div>
+                    </Link>
+                ))}
+                </div>
+            </div>
+            )}
+
+            {/* Fandoms */}
+            {fandoms.length > 0 && (
+            <div className="px-3 pt-2">
+                <div className="flex flex-wrap gap-2">
+                {fandoms.map((fandoms) => (
+                    <Link
+                    key = {fandoms.id}
+                    href={`/fandom/${fandoms.id}`}
+                    className="
+                        flex
+                        items-center
+                        gap-2
+                        rounded-full
+                        bg-foreground/70
+                        px-2.5
+                        py-1.5
+                    "
+                    >
+                    <span className="text-white text-base font-medium">
+                        {fandoms.name}
+                    </span>
+                    </Link>
                 ))}
                 </div>
             </div>

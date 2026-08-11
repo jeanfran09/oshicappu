@@ -37,6 +37,20 @@ export default function ForYouFeed({
             image: "/posts/post1.png",
           },
         ]}
+        fandoms={[
+          {
+            id: "1",
+            name: "idolish7",
+          },
+          {
+            id: "2",
+            name: "snow man",
+          },
+          {
+            id: "3",
+            name: "deltarune",
+          },
+        ]}
         hashtags={[
           "idolish7",
           "anime",
