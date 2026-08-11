@@ -341,8 +341,31 @@ export default function ProfilePage() {
 
         {/* Profile Content */}
         <div className="px-4">
-          <div className="mt-5 flex items-center gap-6">
-            <div className="h-24 w-24 overflow-hidden rounded-full bg-accent/20">
+          <div
+            className={`
+              flex items-center gap-6
+              ${
+                profile?.banner_url
+                  ? "relative z-10 -mt-12"
+                  : "mt-5"
+              }
+            `}
+          >
+            <div
+              className={`
+                h-24
+                w-24
+                shrink-0
+                overflow-hidden
+                rounded-full
+                bg-accent/20
+                ${
+                  profile?.banner_url
+                    ? "border-4 border-background"
+                    : ""
+                }
+              `}
+            >
               {profile?.avatar_url ? (
                 <Image
                   src={profile.avatar_url}
@@ -359,7 +382,16 @@ export default function ProfilePage() {
               )}
             </div>
 
-            <div className="flex-1">
+            <div
+              className={`
+                flex-1
+                ${
+                  profile?.banner_url
+                    ? "translate-y-8"
+                    : ""
+                }
+              `}
+            >
               <div className="flex justify-around">
                 <div className="text-center">
                   <p className="font-semibold">
@@ -391,7 +423,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="mt-4 space-y-1">
+          <div className="mt-2 space-y-1">
             <p className="font-semibold">
               {profile?.display_name}
             </p>
@@ -407,7 +439,7 @@ export default function ProfilePage() {
             onClick={() =>
               setShowEditProfile(true)
             }
-            className="mt-4 h-10 w-full rounded-lg border border-foreground/20 font-medium"
+            className="mt-3 h-10 w-full rounded-lg border border-foreground/20 font-medium"
           >
             Edit Profile
           </button>

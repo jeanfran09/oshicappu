@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ArrowLeft, Camera, User as UserIcon } from "lucide-react";
+import { ArrowLeft, Camera, User as UserIcon, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
 import { motion } from "framer-motion";
@@ -25,6 +25,7 @@ export default function EditProfileModal({ onClose }: Props) {
   const [bannerPreview, setBannerPreview] = useState<string | null>(
     profile?.banner_url ?? null
   );
+  const [bannerRemoved, setBannerRemoved] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -46,6 +47,13 @@ export default function EditProfileModal({ onClose }: Props) {
 
     setBannerFile(file);
     setBannerPreview(URL.createObjectURL(file));
+    setBannerRemoved(false);
+  }
+
+  function handleRemoveBanner() {
+    setBannerFile(null);
+    setBannerPreview(null);
+    setBannerRemoved(true);
   }
 
   async function uploadImage(file: File, kind: "avatar" | "banner") {
@@ -92,6 +100,8 @@ export default function EditProfileModal({ onClose }: Props) {
 
       if (bannerFile) {
         bannerUrl = await uploadImage(bannerFile, "banner");
+      } else if (bannerRemoved) {
+        bannerUrl = null;
       }
 
       const { error: updateError } = await supabase
@@ -170,14 +180,27 @@ export default function EditProfileModal({ onClose }: Props) {
             <div className="h-full w-full bg-gradient-to-br from-accent/40 to-accent-secondary/30" />
           )}
 
-          <button
-            type="button"
-            onClick={() => bannerInputRef.current?.click()}
-            className="absolute bottom-2 right-2 flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-xs font-medium text-white"
-          >
-            <Camera size={14} />
-            Change banner
-          </button>
+          <div className="absolute bottom-2 right-2 flex items-center gap-2">
+            {bannerPreview && (
+              <button
+                type="button"
+                onClick={handleRemoveBanner}
+                className="flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-xs font-medium text-white"
+              >
+                <X size={14} />
+                Remove banner
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => bannerInputRef.current?.click()}
+              className="flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-xs font-medium text-white"
+            >
+              <Camera size={14} />
+              Change banner
+            </button>
+          </div>
 
           <input
             ref={bannerInputRef}
