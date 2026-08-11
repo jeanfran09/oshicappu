@@ -1,7 +1,7 @@
 "use client";
 
 import { formatCount } from "@/utils/formatNumber";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import {
   Heart,
@@ -15,6 +15,8 @@ import {
 import BottomSheet from "./BottomSheet";
 import Divider from "./Divider";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
+import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
 
 type Oshi = {
   id: string;
@@ -60,10 +62,86 @@ export default function Post({
   fandoms = [],
   hashtags = [],
 }: PostProps) {
+    const { user } = useSupabaseAuth();
+
     const [liked, setLiked] = useState(false);
     const [likeCount, setLikeCount] = useState(likes ?? 0);
+    const [likeSubmitting, setLikeSubmitting] = useState(false);
     const [currentImage, setCurrentImage] = useState(0);
     const [showMore, setShowMore] = useState(false);
+
+    // Check whether the current user has already liked this post.
+    useEffect(() => {
+      if (!user) {
+        setLiked(false);
+        return;
+      }
+
+      let cancelled = false;
+
+      async function checkLiked() {
+        const { data, error } = await supabase
+          .from("likes")
+          .select("id")
+          .eq("post_id", id)
+          .eq("user_id", user!.id)
+          .maybeSingle();
+
+        if (!cancelled) {
+          if (error) {
+            console.error("Error checking like status:", error);
+          } else {
+            setLiked(!!data);
+          }
+        }
+      }
+
+      checkLiked();
+
+      return () => {
+        cancelled = true;
+      };
+    }, [id, user]);
+
+    async function handleLikeClick() {
+      if (!user || likeSubmitting) return;
+
+      setLikeSubmitting(true);
+
+      // Optimistic update
+      const nextLiked = !liked;
+      setLiked(nextLiked);
+      setLikeCount((count) => count + (nextLiked ? 1 : -1));
+
+      try {
+        if (nextLiked) {
+          const { error } = await supabase
+            .from("likes")
+            .insert({
+              post_id: id,
+              user_id: user.id,
+            });
+
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from("likes")
+            .delete()
+            .eq("post_id", id)
+            .eq("user_id", user.id);
+
+          if (error) throw error;
+        }
+      } catch (error) {
+        console.error("Error updating like status:", error);
+
+        // Roll back on failure
+        setLiked(!nextLiked);
+        setLikeCount((count) => count + (nextLiked ? -1 : 1));
+      } finally {
+        setLikeSubmitting(false);
+      }
+    }
 
     function handleImageScroll(
         e: React.UIEvent<HTMLDivElement>
@@ -173,16 +251,9 @@ export default function Post({
             <div className="flex items-center justify-between px-3 py-2">
                 <div className="flex items-center gap-5">
                     <button 
-                        onClick={() => {
-                            if (liked) {
-                            setLiked(false);
-                            setLikeCount((count) => count - 1);
-                            } else {
-                            setLiked(true);
-                            setLikeCount((count) => count + 1);
-                            }
-                        }}
-                        className="flex items-center gap-1"
+                        onClick={handleLikeClick}
+                        disabled={likeSubmitting}
+                        className="flex items-center gap-1 disabled:opacity-60"
                     >
                     <Heart size={24} className={liked ? "fill-red-500 text-red-500" : "" }/>
                     {likeCount !== undefined && likeCount > 0 && (<span className="text-sm font-medium pl-1">{formatCount(likeCount)}</span>)}
