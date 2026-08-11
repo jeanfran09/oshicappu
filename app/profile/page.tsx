@@ -63,6 +63,11 @@ export default function ProfilePage() {
   const [oshisLoading, setOshisLoading] =
     useState(true);
 
+  const [followersCount, setFollowersCount] =
+    useState(0);
+  const [followingCount, setFollowingCount] =
+    useState(0);
+
   // Oshi cropper state
   const [showCropper, setShowCropper] =
     useState(false);
@@ -114,8 +119,53 @@ export default function ProfilePage() {
     if (user) {
       fetchUserPosts();
       fetchUserOshis();
+      fetchFollowCounts();
     }
   }, [user]);
+
+  const fetchFollowCounts = async () => {
+    if (!user) return;
+
+    const [followersRes, followingRes] =
+      await Promise.all([
+        supabase
+          .from("follows")
+          .select("id", {
+            count: "exact",
+            head: true,
+          })
+          .eq("following_id", user.id),
+        supabase
+          .from("follows")
+          .select("id", {
+            count: "exact",
+            head: true,
+          })
+          .eq("follower_id", user.id),
+      ]);
+
+    if (followersRes.error) {
+      console.error(
+        "Error fetching followers count:",
+        followersRes.error
+      );
+    } else {
+      setFollowersCount(
+        followersRes.count ?? 0
+      );
+    }
+
+    if (followingRes.error) {
+      console.error(
+        "Error fetching following count:",
+        followingRes.error
+      );
+    } else {
+      setFollowingCount(
+        followingRes.count ?? 0
+      );
+    }
+  };
 
   const fetchUserOshis = async () => {
     if (!user) return;
@@ -404,7 +454,7 @@ export default function ProfilePage() {
 
                 <div className="text-center">
                   <p className="font-semibold">
-                    8
+                    {followersCount}
                   </p>
                   <p className="text-xs">
                     Followers
@@ -413,7 +463,7 @@ export default function ProfilePage() {
 
                 <div className="text-center">
                   <p className="font-semibold">
-                    24
+                    {followingCount}
                   </p>
                   <p className="text-xs">
                     Following
