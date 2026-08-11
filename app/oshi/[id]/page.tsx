@@ -11,6 +11,14 @@ import Image from "next/image";
 
 import { supabase } from "@/lib/supabase";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
+import PostGrid from "@/components/Profile/PostGrid";
+import PostModal, {
+  type ProfilePost,
+} from "@/components/Profile/PostModal";
+import {
+  formatTimeAgo,
+  parsePostImages,
+} from "@/utils/formatNumber";
 
 type Oshi = {
   id: string;
@@ -21,6 +29,11 @@ type Oshi = {
   notes: string | null;
 };
 
+type OwnerProfile = {
+  username: string;
+  avatar_url: string | null;
+};
+
 export default function OshiPage() {
   const params = useParams();
   const router = useRouter();
@@ -29,6 +42,14 @@ export default function OshiPage() {
 
   const [oshi, setOshi] = useState<Oshi | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const [owner, setOwner] = useState<OwnerProfile | null>(null);
+
+  const [posts, setPosts] = useState<ProfilePost[]>([]);
+  const [postsLoading, setPostsLoading] = useState(true);
+
+  const [selectedPostId, setSelectedPostId] =
+    useState<string | null>(null);
 
   useEffect(() => {
     async function fetchOshi() {
@@ -56,6 +77,140 @@ export default function OshiPage() {
 
     fetchOshi();
   }, [params.id]);
+
+  /*
+   * Posts this oshi has been tagged in.
+   */
+  useEffect(() => {
+    async function fetchOshiPosts() {
+      const id = params.id;
+
+      if (!id || typeof id !== "string") {
+        setPostsLoading(false);
+        return;
+      }
+
+      setPostsLoading(true);
+
+      const { data: postOshiRows, error: postOshiError } =
+        await supabase
+          .from("post_oshis")
+          .select("post_id")
+          .eq("oshi_id", id);
+
+      if (postOshiError) {
+        console.error(
+          "Error fetching post_oshis:",
+          postOshiError
+        );
+
+        setPosts([]);
+        setPostsLoading(false);
+        return;
+      }
+
+      const postIds = (postOshiRows ?? []).map(
+        (row) => row.post_id
+      );
+
+      if (postIds.length === 0) {
+        setPosts([]);
+        setPostsLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("posts")
+        .select(
+          `
+          *,
+          likes(count),
+          comments(count),
+          post_oshis(oshis(id, name, image_url)),
+          post_fandoms(fandoms(id, name)),
+          post_hashtags(hashtags(tag))
+          `
+        )
+        .in("id", postIds)
+        .order("created_at", {
+          ascending: false,
+        });
+
+      if (error) {
+        console.error(
+          "Error fetching oshi posts:",
+          error
+        );
+
+        setPosts([]);
+      } else {
+        setPosts(
+          (data ?? []).map((post: any) => ({
+            id: post.id,
+            images: parsePostImages(post.image_url),
+            caption: post.content,
+            time: formatTimeAgo(post.created_at),
+            location: post.location ?? undefined,
+            likes: post.likes?.[0]?.count ?? 0,
+            comments: post.comments?.[0]?.count ?? 0,
+            oshis: (post.post_oshis ?? []).map(
+              (po: any) => ({
+                id: po.oshis.id,
+                name: po.oshis.name,
+                image:
+                  po.oshis.image_url ??
+                  "/icons/temp.jpg",
+              })
+            ),
+            fandoms: (post.post_fandoms ?? []).map(
+              (pf: any) => ({
+                id: pf.fandoms.id,
+                name: pf.fandoms.name,
+              })
+            ),
+            hashtags: (post.post_hashtags ?? []).map(
+              (ph: any) => ph.hashtags.tag
+            ),
+          }))
+        );
+      }
+
+      setPostsLoading(false);
+    }
+
+    fetchOshiPosts();
+  }, [params.id]);
+
+  /*
+   * Owner's username/avatar, for the post modal header.
+   */
+  useEffect(() => {
+    async function fetchOwner() {
+      if (!oshi) return;
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("username, avatar_url")
+        .eq("id", oshi.user_id)
+        .single();
+
+      if (error) {
+        console.error(
+          "Error fetching oshi owner:",
+          error
+        );
+      } else {
+        setOwner(data);
+      }
+    }
+
+    fetchOwner();
+  }, [oshi]);
+
+  const postGridItems = posts.map((post) => ({
+    id: post.id,
+    image: post.images[0] ?? null,
+  }));
 
   if (loading) {
     return (
@@ -227,18 +382,47 @@ export default function OshiPage() {
           </h2>
         </div>
 
-        <div className="
-          flex
-          min-h-40
-          items-center
-          justify-center
-        ">
-          <p className="text-sm text-foreground/40">
-            No posts yet.
-          </p>
-        </div>
+        {postsLoading ? (
+          <div className="
+            flex
+            min-h-40
+            items-center
+            justify-center
+          ">
+            <p className="text-sm text-foreground/40">
+              Loading posts...
+            </p>
+          </div>
+        ) : posts.length > 0 ? (
+          <PostGrid
+            posts={postGridItems}
+            onPostClick={setSelectedPostId}
+          />
+        ) : (
+          <div className="
+            flex
+            min-h-40
+            items-center
+            justify-center
+          ">
+            <p className="text-sm text-foreground/40">
+              No posts yet.
+            </p>
+          </div>
+        )}
 
       </section>
+
+      {/* Post Modal */}
+      {selectedPostId && (
+        <PostModal
+          posts={posts}
+          initialPostId={selectedPostId}
+          username={owner?.username ?? "username"}
+          avatar={owner?.avatar_url || "/icons/temp.jpg"}
+          onClose={() => setSelectedPostId(null)}
+        />
+      )}
 
     </main>
   );
