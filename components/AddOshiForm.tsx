@@ -142,6 +142,7 @@ export default function AddOshiForm({
           user_id: user.id,
           name: name.trim(),
           image_url: imageUrl,
+          fandom: fandom.trim() || null,
           anniversary: anniversary || null,
           notes: notes.trim() || null,
         })
