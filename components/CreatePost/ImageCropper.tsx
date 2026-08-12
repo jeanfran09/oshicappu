@@ -191,7 +191,7 @@ export default function ImageCropper({
 
     <div 
       data-cropper
-      className="fixed inset-0 z-[9999] bg-black"
+      className="fixed inset-0 z-[10000] bg-black"
       style={{
         touchAction: "none",
       }}
