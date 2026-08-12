@@ -136,15 +136,14 @@ export default function FollowButton({
       disabled={checking || submitting}
       className={`
         h-9
-        rounded-full
+        rounded-lg
         px-4
-        text-sm
         font-medium
         transition-colors
         disabled:opacity-60
         ${
           isFollowing
-            ? "border border-foreground/20 text-foreground"
+            ? "border border-foreground/20 text-foreground bg-accent/50"
             : "bg-accent-secondary text-foreground"
         }
         ${className}

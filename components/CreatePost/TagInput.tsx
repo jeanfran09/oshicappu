@@ -81,36 +81,36 @@ export default function TagInput({
         {label}
       </label>
 
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={value}
-          maxLength={maxLength}
-          placeholder={placeholder}
-          onChange={(e) => {
-            setValue(e.target.value);
-            setError("");
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              addItem();
-            }
-          }}
-          className="
-            flex-1
-            rounded-xl
-            border
-            bg-background
-            border-foreground/25
-            px-4
-            py-3
-            text-sm
-            outline-none
-            focus:border-accent
-          "
-        />
-
+      <div className="flex gap-2 ">
+        <div className="flex w-full items-center rounded-xl border border-foreground/25">
+          {label === "Hashtags" && (
+            <span className="pl-5 text-base text-foreground/40">#</span>
+          )}
+          <input
+            type="text"
+            value={value}
+            maxLength={maxLength}
+            placeholder={placeholder}
+            onChange={(e) => {
+              setValue(e.target.value);
+              setError("");
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addItem();
+              }
+            }}
+            className="
+              px-4
+              py-3
+              text-sm
+              outline-none
+              focus:border-accent
+            "
+          />
+        </div>
+        
         <button
           type="button"
           onClick={addItem}

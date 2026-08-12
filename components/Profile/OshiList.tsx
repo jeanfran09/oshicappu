@@ -12,12 +12,14 @@ type Oshi = {
 
 type Props = {
   oshis: Oshi[];
-  onAdd: () => void;
+  showAdd?: boolean;
+  onAdd?: () => void;
 };
 
 
 export default function OshiList({
   oshis,
+  showAdd = true,
   onAdd,
 }: Props) {
 
@@ -55,42 +57,22 @@ export default function OshiList({
           </Link>
         ))}
 
-
-
         {/* Add Oshi */}
-        <button
-          type="button"
-          onClick={onAdd}
-          className="
-            flex
-            flex-col
-            items-center
-            gap-2
-            flex-shrink-0
-          "
-        >
-
-          <div
-            className="
-              flex
-              h-16
-              w-16
-              items-center
-              justify-center
-              rounded-full
-              border-2
-              border-dashed
-              border-accent
-            "
+        {showAdd &&(
+          <button
+            type="button"
+            onClick={onAdd}
+            className="flex flex-col items-center gap-2 flex-shrink-0"
           >
-            <Plus size={26}/>
-          </div>
-
-          <span className="text-xs">
-            Add
-          </span>
-
-        </button>
+            <div className=" flex h-16 w-16 items-center justify-center rounded-full border-2 border-dashed border-accent">
+              <Plus size={26}/>
+            </div>
+            <span className="text-xs">
+              Add
+            </span>
+          </button>
+        )}
+        
       </div>
     </div>
   );

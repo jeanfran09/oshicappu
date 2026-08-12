@@ -6,6 +6,7 @@ import { X, Send, User as UserIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
 import { formatTimeAgo } from "@/utils/formatNumber";
+import Link from "next/link";
 
 type CommentWithAuthor = {
   id: string;
@@ -167,7 +168,7 @@ export default function CommentsSheet({
             <div className="space-y-4">
               {comments.map((c) => (
                 <div key={c.id} className="flex gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent/30">
+                  <Link href={`/profile/${c.username}`} className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent/30">
                     {c.avatar_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -178,13 +179,15 @@ export default function CommentsSheet({
                     ) : (
                       <UserIcon size={16} className="text-foreground/30" />
                     )}
-                  </div>
+                  </Link>
 
                   <div>
                     <p className="text-sm">
-                      <span className="mr-2 font-semibold">
-                        {c.username}
-                      </span>
+                      <Link href={`/profile/${c.username}`}>
+                        <span className="mr-2 font-semibold">
+                          {c.username}
+                        </span>
+                      </Link>
                       {c.comment_text}
                     </p>
                     <p className="mt-1 text-xs uppercase text-foreground/40">

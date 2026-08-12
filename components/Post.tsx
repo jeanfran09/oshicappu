@@ -333,7 +333,7 @@ export default function Post({
                         items-center
                         gap-2
                         rounded-full
-                        bg-foreground/70
+                        bg-foreground/50
                         px-2.5
                         py-1.5
                     "
@@ -349,11 +349,11 @@ export default function Post({
 
             {/* Hashtags */}
             {hashtags.length > 0 && (
-            <div className="px-3 pt-2 flex flex-wrap gap-x-3 gap-y-1">
+            <div className="px-3 flex flex-wrap gap-x-3 gap-y-1">
                 {hashtags.map((tag) => (
-                <span key={tag} className="text-base  font-medium">
+                <Link key={tag} href={`/hashtag/${tag}`}className="text-base  font-medium">
                     #{tag}
-                </span>
+                </Link>
                 ))}
             </div>
             )}

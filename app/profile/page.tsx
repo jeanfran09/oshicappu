@@ -489,7 +489,7 @@ export default function ProfilePage() {
             onClick={() =>
               setShowEditProfile(true)
             }
-            className="mt-3 h-10 w-full rounded-lg border border-foreground/20 font-medium"
+            className="mt-3 h-10 w-full rounded-lg border border-foreground/20 font-medium bg-accent/50"
           >
             Edit Profile
           </button>

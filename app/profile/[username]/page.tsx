@@ -363,7 +363,7 @@ export default function PublicProfilePage() {
         />
 
         {!oshisLoading && oshis.length > 0 && (
-          <OshiList oshis={oshis} />
+          <OshiList oshis={oshis} showAdd={false}/>
         )}
       </div>
 
