@@ -27,6 +27,7 @@ type Oshi = {
   image_url: string | null;
   anniversary: string | null;
   notes: string | null;
+  fandom: string | null;
 };
 
 type OwnerProfile = {
@@ -346,12 +347,24 @@ export default function OshiPage() {
               </p>
             )}
 
+            {oshi.fandom && (
+              <div className="mt-4">
+                <p className="text-xs text-foreground/40">
+                  Fandom: {oshi.fandom}
+                </p>
+
+                <p className="mt-1 text-sm font-medium">
+                  
+                </p>
+              </div>
+            )}
+
           </div>
 
         </div>
 
 
-        {/* Notes / Bio */}
+        {/* Notes */}
         {oshi.notes && (
           <div className="mt-5">
             <p className="
