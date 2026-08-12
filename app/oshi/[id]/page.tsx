@@ -247,7 +247,7 @@ export default function OshiPage() {
   const isOwner = user?.id === oshi.user_id;
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-dvh  bg-background">
 
       {/* Header */}
       <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-foreground/10 bg-background px-4">

@@ -23,85 +23,87 @@ export default function NotifsPage() {
       </header>
       <PullToRefresh onRefresh={refreshNotifs}> 
         {/* Like notification */}
-        <Notification
-          type="like"
-          username="yuna"
-          avatar="/avatars/banri.png"
-          image="/posts/post2.jpg"
-          time="5 minutes ago"
-        />
-        <Divider/>
-        {/* Comment notification */}
-        <Notification
-          type="comment"
-          username="haru"
-          avatar="/avatars/banri.png"
-          content="This performance was amazing! 💖"
-          image="/posts/post2.jpg"
-          time="10 minutes ago"
-        />
-        <Divider/>
-        {/* Follow notification */}
-        <Notification
-          type="follow"
-          username="mika"
-          avatar="/avatars/banri.png"
-          time="1 hour ago"
-        />
-        <Divider/>
-        {/* Like notification */}
-        <Notification
-          type="like"
-          username="yuna"
-          avatar="/avatars/banri.png"
-          image="/posts/post2.jpg"
-          time="5 minutes ago"
-        />
-        <Divider/>
-        {/* Comment notification */}
-        <Notification
-          type="comment"
-          username="haru"
-          avatar="/avatars/banri.png"
-          content="This performance was amazing! 💖"
-          image="/posts/post2.jpg"
-          time="10 minutes ago"
-        />
-        <Divider/>
-        {/* Follow notification */}
-        <Notification
-          type="follow"
-          username="mika"
-          avatar="/avatars/banri.png"
-          time="1 hour ago"
-        />
-        <Divider/>
-        {/* Like notification */}
-        <Notification
-          type="like"
-          username="yuna"
-          avatar="/avatars/banri.png"
-          image="/posts/post2.jpg"
-          time="5 minutes ago"
-        />
-        <Divider/>
-        {/* Comment notification */}
-        <Notification
-          type="comment"
-          username="haru"
-          avatar="/avatars/banri.png"
-          content="This performance was amazing! 💖"
-          image="/posts/post2.jpg"
-          time="10 minutes ago"
-        />
-        <Divider/>
-        {/* Follow notification */}
-        <Notification
-          type="follow"
-          username="mika"
-          avatar="/avatars/banri.png"
-          time="1 hour ago"
-        />
+          <div className="pb-16">
+          <Notification
+            type="like"
+            username="yuna"
+            avatar="/avatars/banri.png"
+            image="/posts/post2.jpg"
+            time="5 minutes ago"
+          />
+          <Divider/>
+          {/* Comment notification */}
+          <Notification
+            type="comment"
+            username="haru"
+            avatar="/avatars/banri.png"
+            content="This performance was amazing! 💖"
+            image="/posts/post2.jpg"
+            time="10 minutes ago"
+          />
+          <Divider/>
+          {/* Follow notification */}
+          <Notification
+            type="follow"
+            username="mika"
+            avatar="/avatars/banri.png"
+            time="1 hour ago"
+          />
+          <Divider/>
+          {/* Like notification */}
+          <Notification
+            type="like"
+            username="yuna"
+            avatar="/avatars/banri.png"
+            image="/posts/post2.jpg"
+            time="5 minutes ago"
+          />
+          <Divider/>
+          {/* Comment notification */}
+          <Notification
+            type="comment"
+            username="haru"
+            avatar="/avatars/banri.png"
+            content="This performance was amazing! 💖"
+            image="/posts/post2.jpg"
+            time="10 minutes ago"
+          />
+          <Divider/>
+          {/* Follow notification */}
+          <Notification
+            type="follow"
+            username="mika"
+            avatar="/avatars/banri.png"
+            time="1 hour ago"
+          />
+          <Divider/>
+          {/* Like notification */}
+          <Notification
+            type="like"
+            username="yuna"
+            avatar="/avatars/banri.png"
+            image="/posts/post2.jpg"
+            time="5 minutes ago"
+          />
+          <Divider/>
+          {/* Comment notification */}
+          <Notification
+            type="comment"
+            username="haru"
+            avatar="/avatars/banri.png"
+            content="This performance was amazing! 💖"
+            image="/posts/post2.jpg"
+            time="10 minutes ago"
+          />
+          <Divider/>
+          {/* Follow notification */}
+          <Notification
+            type="follow"
+            username="mika"
+            avatar="/avatars/banri.png"
+            time="1 hour ago"
+          />
+        </div>
       </PullToRefresh>
       
       <CreatePostButton />

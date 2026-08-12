@@ -49,7 +49,7 @@ export default function RootLayout({
         <SupabaseAuthProvider>
           {/* Mobile view */}
           <div className="md:hidden min-h-screen flex flex-col">
-            <div className="flex-1 pb-16">
+            <div className="flex-1">
               {children}
             </div>
 
