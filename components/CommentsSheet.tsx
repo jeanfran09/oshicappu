@@ -26,9 +26,12 @@ type CommentWithAuthor = {
   parent_comment_id: string | null;
   username: string;
   avatar_url: string | null;
-
-  // Username of the person this comment is replying to
   replyToUsername: string | null;
+};
+
+type UserProfile = {
+  username: string;
+  avatar_url: string | null;
 };
 
 type Props = {
@@ -47,10 +50,7 @@ export default function CommentsSheet({
   const [mounted, setMounted] = useState(false);
   const [closing, setClosing] = useState(false);
 
-  const [comments, setComments] = useState<
-    CommentWithAuthor[]
-  >([]);
-
+  const [comments, setComments] = useState<CommentWithAuthor[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [newComment, setNewComment] = useState("");
@@ -65,8 +65,11 @@ export default function CommentsSheet({
   const [openMenuId, setOpenMenuId] =
     useState<string | null>(null);
 
-  // Used to detect clicks/taps outside the options menu
+  const [currentUserProfile, setCurrentUserProfile] =
+    useState<UserProfile | null>(null);
+
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -79,8 +82,38 @@ export default function CommentsSheet({
   }, [postId]);
 
   /*
-   * Close the options menu when clicking/tapping
-   * anywhere outside the currently open menu.
+   * Fetch current user's profile for the PFP
+   * beside the comment input.
+   */
+  useEffect(() => {
+    async function fetchCurrentUserProfile() {
+      if (!user) {
+        setCurrentUserProfile(null);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("username, avatar_url")
+        .eq("id", user.id)
+        .single();
+
+      if (error) {
+        console.error(
+          "Error fetching current user profile:",
+          error
+        );
+        return;
+      }
+
+      setCurrentUserProfile(data);
+    }
+
+    fetchCurrentUserProfile();
+  }, [user]);
+
+  /*
+   * Close options menu when clicking/tapping outside.
    */
   useEffect(() => {
     function handleOutsideClick(
@@ -88,9 +121,7 @@ export default function CommentsSheet({
     ) {
       if (
         menuRef.current &&
-        !menuRef.current.contains(
-          event.target as Node
-        )
+        !menuRef.current.contains(event.target as Node)
       ) {
         setOpenMenuId(null);
       }
@@ -119,6 +150,24 @@ export default function CommentsSheet({
     };
   }, []);
 
+  /*
+   * Automatically resize textarea.
+   */
+  function resizeTextarea() {
+    const textarea = textareaRef.current;
+
+    if (!textarea) return;
+
+    textarea.style.height = "auto";
+
+    const maxHeight = 120;
+
+    textarea.style.height = `${Math.min(
+      textarea.scrollHeight,
+      maxHeight
+    )}px`;
+  }
+
   async function fetchComments() {
     setLoading(true);
 
@@ -144,9 +193,6 @@ export default function CommentsSheet({
 
     const rows = data ?? [];
 
-    /*
-     * Get all user IDs from the comments.
-     */
     const userIds = Array.from(
       new Set(rows.map((r) => r.user_id))
     );
@@ -187,10 +233,7 @@ export default function CommentsSheet({
     }
 
     /*
-     * Map:
-     *
-     * comment ID -> user ID of the comment author
-     *
+     * Map comment ID -> author ID.
      * Used to determine who a reply is directed to.
      */
     const commentAuthorById: Record<string, string> =
@@ -207,15 +250,12 @@ export default function CommentsSheet({
 
         if (r.parent_comment_id) {
           const parentUserId =
-            commentAuthorById[
-              r.parent_comment_id
-            ];
+            commentAuthorById[r.parent_comment_id];
 
-          replyToUsername =
-            parentUserId
-              ? profilesById[parentUserId]?.username ??
-                null
-              : null;
+          replyToUsername = parentUserId
+            ? profilesById[parentUserId]?.username ??
+              null
+            : null;
         }
 
         return {
@@ -277,6 +317,10 @@ export default function CommentsSheet({
       setNewComment("");
       setReplyingTo(null);
 
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+      }
+
       await fetchComments();
     }
 
@@ -294,6 +338,15 @@ export default function CommentsSheet({
 
     setReplyingTo(null);
     setOpenMenuId(null);
+
+    /*
+     * Resize after React puts the text into
+     * the textarea.
+     */
+    setTimeout(() => {
+      resizeTextarea();
+      textareaRef.current?.focus();
+    }, 0);
   }
 
   /*
@@ -302,6 +355,10 @@ export default function CommentsSheet({
   function handleCancelEdit() {
     setEditingComment(null);
     setNewComment("");
+
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
   }
 
   /*
@@ -336,6 +393,10 @@ export default function CommentsSheet({
     } else {
       setEditingComment(null);
       setNewComment("");
+
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+      }
 
       await fetchComments();
     }
@@ -376,7 +437,6 @@ export default function CommentsSheet({
   function handleReportComment(
     commentId: string
   ) {
-    // Add your report functionality here.
     console.log(
       "Report comment:",
       commentId
@@ -472,16 +532,17 @@ export default function CommentsSheet({
                   user?.id === c.user_id;
 
                 /*
-                 * Determine if this comment has
-                 * actually been edited.
+                 * A comment is edited if updated_at
+                 * is different from created_at.
                  */
-                const isEdited =c.updated_at !== null &&
-                  new Date(c.updated_at).getTime() !== new Date(c.created_at).getTime();
+                const isEdited =
+                  new Date(c.updated_at).getTime() !==
+                  new Date(c.created_at).getTime();
 
                 return (
                   <div
                     key={c.id}
-                    className={`flex gap-3 ${
+                    className={`flex gap-3 whitespace-pre-line ${
                       isReply ? "ml-10" : ""
                     }`}
                   >
@@ -509,7 +570,7 @@ export default function CommentsSheet({
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
                         <p className="min-w-0 break-words text-base">
-                          {/* Comment author's username */}
+                          {/* Author */}
                           <Link
                             href={`/profile/${c.username}`}
                           >
@@ -530,7 +591,7 @@ export default function CommentsSheet({
                             </>
                           )}
 
-                          {/* Comment text */}
+                          {/* Comment */}
                           {c.comment_text}
                         </p>
 
@@ -568,9 +629,7 @@ export default function CommentsSheet({
                                   <button
                                     type="button"
                                     onClick={() =>
-                                      handleStartEdit(
-                                        c
-                                      )
+                                      handleStartEdit(c)
                                     }
                                     className="flex w-full items-center px-3 py-2 text-left text-sm hover:bg-accent"
                                   >
@@ -629,14 +688,14 @@ export default function CommentsSheet({
 
                       {/* Time + Edited + Reply */}
                       <div className="mt-1 flex items-center gap-3">
-                        <p className="text-xs text-foreground/40">
+                        <p className="text-sm text-foreground/40">
                           {formatCommentTime(
                             c.created_at
                           )}
                         </p>
 
                         {isEdited && (
-                          <span className="text-xs text-foreground/40">
+                          <span className="text-sm text-foreground/40">
                             Edited
                           </span>
                         )}
@@ -647,8 +706,13 @@ export default function CommentsSheet({
                             setEditingComment(null);
                             setNewComment("");
                             setReplyingTo(c);
+
+                            if (textareaRef.current) {
+                              textareaRef.current.style.height =
+                                "auto";
+                            }
                           }}
-                          className="text-xs font-semibold text-foreground/50"
+                          className="text-sm font-semibold text-foreground/50"
                         >
                           Reply
                         </button>
@@ -681,7 +745,7 @@ export default function CommentsSheet({
               </div>
             )}
 
-            {/* Replying to indicator */}
+            {/* Replying indicator */}
             {!editingComment && replyingTo && (
               <div className="mb-2 flex items-center justify-between rounded-lg bg-accent/30 px-3 py-2 text-xs">
                 <span className="text-foreground/60">
@@ -706,20 +770,43 @@ export default function CommentsSheet({
               </div>
             )}
 
-            <div className="flex items-center gap-2">
-              <input
+            <div className="flex items-end gap-2">
+              {/* Current user's PFP */}
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent/30">
+                {currentUserProfile?.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={currentUserProfile.avatar_url}
+                    alt={
+                      currentUserProfile.username
+                    }
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <UserIcon
+                    size={18}
+                    className="text-foreground/30"
+                  />
+                )}
+              </div>
+
+              {/* Input */}
+              <textarea
+                ref={textareaRef}
                 value={newComment}
-                onChange={(e) =>
-                  setNewComment(e.target.value)
-                }
+                onChange={(e) => {
+                  setNewComment(e.target.value);
+                  resizeTextarea();
+                }}
                 placeholder={
                   editingComment
                     ? "Edit your comment..."
                     : replyingTo
-                    ? `Reply to @${replyingTo.username}...`
+                    ? "Add a reply..."
                     : "Add a comment..."
                 }
-                className="flex-1 rounded-full border border-foreground/20 bg-transparent px-4 py-2 text-sm outline-none"
+                rows={1}
+                className="min-h-[38px] max-h-[120px] flex-1 resize-none overflow-y-auto rounded-2xl border border-foreground/20 bg-transparent px-4 py-2 text-base leading-5 outline-none no-scrollbar"
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     if (editingComment) {
@@ -731,6 +818,7 @@ export default function CommentsSheet({
                 }}
               />
 
+              {/* Send */}
               <button
                 type="button"
                 onClick={
@@ -742,7 +830,7 @@ export default function CommentsSheet({
                   !newComment.trim() ||
                   posting
                 }
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-secondary text-white disabled:opacity-40"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-foreground disabled:opacity-40"
               >
                 <Send size={16} />
               </button>

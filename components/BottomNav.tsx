@@ -25,7 +25,7 @@ export default function BottomNav() {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 h-16 bg-accent flex justify-around items-center">
+    <nav className="fixed bottom-0 left-0 right-0 h-16 bg-background border-t-1 border-foreground/25 flex justify-around items-center">
       <Link href="/" onClick={() => handleNav("/")}>
         <Home
           size={24}
