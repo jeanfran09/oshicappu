@@ -228,7 +228,7 @@ export default function Post({
             
             {/*Image Dots*/}
             {images.length > 1 && (
-                <div className="flex justify-center gap-1 py-2">
+                <div className="flex justify-center gap-1 pt-2">
                     {images.map((_, index) => (
                     <div
                         key={index}
@@ -275,13 +275,15 @@ export default function Post({
             </div>
 
             {/* Caption */}
+            {caption && (
             <div className="px-3 pt-1 whitespace-pre-line break-words leading-tight">
-                <span className="font-semibold mr-2">
+                <span className="mr-2 font-semibold">
                 {username}
                 </span>
 
                 <span>{caption}</span>
             </div>
+            )}
 
             {/* Oshis */}
             {oshis.length > 0 && (
@@ -361,7 +363,7 @@ export default function Post({
             
             {/* Time */}
             <div className="px-3 pt-2 pb-4">
-                <p className="text-xs text-gray-500 uppercase">
+                <p className="text-sm text-foreground/65">
                 {time}
                 </p>
             </div>
