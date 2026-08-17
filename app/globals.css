@@ -16,6 +16,7 @@
   --font-mono: var(--font-geist-mono);
   --font-sacramento: var(--font-sacramento);
   --font-patrick-hand: var(--font-patrick-hand);
+  --fon-m-plus-rounded: var(--font-m-plus-rounded)
 }
 
 /* @media (prefers-color-scheme: dark) {
@@ -37,6 +38,6 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-patrick-hand), Arial, Helvetica, sans-serif;
+  font-family: var(--font-m-plus-rounded), Arial, Helvetica, sans-serif;
   font-size: 18px;
 }

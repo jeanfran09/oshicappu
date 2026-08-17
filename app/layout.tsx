@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Sacramento, Patrick_Hand } from "next/font/google";
+import { Geist, Geist_Mono, Sacramento, Patrick_Hand, M_PLUS_Rounded_1c } from "next/font/google";
 import { SupabaseAuthProvider } from "@/components/SupabaseAuthContext";
 import "./globals.css";
 import BottomNav from "@/components/BottomNav";
@@ -26,6 +26,12 @@ const patrickHand = Patrick_Hand({
   subsets: ["latin"],
 });
 
+const mPlusRounded = M_PLUS_Rounded_1c({
+  variable: "--font-m-plus-rounded",
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+});
+
 export const metadata: Metadata = {
   title: "Oshicappu",
   description: "Social Media App for Oshikatsu",
@@ -43,7 +49,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${sacramento.variable} ${patrickHand.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${sacramento.variable} ${patrickHand.variable} ${mPlusRounded.variable} h-full antialiased`}
     >
       <body className="min-h-full flex-col" suppressHydrationWarning>
         <SupabaseAuthProvider>
