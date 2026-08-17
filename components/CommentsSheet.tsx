@@ -339,10 +339,6 @@ export default function CommentsSheet({
     setReplyingTo(null);
     setOpenMenuId(null);
 
-    /*
-     * Resize after React puts the text into
-     * the textarea.
-     */
     setTimeout(() => {
       resizeTextarea();
       textareaRef.current?.focus();
@@ -542,14 +538,14 @@ export default function CommentsSheet({
                 return (
                   <div
                     key={c.id}
-                    className={`flex gap-3 whitespace-pre-line ${
+                    className={`flex gap-3 ${
                       isReply ? "ml-10" : ""
                     }`}
                   >
                     {/* Avatar */}
                     <Link
                       href={`/profile/${c.username}`}
-                      className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent/30"
+                      className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent/30"
                     >
                       {c.avatar_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -568,32 +564,33 @@ export default function CommentsSheet({
 
                     {/* Comment content */}
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="min-w-0 break-words text-base">
-                          {/* Author */}
+                      {/* Username + Time + Edited + More options */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex min-w-0 text-base items-center gap-2">
+                          {/* Username */}
                           <Link
                             href={`/profile/${c.username}`}
+                            className="shrink-0"
                           >
-                            <span className="mr-2 font-semibold">
+                            <span className="font-semibold">
                               {c.username}
                             </span>
                           </Link>
 
-                          {/* Replied-to username */}
-                          {c.replyToUsername && (
-                            <>
-                              <Link
-                                href={`/profile/${c.replyToUsername}`}
-                                className="mr-1 text-accent-secondary"
-                              >
-                                @{c.replyToUsername}
-                              </Link>{" "}
-                            </>
-                          )}
+                          {/* Time */}
+                          <p className="shrink-0 text-base text-foreground/40">
+                            {formatCommentTime(
+                              c.created_at
+                            )}
+                          </p>
 
-                          {/* Comment */}
-                          {c.comment_text}
-                        </p>
+                          {/* Edited */}
+                          {isEdited && (
+                            <span className="shrink-0 text-sm text-foreground/40">
+                              Edited
+                            </span>
+                          )}
+                        </div>
 
                         {/* More options */}
                         <div
@@ -686,20 +683,22 @@ export default function CommentsSheet({
                         </div>
                       </div>
 
-                      {/* Time + Edited + Reply */}
-                      <div className="mt-1 flex items-center gap-3">
-                        <p className="text-sm text-foreground/40">
-                          {formatCommentTime(
-                            c.created_at
-                          )}
-                        </p>
-
-                        {isEdited && (
-                          <span className="text-sm text-foreground/40">
-                            Edited
-                          </span>
+                      {/* Tag + Comment */}
+                      <div className="break-words whitespace-pre-line text-base leading-tight">
+                        {c.replyToUsername && (
+                          <Link
+                            href={`/profile/${c.replyToUsername}`}
+                            className="mr-1 text-accent-secondary"
+                          >
+                            @{c.replyToUsername}
+                          </Link>
                         )}
 
+                        {c.comment_text}
+                      </div>
+
+                      {/* Reply */}
+                      <div>
                         <button
                           type="button"
                           onClick={() => {
