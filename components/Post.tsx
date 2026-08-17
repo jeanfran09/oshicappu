@@ -17,6 +17,7 @@ import Divider from "./Divider";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
+import { useRouter } from "next/navigation";
 
 type Oshi = {
   id: string;
@@ -69,6 +70,8 @@ export default function Post({
     const [likeSubmitting, setLikeSubmitting] = useState(false);
     const [currentImage, setCurrentImage] = useState(0);
     const [showMore, setShowMore] = useState(false);
+
+    const router = useRouter();
 
     // Check whether the current user has already liked this post.
     useEffect(() => {
@@ -389,7 +392,7 @@ export default function Post({
                     "
                     onClick={() => {
                     setShowMore(false);
-                    // open edit modal here
+                    router.push(`/edit_post/${id}`);
                     }}
                 >
                     <div className="flex h-9 w-9 mr-3 items-center justify-center rounded-full bg-accent">

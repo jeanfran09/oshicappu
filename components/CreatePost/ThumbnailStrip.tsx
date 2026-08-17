@@ -13,6 +13,9 @@ type ThumbnailStripProps = {
   onSelectImages: (
     e: React.ChangeEvent<HTMLInputElement>
   ) => void;
+
+  // Controls whether the Add Image button is shown
+  showAddButton?: boolean;
 };
 
 export default function ThumbnailStrip({
@@ -21,6 +24,7 @@ export default function ThumbnailStrip({
   setCurrentIndex,
   setImages,
   onSelectImages,
+  showAddButton = true,
 }: ThumbnailStripProps) {
   const [urls, setUrls] = useState<string[]>([]);
 
@@ -144,7 +148,7 @@ export default function ThumbnailStrip({
       ))}
 
       {/* Add image */}
-      {images.length < MAX_IMAGES && (
+      {showAddButton && images.length < MAX_IMAGES && (
         <label
           className="
             flex
@@ -173,7 +177,7 @@ export default function ThumbnailStrip({
             onChange={(e) => {
               onSelectImages(e);
 
-              // Allow selecting the same images again
+              // Allow selecting the same image again
               e.target.value = "";
             }}
           />

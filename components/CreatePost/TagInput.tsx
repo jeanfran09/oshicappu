@@ -51,6 +51,7 @@ export default function TagInput({
             item.toLowerCase() === text.toLowerCase()
         )
     ) {
+        setValue("");
         setError(
         `${text} is already added.`
         );
@@ -157,9 +158,6 @@ export default function TagInput({
             </button>
           </div>
         ))}
-        {error && (
-            <p className="text-sm text-red-500">{error}</p>
-        )}
       </div>
     </div>
   );
