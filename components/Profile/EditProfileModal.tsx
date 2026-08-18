@@ -160,7 +160,7 @@ export default function EditProfileModal({ onClose }: Props) {
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="rounded-full bg-accent-secondary px-4 py-1.5 text-sm font-semibold text-foreground disabled:opacity-40"
+          className="rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-foreground disabled:opacity-40"
         >
           {saving ? "Saving..." : "Save"}
         </button>
@@ -177,7 +177,7 @@ export default function EditProfileModal({ onClose }: Props) {
               className="h-full w-full object-cover"
             />
           ) : (
-            <div className="h-full w-full bg-gradient-to-br from-accent/40 to-accent-secondary/30" />
+            <div className="h-full w-full bg-gradient-to-br from-accent/40 to-accent/30" />
           )}
 
           <div className="absolute bottom-2 right-2 flex items-center gap-2">
@@ -230,7 +230,7 @@ export default function EditProfileModal({ onClose }: Props) {
             <button
               type="button"
               onClick={() => avatarInputRef.current?.click()}
-              className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-accent-secondary text-white"
+              className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-accent"
             >
               <Camera size={13} />
             </button>

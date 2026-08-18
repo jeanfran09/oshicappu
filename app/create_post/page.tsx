@@ -820,7 +820,7 @@ export default function CreatePostPage() {
             h-10
             w-10
             rounded-full
-            bg-accent/50
+            bg-accent
             flex
             items-center
             justify-center

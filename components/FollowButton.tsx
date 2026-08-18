@@ -22,14 +22,24 @@ export default function FollowButton({
   const [isFollowing, setIsFollowing] = useState(
     initialIsFollowing ?? false
   );
+
   const [checking, setChecking] = useState(
     initialIsFollowing === undefined
   );
+
   const [submitting, setSubmitting] = useState(false);
 
-  // If the caller didn't already know the follow state, check it.
+  /*
+   * Only check Supabase ourselves when the parent
+   * did NOT provide the initial follow state.
+   */
   useEffect(() => {
-    if (initialIsFollowing !== undefined) return;
+    if (initialIsFollowing !== undefined) {
+      setIsFollowing(initialIsFollowing);
+      setChecking(false);
+      return;
+    }
+
     if (!user || user.id === targetUserId) {
       setChecking(false);
       return;
@@ -45,17 +55,18 @@ export default function FollowButton({
         .eq("following_id", targetUserId)
         .maybeSingle();
 
-      if (!cancelled) {
-        if (error) {
-          console.error(
-            "Error checking follow status:",
-            error
-          );
-        } else {
-          setIsFollowing(!!data);
-        }
-        setChecking(false);
+      if (cancelled) return;
+
+      if (error) {
+        console.error(
+          "Error checking follow status:",
+          error
+        );
+      } else {
+        setIsFollowing(!!data);
       }
+
+      setChecking(false);
     }
 
     checkFollowing();
@@ -70,17 +81,25 @@ export default function FollowButton({
   }
 
   const handleClick = async () => {
-    if (submitting || checking) return;
+    if (checking || submitting) return;
 
-    setSubmitting(true);
+    const previousState = isFollowing;
+    const nextState = !previousState;
 
-    // Optimistic update
-    const nextState = !isFollowing;
+    /*
+     * Optimistic update.
+     *
+     * The button changes immediately without waiting
+     * for Supabase.
+     */
     setIsFollowing(nextState);
     onChange?.(nextState);
 
+    setSubmitting(true);
+
     try {
       if (nextState) {
+        // Follow
         const { error } = await supabase
           .from("follows")
           .insert({
@@ -88,32 +107,37 @@ export default function FollowButton({
             following_id: targetUserId,
           });
 
-        if (error) throw error;
+        if (error) {
+          throw error;
+        }
 
-        // Best-effort follow notification; ignore failures.
-        supabase
+        // Create notification without blocking the UI.
+        void supabase
           .from("notifications")
           .insert({
             recipient_id: targetUserId,
             sender_id: user.id,
             type: "follow",
           })
-          .then(({ error: notifError }) => {
-            if (notifError) {
+          .then(({ error: notificationError }) => {
+            if (notificationError) {
               console.error(
                 "Error creating follow notification:",
-                notifError
+                notificationError
               );
             }
           });
       } else {
+        // Unfollow
         const { error } = await supabase
           .from("follows")
           .delete()
           .eq("follower_id", user.id)
           .eq("following_id", targetUserId);
 
-        if (error) throw error;
+        if (error) {
+          throw error;
+        }
       }
     } catch (error) {
       console.error(
@@ -121,9 +145,11 @@ export default function FollowButton({
         error
       );
 
-      // Roll back on failure
-      setIsFollowing(!nextState);
-      onChange?.(!nextState);
+      /*
+       * Supabase failed, so restore the previous state.
+       */
+      setIsFollowing(previousState);
+      onChange?.(previousState);
     } finally {
       setSubmitting(false);
     }
@@ -141,15 +167,22 @@ export default function FollowButton({
         font-medium
         transition-colors
         disabled:opacity-60
+        text-base
+
         ${
           isFollowing
-            ? "border border-foreground/20 text-foreground bg-accent/50"
-            : "bg-accent-secondary text-foreground"
+            ? "border border-foreground/20 bg-accent/50 text-foreground"
+            : "bg-accent text-foreground"
         }
+
         ${className}
       `}
     >
-      {isFollowing ? "Following" : "Follow"}
+      {checking
+        ? "Follow"
+        : isFollowing
+          ? "Following"
+          : "Follow"}
     </button>
   );
 }

@@ -230,8 +230,7 @@ export default function AddOshiForm({
               items-center
               justify-center
               rounded-full
-              bg-accent-secondary
-              text-white
+              bg-accent
             "
           >
             <Camera size={15} />
@@ -392,7 +391,7 @@ export default function AddOshiForm({
           h-11
           w-full
           rounded-xl
-          bg-accent-secondary
+          bg-accent
           font-semibold
           text-foreground
           transition-opacity

@@ -18,6 +18,7 @@ import AddOshiForm from "@/components/AddOshiForm";
 import ImageCropper from "@/components/CreatePost/ImageCropper";
 import type { Oshi } from "@/components/CreatePost/OshiPicker";
 import { formatTimeAgo, parsePostImages } from "@/utils/formatNumber";
+import UserList from "@/components/UserList";
 import { AnimatePresence } from "framer-motion";
 
 interface Post {
@@ -43,6 +44,10 @@ export default function ProfilePage() {
     useSupabaseAuth();
 
   const router = useRouter();
+
+  const [userListType, setUserListType] = useState<
+    "followers" | "following" | null
+  >(null);
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
@@ -452,23 +457,31 @@ export default function ProfilePage() {
                   </p>
                 </div>
 
-                <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => setUserListType("followers")}
+                  className="text-center"
+                >
                   <p className="font-semibold">
                     {followersCount}
                   </p>
                   <p className="text-xs">
                     Followers
                   </p>
-                </div>
+                </button>
 
-                <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => setUserListType("following")}
+                  className="text-center"
+                >
                   <p className="font-semibold">
                     {followingCount}
                   </p>
                   <p className="text-xs">
                     Following
                   </p>
-                </div>
+                </button>
               </div>
             </div>
           </div>
@@ -489,7 +502,7 @@ export default function ProfilePage() {
             onClick={() =>
               setShowEditProfile(true)
             }
-            className="mt-3 h-10 w-full rounded-lg border border-foreground/20 font-medium bg-accent/50"
+            className="mt-3 h-10 w-full rounded-lg border border-foreground/20 font-medium bg-accent/50 text-base"
           >
             Edit Profile
           </button>
@@ -597,6 +610,17 @@ export default function ProfilePage() {
             onClose={() =>
               setShowEditProfile(false)
             }
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Following/Follower List */}
+      <AnimatePresence>
+        {userListType && (
+          <UserList
+            userId={user.id}
+            type={userListType}
+            onClose={() => setUserListType(null)}
           />
         )}
       </AnimatePresence>

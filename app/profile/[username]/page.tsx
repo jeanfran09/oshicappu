@@ -4,16 +4,23 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { ArrowLeft, User as UserIcon } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
 
 import { supabase } from "@/lib/supabase";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
+
 import OshiList from "@/components/Profile/OshiList";
 import PostGrid from "@/components/Profile/PostGrid";
 import PostModal, {
   type ProfilePost,
 } from "@/components/Profile/PostModal";
 import FollowButton from "@/components/FollowButton";
-import { formatTimeAgo, parsePostImages } from "@/utils/formatNumber";
+import UserList from "@/components/UserList";
+
+import {
+  formatTimeAgo,
+  parsePostImages,
+} from "@/utils/formatNumber";
 
 type TargetProfile = {
   id: string;
@@ -42,22 +49,35 @@ export default function PublicProfilePage() {
 
   const [profile, setProfile] =
     useState<TargetProfile | null>(null);
+
   const [loadingProfile, setLoadingProfile] =
     useState(true);
 
   const [posts, setPosts] = useState<ProfilePost[]>([]);
-  const [loadingPosts, setLoadingPosts] = useState(true);
+  const [loadingPosts, setLoadingPosts] =
+    useState(true);
 
   const [oshis, setOshis] = useState<Oshi[]>([]);
-  const [oshisLoading, setOshisLoading] = useState(true);
+  const [oshisLoading, setOshisLoading] =
+    useState(true);
 
-  const [followersCount, setFollowersCount] = useState(0);
-  const [followingCount, setFollowingCount] = useState(0);
+  const [followersCount, setFollowersCount] =
+    useState(0);
+
+  const [followingCount, setFollowingCount] =
+    useState(0);
 
   const [selectedPostId, setSelectedPostId] =
     useState<string | null>(null);
 
-  // Fetch the target profile by username.
+  const [userListType, setUserListType] =
+    useState<"followers" | "following" | null>(
+      null
+    );
+
+  /*
+   * Fetch the target profile by username.
+   */
   useEffect(() => {
     async function fetchProfile() {
       if (!username) {
@@ -76,7 +96,11 @@ export default function PublicProfilePage() {
         .single();
 
       if (error) {
-        console.error("Error fetching profile:", error);
+        console.error(
+          "Error fetching profile:",
+          error
+        );
+
         setProfile(null);
       } else {
         setProfile(data);
@@ -88,14 +112,23 @@ export default function PublicProfilePage() {
     fetchProfile();
   }, [username]);
 
-  // If this is the logged-in user's own profile, send them to /profile.
+  /*
+   * If this is the logged-in user's own profile,
+   * redirect them to their private profile page.
+   */
   useEffect(() => {
-    if (profile && user && profile.id === user.id) {
+    if (
+      profile &&
+      user &&
+      profile.id === user.id
+    ) {
       router.replace("/profile");
     }
   }, [profile, user, router]);
 
-  // Posts, oshis, and follower/following counts.
+  /*
+   * Fetch posts, oshis, and follower/following counts.
+   */
   useEffect(() => {
     if (!profile) return;
 
@@ -115,34 +148,54 @@ export default function PublicProfilePage() {
           `
         )
         .eq("user_id", profile!.id)
-        .order("created_at", { ascending: false });
+        .order("created_at", {
+          ascending: false,
+        });
 
       if (error) {
-        console.error("Error fetching posts:", error);
+        console.error(
+          "Error fetching posts:",
+          error
+        );
+
         setPosts([]);
       } else {
         setPosts(
           (data ?? []).map((post: any) => ({
             id: post.id,
-            images: parsePostImages(post.image_url),
+            images: parsePostImages(
+              post.image_url
+            ),
             caption: post.content,
-            time: formatTimeAgo(post.created_at),
-            location: post.location ?? undefined,
-            likes: post.likes?.[0]?.count ?? 0,
-            comments: post.comments?.[0]?.count ?? 0,
-            oshis: (post.post_oshis ?? []).map((po: any) => ({
+            time: formatTimeAgo(
+              post.created_at
+            ),
+            location:
+              post.location ?? undefined,
+            likes:
+              post.likes?.[0]?.count ?? 0,
+            comments:
+              post.comments?.[0]?.count ?? 0,
+            oshis: (
+              post.post_oshis ?? []
+            ).map((po: any) => ({
               id: po.oshis.id,
               name: po.oshis.name,
-              image: po.oshis.image_url ?? "/icons/temp.jpg",
+              image:
+                po.oshis.image_url ??
+                "/icons/temp.jpg",
             })),
-            fandoms: (post.post_fandoms ?? []).map(
-              (pf: any) => ({
-                id: pf.fandoms.id,
-                name: pf.fandoms.name,
-              })
-            ),
-            hashtags: (post.post_hashtags ?? []).map(
-              (ph: any) => ph.hashtags.tag
+            fandoms: (
+              post.post_fandoms ?? []
+            ).map((pf: any) => ({
+              id: pf.fandoms.id,
+              name: pf.fandoms.name,
+            })),
+            hashtags: (
+              post.post_hashtags ?? []
+            ).map(
+              (ph: any) =>
+                ph.hashtags.tag
             ),
           }))
         );
@@ -156,18 +209,27 @@ export default function PublicProfilePage() {
 
       const { data, error } = await supabase
         .from("oshis")
-        .select("id, name, image_url")
+        .select(
+          "id, name, image_url"
+        )
         .eq("user_id", profile!.id)
-        .order("created_at", { ascending: true });
+        .order("created_at", {
+          ascending: true,
+        });
 
       if (error) {
-        console.error("Error fetching oshis:", error);
+        console.error(
+          "Error fetching oshis:",
+          error
+        );
       } else {
         setOshis(
           (data ?? []).map((o) => ({
             id: o.id,
             name: o.name,
-            image: o.image_url ?? "/icons/temp.jpg",
+            image:
+              o.image_url ??
+              "/icons/temp.jpg",
           }))
         );
       }
@@ -176,15 +238,31 @@ export default function PublicProfilePage() {
     }
 
     async function fetchCounts() {
-      const [followersRes, followingRes] = await Promise.all([
+      const [
+        followersRes,
+        followingRes,
+      ] = await Promise.all([
         supabase
           .from("follows")
-          .select("id", { count: "exact", head: true })
-          .eq("following_id", profile!.id),
+          .select("id", {
+            count: "exact",
+            head: true,
+          })
+          .eq(
+            "following_id",
+            profile!.id
+          ),
+
         supabase
           .from("follows")
-          .select("id", { count: "exact", head: true })
-          .eq("follower_id", profile!.id),
+          .select("id", {
+            count: "exact",
+            head: true,
+          })
+          .eq(
+            "follower_id",
+            profile!.id
+          ),
       ]);
 
       if (followersRes.error) {
@@ -193,7 +271,9 @@ export default function PublicProfilePage() {
           followersRes.error
         );
       } else {
-        setFollowersCount(followersRes.count ?? 0);
+        setFollowersCount(
+          followersRes.count ?? 0
+        );
       }
 
       if (followingRes.error) {
@@ -202,7 +282,9 @@ export default function PublicProfilePage() {
           followingRes.error
         );
       } else {
-        setFollowingCount(followingRes.count ?? 0);
+        setFollowingCount(
+          followingRes.count ?? 0
+        );
       }
     }
 
@@ -211,15 +293,38 @@ export default function PublicProfilePage() {
     fetchCounts();
   }, [profile]);
 
-  const postGridItems = posts.map((post) => ({
-    id: post.id,
-    image: post.images[0] ?? null,
-  }));
+  const postGridItems = posts.map(
+    (post) => ({
+      id: post.id,
+      image:
+        post.images[0] ?? null,
+    })
+  );
+
+  /*
+   * Called immediately by FollowButton when
+   * the user clicks Follow/Following.
+   *
+   * This means the follower count changes
+   * immediately without waiting for another
+   * database fetch.
+   */
+  const handleFollowChange = (
+    isFollowing: boolean
+  ) => {
+    setFollowersCount((prev) =>
+      isFollowing
+        ? prev + 1
+        : Math.max(0, prev - 1)
+    );
+  };
 
   if (loadingProfile) {
     return (
       <div className="md:hidden flex min-h-screen items-center justify-center">
-        <p className="text-foreground/50">Loading...</p>
+        <p className="text-foreground/50">
+          Loading...
+        </p>
       </div>
     );
   }
@@ -227,7 +332,10 @@ export default function PublicProfilePage() {
   if (!profile) {
     return (
       <div className="md:hidden flex min-h-screen flex-col items-center justify-center gap-3">
-        <p className="text-foreground/50">User not found.</p>
+        <p className="text-foreground/50">
+          User not found.
+        </p>
+
         <button
           onClick={() => router.back()}
           className="text-sm font-medium"
@@ -278,6 +386,7 @@ export default function PublicProfilePage() {
             }
           `}
         >
+          {/* Avatar */}
           <div
             className={`
               h-24
@@ -309,37 +418,71 @@ export default function PublicProfilePage() {
             )}
           </div>
 
+          {/* Stats */}
           <div
             className={`
               flex-1
-              ${profile.banner_url ? "translate-y-8" : ""}
+              ${
+                profile.banner_url
+                  ? "translate-y-8"
+                  : ""
+              }
             `}
           >
             <div className="flex justify-around">
+              {/* Posts */}
               <div className="text-center">
                 <p className="font-semibold">
                   {posts.length}
                 </p>
-                <p className="text-xs">Posts</p>
+
+                <p className="text-xs">
+                  Posts
+                </p>
               </div>
 
-              <div className="text-center">
+              {/* Followers */}
+              <button
+                type="button"
+                onClick={() =>
+                  setUserListType(
+                    "followers"
+                  )
+                }
+                className="text-center"
+              >
                 <p className="font-semibold">
                   {followersCount}
                 </p>
-                <p className="text-xs">Followers</p>
-              </div>
 
-              <div className="text-center">
+                <p className="text-xs">
+                  Followers
+                </p>
+              </button>
+
+              {/* Following */}
+              <button
+                type="button"
+                onClick={() =>
+                  setUserListType(
+                    "following"
+                  )
+                }
+                className="text-center"
+              >
                 <p className="font-semibold">
                   {followingCount}
                 </p>
-                <p className="text-xs">Following</p>
-              </div>
+
+                <p className="text-xs">
+                  Following
+                </p>
+              </button>
             </div>
           </div>
         </div>
 
+        {/* Name + Bio */}
         <div className="mt-2 space-y-1">
           <p className="font-semibold">
             {profile.display_name}
@@ -352,23 +495,27 @@ export default function PublicProfilePage() {
           )}
         </div>
 
+        {/* Follow Button */}
         <FollowButton
           targetUserId={profile.id}
-          onChange={(isFollowing) =>
-            setFollowersCount((prev) =>
-              isFollowing ? prev + 1 : Math.max(0, prev - 1)
-            )
-          }
+          onChange={handleFollowChange}
           className="mt-3 h-10 w-full"
         />
 
-        {!oshisLoading && oshis.length > 0 && (
-          <OshiList oshis={oshis} showAdd={false}/>
-        )}
+        {/* Oshis */}
+        {!oshisLoading &&
+          oshis.length > 0 && (
+            <OshiList
+              oshis={oshis}
+              showAdd={false}
+            />
+          )}
       </div>
 
+      {/* Post Divider */}
       <div className="mt-2 border-t border-foreground/10" />
 
+      {/* Posts */}
       {!loadingPosts && (
         <PostGrid
           posts={postGridItems}
@@ -382,10 +529,28 @@ export default function PublicProfilePage() {
           posts={posts}
           initialPostId={selectedPostId}
           username={profile.username}
-          avatar={profile.avatar_url || "/icons/temp.jpg"}
-          onClose={() => setSelectedPostId(null)}
+          avatar={
+            profile.avatar_url ||
+            "/icons/temp.jpg"
+          }
+          onClose={() =>
+            setSelectedPostId(null)
+          }
         />
       )}
+
+      {/* Followers / Following List */}
+      <AnimatePresence>
+        {userListType && (
+          <UserList
+            userId={profile.id}
+            type={userListType}
+            onClose={() =>
+              setUserListType(null)
+            }
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

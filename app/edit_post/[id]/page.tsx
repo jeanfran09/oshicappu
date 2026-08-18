@@ -2,14 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { X } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
 
 import CaptionInput from "@/components/CreatePost/CaptionInput";
 import LocationInput from "@/components/CreatePost/LocationInput";
-import PostButton from "@/components/CreatePost/PostButton";
 import TagInput from "@/components/CreatePost/TagInput";
 import ThumbnailStrip from "@/components/CreatePost/ThumbnailStrip";
 import OshiPicker, {
@@ -28,7 +27,6 @@ export default function EditPostPage() {
   const params = useParams();
   const router = useRouter();
 
-  // Your folder is [id]
   const postId = params.id as string;
 
   const {
@@ -48,11 +46,18 @@ export default function EditPostPage() {
   const [selectedOshis, setSelectedOshis] =
     useState<string[]>([]);
 
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [imageUrls, setImageUrls] = useState<string[]>(
+    []
+  );
+
   const [images, setImages] = useState<File[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const [currentIndex, setCurrentIndex] =
+    useState(0);
 
   const [oshis, setOshis] = useState<Oshi[]>([]);
+
+  const [loading, setLoading] = useState(false);
 
   /*
    * Load existing post
@@ -73,6 +78,13 @@ export default function EditPostPage() {
       return;
     }
 
+    /*
+     * Store the authenticated user in a local constant.
+     * This lets TypeScript know that user is not null
+     * inside the async function below.
+     */
+    const currentUser = user;
+
     async function loadPost() {
       setPageLoading(true);
       setError("");
@@ -90,7 +102,7 @@ export default function EditPostPage() {
             "id, user_id, content, image_url, location"
           )
           .eq("id", postId)
-          .eq("user_id", user.id)
+          .eq("user_id", currentUser.id)
           .single();
 
         if (postError) {
@@ -153,7 +165,11 @@ export default function EditPostPage() {
          */
         const imageFiles: File[] = [];
 
-        for (let i = 0; i < parsedImages.length; i++) {
+        for (
+          let i = 0;
+          i < parsedImages.length;
+          i++
+        ) {
           try {
             const response = await fetch(
               parsedImages[i]
@@ -289,7 +305,10 @@ export default function EditPostPage() {
           .select(
             "id, name, image_url"
           )
-          .eq("user_id", user.id)
+          .eq(
+            "user_id",
+            currentUser.id
+          )
           .order("created_at", {
             ascending: true,
           });
@@ -366,15 +385,65 @@ export default function EditPostPage() {
     );
   }
 
+  /*
+   * Handle adding images.
+   *
+   * Currently disabled because this edit page only
+   * works with the existing images.
+   */
   function handleSelectImages(
     e: React.ChangeEvent<HTMLInputElement>
   ) {
     e.target.value = "";
   }
 
+  /*
+   * Keep imageUrls synchronized if a thumbnail
+   * is removed.
+   *
+   * ThumbnailStrip changes the File[] state,
+   * so we use the same indexes to update URLs.
+   */
+  function handleSetImages(
+    newImages: React.SetStateAction<File[]>
+  ) {
+    setImages((previousImages) => {
+      const updatedImages =
+        typeof newImages === "function"
+          ? newImages(previousImages)
+          : newImages;
+
+      /*
+       * If images were removed, keep only the
+       * corresponding existing URLs.
+       */
+      setImageUrls((previousUrls) =>
+        previousUrls.slice(
+          0,
+          updatedImages.length
+        )
+      );
+
+      /*
+       * Prevent currentIndex from pointing
+       * to an image that no longer exists.
+       */
+      setCurrentIndex((previousIndex) =>
+        Math.min(
+          previousIndex,
+          Math.max(
+            updatedImages.length - 1,
+            0
+          )
+        )
+      );
+
+      return updatedImages;
+    });
+  }
+
   return (
     <div className="md:hidden min-h-screen flex flex-col">
-
       {/* Header */}
       <header
         className="
@@ -406,7 +475,7 @@ export default function EditPostPage() {
             items-center
             justify-center
             rounded-full
-            bg-accent/50
+            bg-accent
           "
         >
           <X size={20} />
@@ -416,7 +485,6 @@ export default function EditPostPage() {
       {/* Main */}
       <main className="flex-1 overflow-y-auto px-4 pb-24">
         <div className="mt-4">
-
           {/* Main Image */}
           {images.length > 0 && (
             <div className="mb-4">
@@ -430,7 +498,9 @@ export default function EditPostPage() {
                 "
               >
                 <img
-                  src={imageUrls[currentIndex]}
+                  src={
+                    imageUrls[currentIndex]
+                  }
                   alt={`Post image ${
                     currentIndex + 1
                   }`}
@@ -453,7 +523,7 @@ export default function EditPostPage() {
                 setCurrentIndex={
                   setCurrentIndex
                 }
-                setImages={setImages}
+                setImages={handleSetImages}
                 onSelectImages={
                   handleSelectImages
                 }
@@ -528,21 +598,59 @@ export default function EditPostPage() {
       </main>
 
       {/* Save button */}
-      <PostButton
-        disabled={false}
-        loading={false}
-        onClick={() => {
-          console.log("Edit post:", {
-            postId,
-            caption,
-            location,
-            hashtags,
-            fandoms,
-            selectedOshis,
-            imageUrls,
-          });
-        }}
-      />
+      <div
+        className="
+          fixed
+          bottom-0
+          left-0
+          right-0
+          z-50
+          border-t
+          border-foreground/30
+          bg-background
+          p-4
+        "
+      >
+        <button
+          type="button"
+          onClick={() => {
+            console.log("Edit post:", {
+              postId,
+              caption,
+              location,
+              hashtags,
+              fandoms,
+              selectedOshis,
+              imageUrls,
+            });
+          }}
+          disabled={loading}
+          className="
+            flex
+            h-12
+            w-full
+            items-center
+            justify-center
+            rounded-full
+            bg-[#b8d8be]/90
+            font-semibold
+            text-foreground
+            transition
+            active:scale-[0.98]
+            disabled:cursor-not-allowed
+            disabled:opacity-50
+          "
+        >
+          {loading ? (
+            <Loader2
+              size={20}
+              className="animate-spin"
+            />
+          ) : (
+            "Save Changes"
+          )}
+        </button>
+      </div>
     </div>
   );
 }
