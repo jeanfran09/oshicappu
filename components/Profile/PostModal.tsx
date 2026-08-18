@@ -35,7 +35,9 @@ type PostModalProps = {
   initialPostId: string;
   username: string;
   avatar: string;
+  ownerId?: string;
   onClose: () => void;
+  onPostDeleted?: (postId: string) => void;
 };
 
 export default function PostModal({
@@ -43,7 +45,9 @@ export default function PostModal({
   initialPostId,
   username,
   avatar,
+  ownerId,
   onClose,
+  onPostDeleted,
 }: PostModalProps) {
   const [activeCommentsPostId, setActiveCommentsPostId] = useState<
     string | null
@@ -116,6 +120,7 @@ export default function PostModal({
             >
               <Post
                 id={post.id}
+                userId={ownerId}
                 username={username}
                 avatar={avatar}
                 images={post.images}
@@ -130,6 +135,7 @@ export default function PostModal({
                 onCommentClick={() =>
                   setActiveCommentsPostId(post.id)
                 }
+                onDeleted={onPostDeleted}
               />
             </div>
           ))}

@@ -32,6 +32,7 @@ type Fandom = {
 
 type PostProps = {
   id: string;
+  userId?: string;
   username: string;
   avatar: string;
   images: string[];
@@ -45,10 +46,12 @@ type PostProps = {
   oshis?: Oshi[];
   fandoms?: Fandom[];
   hashtags?: string[];
+  onDeleted?: (postId: string) => void;
 };
 
 export default function Post({
   id,
+  userId,
   username,
   avatar,
   images,
@@ -62,14 +65,20 @@ export default function Post({
   oshis = [],
   fandoms = [],
   hashtags = [],
+  onDeleted,
 }: PostProps) {
     const { user } = useSupabaseAuth();
+
+    const isOwner = !!user && !!userId && user.id === userId;
 
     const [liked, setLiked] = useState(false);
     const [likeCount, setLikeCount] = useState(likes ?? 0);
     const [likeSubmitting, setLikeSubmitting] = useState(false);
     const [currentImage, setCurrentImage] = useState(0);
     const [showMore, setShowMore] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState("");
 
     const router = useRouter();
 
@@ -146,6 +155,45 @@ export default function Post({
       }
     }
 
+    async function handleDeletePost() {
+      if (!user || !isOwner || deleting) return;
+
+      setDeleting(true);
+      setDeleteError("");
+
+      try {
+        const { error } = await supabase
+          .from("posts")
+          .delete()
+          .eq("id", id)
+          .eq("user_id", user.id);
+
+        if (error) throw error;
+
+        setShowMore(false);
+        setConfirmDelete(false);
+
+        if (onDeleted) {
+          onDeleted(id);
+        } else {
+          router.push("/");
+        }
+      } catch (error) {
+        console.error("Error deleting post:", error);
+        setDeleteError(
+          "Couldn't delete this post. Try again."
+        );
+      } finally {
+        setDeleting(false);
+      }
+    }
+
+    function closeOptionsSheet() {
+      setShowMore(false);
+      setConfirmDelete(false);
+      setDeleteError("");
+    }
+
     function handleImageScroll(
         e: React.UIEvent<HTMLDivElement>
         ) {
@@ -182,9 +230,11 @@ export default function Post({
                 </div>
                 </div>
 
+                {isOwner && (
                 <button  onClick={() => setShowMore(true)}>
                     <MoreHorizontal size={20} />
                 </button>
+                )}
             </div>
 
             {/* Post Image */}
@@ -372,12 +422,58 @@ export default function Post({
             </div>
 
 
-            {showMore && (
+            {showMore && isOwner && (
             <BottomSheet
-                title="Options"
-                onClose={() => setShowMore(false)}
+                title={confirmDelete ? "Delete Post?" : "Options"}
+                onClose={closeOptionsSheet}
                 size="small"
             >
+                {confirmDelete ? (
+                <div className="w-full space-y-4">
+                    <p className="text-sm text-foreground/70">
+                        This can't be undone. Your post, comments, and likes will be permanently removed.
+                    </p>
+
+                    {deleteError && (
+                        <p className="text-sm text-red-500">
+                            {deleteError}
+                        </p>
+                    )}
+
+                    <div className="flex gap-3">
+                        <button
+                            className="
+                            flex-1
+                            h-11
+                            rounded-xl
+                            border
+                            border-foreground/20
+                            font-medium
+                            "
+                            onClick={() => setConfirmDelete(false)}
+                            disabled={deleting}
+                        >
+                            Cancel
+                        </button>
+
+                        <button
+                            className="
+                            flex-1
+                            h-11
+                            rounded-xl
+                            bg-red-500
+                            font-semibold
+                            text-white
+                            disabled:opacity-60
+                            "
+                            onClick={handleDeletePost}
+                            disabled={deleting}
+                        >
+                            {deleting ? "Deleting..." : "Delete"}
+                        </button>
+                    </div>
+                </div>
+                ) : (
                 <div className="w-full space-y-3">
 
                 <button
@@ -414,10 +510,7 @@ export default function Post({
                     text-red-500
                     items-center
                     "
-                    onClick={() => {
-                    setShowMore(false);
-                    // delete post here
-                    }}
+                    onClick={() => setConfirmDelete(true)}
                 >
                     <div className="flex h-9 w-9 mr-3 items-center justify-center rounded-full bg-red-500/15">
                         <Trash2 size={18} className="text-red-500"/>
@@ -427,6 +520,7 @@ export default function Post({
                 </button>
 
                 </div>
+                )}
             </BottomSheet>
             )}
         </article>

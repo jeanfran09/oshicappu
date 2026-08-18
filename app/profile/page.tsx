@@ -603,9 +603,16 @@ export default function ProfilePage() {
             profile?.avatar_url ||
             "/icons/temp.jpg"
           }
+          ownerId={user?.id}
           onClose={() =>
             setSelectedPostId(null)
           }
+          onPostDeleted={(postId) => {
+            setPosts((prev) =>
+              prev.filter((p) => p.id !== postId)
+            );
+            setSelectedPostId(null);
+          }}
         />
       )}
 

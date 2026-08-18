@@ -386,6 +386,223 @@ export default function EditPostPage() {
   }
 
   /*
+   * Insert hashtags (find-or-create + link)
+   */
+  async function insertHashtags(postId: string) {
+    for (const rawTag of hashtags) {
+      const tag = rawTag.trim().toLowerCase();
+
+      if (!tag) continue;
+
+      let hashtagId: string;
+
+      const { data: existing, error: lookupError } =
+        await supabase
+          .from("hashtags")
+          .select("id")
+          .eq("tag", tag)
+          .maybeSingle();
+
+      if (lookupError) {
+        console.error(
+          "Error looking up hashtag:",
+          lookupError
+        );
+        continue;
+      }
+
+      if (existing) {
+        hashtagId = existing.id;
+      } else {
+        const { data: created, error: createError } =
+          await supabase
+            .from("hashtags")
+            .insert({ tag })
+            .select("id")
+            .single();
+
+        if (createError || !created) {
+          console.error(
+            "Error creating hashtag:",
+            createError
+          );
+          continue;
+        }
+
+        hashtagId = created.id;
+      }
+
+      const { error: linkError } = await supabase
+        .from("post_hashtags")
+        .insert({
+          post_id: postId,
+          hashtag_id: hashtagId,
+        });
+
+      if (linkError) {
+        console.error(
+          "Error linking hashtag to post:",
+          linkError
+        );
+      }
+    }
+  }
+
+  /*
+   * Insert fandoms (find-or-create + link)
+   */
+  async function insertFandoms(postId: string) {
+    for (const rawFandom of fandoms) {
+      const name = rawFandom.trim();
+
+      if (!name) continue;
+
+      let fandomId: string;
+
+      const { data: existing, error: lookupError } =
+        await supabase
+          .from("fandoms")
+          .select("id")
+          .ilike("name", name)
+          .maybeSingle();
+
+      if (lookupError) {
+        console.error(
+          "Error looking up fandom:",
+          lookupError
+        );
+        continue;
+      }
+
+      if (existing) {
+        fandomId = existing.id;
+      } else {
+        const { data: created, error: createError } =
+          await supabase
+            .from("fandoms")
+            .insert({ name })
+            .select("id")
+            .single();
+
+        if (createError || !created) {
+          console.error(
+            "Error creating fandom:",
+            createError
+          );
+          continue;
+        }
+
+        fandomId = created.id;
+      }
+
+      const { error: linkError } = await supabase
+        .from("post_fandoms")
+        .insert({
+          post_id: postId,
+          fandom_id: fandomId,
+        });
+
+      if (linkError) {
+        console.error(
+          "Error linking fandom to post:",
+          linkError
+        );
+      }
+    }
+  }
+
+  /*
+   * Insert Oshi tags
+   */
+  async function insertOshiTags(postId: string) {
+    if (selectedOshis.length === 0) return;
+
+    const rows = selectedOshis.map((oshiId) => ({
+      post_id: postId,
+      oshi_id: oshiId,
+    }));
+
+    const { error: oshiLinkError } = await supabase
+      .from("post_oshis")
+      .insert(rows);
+
+    if (oshiLinkError) {
+      console.error(
+        "Error linking oshis to post:",
+        oshiLinkError
+      );
+    }
+  }
+
+  /*
+   * Save changes to the post.
+   */
+  async function handleSave() {
+    if (!user || loading) return;
+
+    setLoading(true);
+    setError("");
+
+    try {
+      /*
+       * Update the post row itself.
+       */
+      const { error: updateError } = await supabase
+        .from("posts")
+        .update({
+          content: caption.trim(),
+          location: location.trim() || null,
+          image_url:
+            imageUrls.length > 0
+              ? JSON.stringify(imageUrls)
+              : null,
+        })
+        .eq("id", postId)
+        .eq("user_id", user.id);
+
+      if (updateError) throw updateError;
+
+      /*
+       * Clear existing tag links, then re-insert
+       * from the current form state. Simplest way
+       * to keep everything in sync without diffing.
+       */
+      await Promise.all([
+        supabase
+          .from("post_hashtags")
+          .delete()
+          .eq("post_id", postId),
+        supabase
+          .from("post_fandoms")
+          .delete()
+          .eq("post_id", postId),
+        supabase
+          .from("post_oshis")
+          .delete()
+          .eq("post_id", postId),
+      ]);
+
+      await Promise.all([
+        insertHashtags(postId),
+        insertFandoms(postId),
+        insertOshiTags(postId),
+      ]);
+
+      router.replace(`/post/${postId}`);
+    } catch (err) {
+      console.error("Error saving post:", err);
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to save changes."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /*
    * Handle adding images.
    *
    * Currently disabled because this edit page only
@@ -613,17 +830,7 @@ export default function EditPostPage() {
       >
         <button
           type="button"
-          onClick={() => {
-            console.log("Edit post:", {
-              postId,
-              caption,
-              location,
-              hashtags,
-              fandoms,
-              selectedOshis,
-              imageUrls,
-            });
-          }}
+          onClick={handleSave}
           disabled={loading}
           className="
             flex

@@ -220,6 +220,7 @@ export default function PostPage() {
       {/* Post */}
       <Post
         id={post.id}
+        userId={post.user_id}
         username={post.username}
         avatar={post.avatar}
         images={parsePostImages(post.image_url)}
@@ -234,6 +235,7 @@ export default function PostPage() {
         onCommentClick={() => {
           setActiveCommentsPostId(post.id);
         }}
+        onDeleted={() => router.push("/")}
       />
 
       {/* Comments */}

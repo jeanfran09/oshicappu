@@ -533,6 +533,7 @@ export default function PublicProfilePage() {
             profile.avatar_url ||
             "/icons/temp.jpg"
           }
+          ownerId={profile.id}
           onClose={() =>
             setSelectedPostId(null)
           }

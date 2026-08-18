@@ -433,7 +433,14 @@ export default function OshiPage() {
           initialPostId={selectedPostId}
           username={owner?.username ?? "username"}
           avatar={owner?.avatar_url || "/icons/temp.jpg"}
+          ownerId={oshi?.user_id}
           onClose={() => setSelectedPostId(null)}
+          onPostDeleted={(postId) => {
+            setPosts((prev) =>
+              prev.filter((p) => p.id !== postId)
+            );
+            setSelectedPostId(null);
+          }}
         />
       )}
 
