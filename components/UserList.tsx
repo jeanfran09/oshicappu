@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Search, X } from "lucide-react";
 import { motion } from "framer-motion";
 
 import { supabase } from "@/lib/supabase";
@@ -35,6 +35,8 @@ export default function UserList({
   const [followingIds, setFollowingIds] = useState<Set<string>>(
     new Set()
   );
+
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -110,12 +112,14 @@ export default function UserList({
           );
 
           if (targetIds.length > 0) {
-            const { data: followData, error: followError } =
-              await supabase
-                .from("follows")
-                .select("following_id")
-                .eq("follower_id", currentUser.id)
-                .in("following_id", targetIds);
+            const {
+              data: followData,
+              error: followError,
+            } = await supabase
+              .from("follows")
+              .select("following_id")
+              .eq("follower_id", currentUser.id)
+              .in("following_id", targetIds);
 
             if (followError) {
               console.error(
@@ -134,6 +138,8 @@ export default function UserList({
           } else {
             setFollowingIds(new Set());
           }
+        } else {
+          setFollowingIds(new Set());
         }
       } catch (err) {
         console.error(`Error fetching ${type}:`, err);
@@ -174,6 +180,22 @@ export default function UserList({
     });
   };
 
+  // --------------------------------
+  // Filter users based on search
+  // --------------------------------
+  const filteredUsers = users.filter((user) => {
+    const query = searchQuery.trim().toLowerCase();
+
+    if (!query) {
+      return true;
+    }
+
+    return (
+      user.username.toLowerCase().includes(query) ||
+      user.display_name.toLowerCase().includes(query)
+    );
+  });
+
   return (
     <motion.div
       initial={{ x: "100%" }}
@@ -190,7 +212,7 @@ export default function UserList({
         <button
           type="button"
           onClick={onClose}
-          className="flex h-9 w-9 items-center justify-center rounded-full"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
         >
           <ArrowLeft size={22} />
         </button>
@@ -201,6 +223,46 @@ export default function UserList({
             : "Following"}
         </p>
       </header>
+
+      {/* Search Bar */}
+      <div className="bg-background px-4 py-3">
+        <div className="flex h-10 items-center gap-2 rounded-lg bg-accent/50 px-3">
+          <Search
+            size={18}
+            className="shrink-0 text-foreground/50"
+          />
+
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) =>
+              setSearchQuery(e.target.value)
+            }
+            placeholder={"Search"}
+            className="
+              min-w-0
+              flex-1
+              bg-transparent
+              text-sm
+              outline-none
+              placeholder:text-foreground/50
+            "
+          />
+
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
+            >
+              <X
+                size={16}
+                className="text-foreground/50"
+              />
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
@@ -223,7 +285,7 @@ export default function UserList({
             </div>
           )}
 
-          {/* Empty */}
+          {/* No users */}
           {!loading &&
             !error &&
             users.length === 0 && (
@@ -236,12 +298,24 @@ export default function UserList({
               </div>
             )}
 
+          {/* No search results */}
+          {!loading &&
+            !error &&
+            users.length > 0 &&
+            filteredUsers.length === 0 && (
+              <div className="flex justify-center py-8">
+                <p className="text-sm text-foreground/60">
+                  No users found.
+                </p>
+              </div>
+            )}
+
           {/* Users */}
           {!loading &&
             !error &&
-            users.length > 0 && (
+            filteredUsers.length > 0 && (
               <div className="space-y-1">
-                {users.map((user) => (
+                {filteredUsers.map((user) => (
                   <div
                     key={user.id}
                     className="flex w-full items-center gap-3 rounded-lg px-2 py-2"
@@ -250,7 +324,9 @@ export default function UserList({
                     <button
                       type="button"
                       onClick={() =>
-                        handleUserClick(user.username)
+                        handleUserClick(
+                          user.username
+                        )
                       }
                       className="flex min-w-0 flex-1 items-center gap-3 text-left"
                     >

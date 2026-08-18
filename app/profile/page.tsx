@@ -35,10 +35,6 @@ interface Post {
   hashtags: string[];
 }
 
-async function refreshFeed() {
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-}
-
 export default function ProfilePage() {
   const { user, profile, isLoggedIn, logout, isLoading } =
     useSupabaseAuth();
@@ -352,6 +348,16 @@ export default function ProfilePage() {
 
     setCropImage(null);
     setShowCropper(false);
+  };
+
+  const refreshFeed = async () => {
+    if (!user) return;
+
+    await Promise.all([
+      fetchUserPosts(),
+      fetchUserOshis(),
+      fetchFollowCounts(),
+    ]);
   };
 
   if (isLoading) {
