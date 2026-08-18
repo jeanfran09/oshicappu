@@ -27,7 +27,7 @@ export default function PostGrid({
   }
 
   return (
-    <div className="grid grid-cols-3 gap-[2px]">
+    <div className="grid grid-cols-3 gap-[1px]">
       {posts.map((post) => (
 
         <button

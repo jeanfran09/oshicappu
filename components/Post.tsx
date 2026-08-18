@@ -365,7 +365,7 @@ export default function Post({
 
             
             {/* Time */}
-            <div className="px-3 pb-4">
+            <div className="px-3 pb-4 pt-1">
                 <p className="text-sm text-foreground/65">
                 {time}
                 </p>

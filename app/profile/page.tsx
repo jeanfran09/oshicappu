@@ -422,7 +422,7 @@ export default function ProfilePage() {
                 bg-accent/20
                 ${
                   profile?.banner_url
-                    ? "border-4 border-background"
+                    ? "border-3 border-background"
                     : ""
                 }
               `}

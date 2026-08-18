@@ -3,34 +3,104 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Search, User as UserIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  Search,
+  User as UserIcon,
+} from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
-import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
 import CreatePostButton from "@/components/CreatePostButton";
-import FollowButton from "@/components/FollowButton";
+import PostGrid from "@/components/Profile/PostGrid";
+import { parsePostImages } from "@/utils/formatNumber";
+import PullToRefresh from "@/components/PullToRefresh";
 
 type SearchResult = {
   id: string;
   username: string;
   display_name: string;
   avatar_url: string | null;
-  isFollowing: boolean;
 };
 
+type PostResult = {
+  id: string;
+  image_url: string | null;
+};
+
+async function refreshFeed() {
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  // fetch posts here
+}
+
 export default function SearchPage() {
-  const { user } = useSupabaseAuth();
+  const router = useRouter();
 
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResult[]>([]);
+
+  const [results, setResults] = useState<
+    SearchResult[]
+  >([]);
+
+  const [postResults, setPostResults] = useState<
+    PostResult[]
+  >([]);
+
+  const [defaultPosts, setDefaultPosts] = useState<
+    PostResult[]
+  >([]);
+
   const [loading, setLoading] = useState(false);
-  const [searched, setSearched] = useState(false);
+
+  const [loadingPosts, setLoadingPosts] =
+    useState(true);
+
+  const [searched, setSearched] =
+    useState(false);
+
+  /*
+   * --------------------------------
+   * Fetch default posts
+   * --------------------------------
+   */
+  useEffect(() => {
+    async function fetchDefaultPosts() {
+      setLoadingPosts(true);
+
+      const {
+        data,
+        error,
+      } = await supabase
+        .from("posts")
+        .select("id, image_url")
+        .order("created_at", {
+          ascending: false,
+        })
+        .limit(30);
+
+      if (error) {
+        console.error(
+          "Error fetching posts:",
+          error
+        );
+
+        setDefaultPosts([]);
+      } else {
+        setDefaultPosts(data ?? []);
+      }
+
+      setLoadingPosts(false);
+    }
+
+    fetchDefaultPosts();
+  }, []);
 
   useEffect(() => {
     const term = query.trim();
 
     if (!term) {
       setResults([]);
+      setPostResults([]);
       setSearched(false);
       setLoading(false);
       return;
@@ -38,169 +108,258 @@ export default function SearchPage() {
 
     setLoading(true);
 
-    const timeout = setTimeout(async () => {
-      let usersQuery = supabase
-        .from("profiles")
-        .select("id, username, display_name, avatar_url")
-        .or(
-          `username.ilike.%${term}%,display_name.ilike.%${term}%`
-        )
-        .limit(20);
+    const timeout = setTimeout(
+      async () => {
+        try {
+          /*
+           * Search users
+           */
+          const {
+            data: users,
+            error: usersError,
+          } = await supabase
+            .from("profiles")
+            .select(
+              "id, username, display_name, avatar_url"
+            )
+            .or(
+              `username.ilike.%${term}%,display_name.ilike.%${term}%`
+            )
+            .limit(20);
 
-      if (user) {
-        usersQuery = usersQuery.neq("id", user.id);
-      }
-
-      const { data: users, error } = await usersQuery;
-
-      if (error) {
-        console.error("Error searching users:", error);
-        setResults([]);
-        setLoading(false);
-        setSearched(true);
-        return;
-      }
-
-      let followingIds = new Set<string>();
-
-      if (user && users && users.length > 0) {
-        const { data: followRows, error: followError } =
-          await supabase
-            .from("follows")
-            .select("following_id")
-            .eq("follower_id", user.id)
-            .in(
-              "following_id",
-              users.map((u) => u.id)
+          if (usersError) {
+            console.error(
+              "Error searching users:",
+              usersError
             );
 
-        if (followError) {
+            setResults([]);
+          } else {
+            setResults(users ?? []);
+          }
+
+          /*
+           * Search posts
+           */
+          const {
+            data: posts,
+            error: postsError,
+          } = await supabase
+            .from("posts")
+            .select(
+              "id, image_url"
+            )
+            .ilike(
+              "content",
+              `%${term}%`
+            )
+            .order("created_at", {
+              ascending: false,
+            })
+            .limit(30);
+
+          if (postsError) {
+            console.error(
+              "Error searching posts:",
+              postsError
+            );
+
+            setPostResults([]);
+          } else {
+            setPostResults(
+              posts ?? []
+            );
+          }
+
+          setSearched(true);
+        } catch (error) {
           console.error(
-            "Error fetching follow status:",
-            followError
+            "Search error:",
+            error
           );
-        } else {
-          followingIds = new Set(
-            (followRows ?? []).map((r) => r.following_id)
-          );
+
+          setResults([]);
+          setPostResults([]);
+          setSearched(true);
+        } finally {
+          setLoading(false);
         }
-      }
+      },
+      300
+    );
 
-      setResults(
-        (users ?? []).map((u) => ({
-          id: u.id,
-          username: u.username,
-          display_name: u.display_name,
-          avatar_url: u.avatar_url,
-          isFollowing: followingIds.has(u.id),
-        }))
-      );
+    return () =>
+      clearTimeout(timeout);
+  }, [query]);
 
-      setLoading(false);
-      setSearched(true);
-    }, 300);
+  const defaultGridPosts =
+    defaultPosts.map((post) => ({
+      id: post.id,
+      image:
+        parsePostImages(
+          post.image_url
+        )[0] ?? null,
+    }));
 
-    return () => clearTimeout(timeout);
-  }, [query, user]);
+  const searchedGridPosts =
+    postResults.map((post) => ({
+      id: post.id,
+      image:
+        parsePostImages(
+          post.image_url
+        )[0] ?? null,
+    }));
+
+  const handlePostClick = (postId: string) => {
+    router.push(`/post/${postId}`);
+  };
 
   return (
-    <main className="p-4">
-      {/* Search Input */}
-      <div className="relative">
+    <main>
+      {/* Search Bar */}
+      <div className="flex h-10 items-center gap-2 rounded-lg bg-accent/50 px-3 m-4">
         <Search
           size={18}
-          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-foreground/40"
+          className="shrink-0 text-foreground/50"
         />
 
         <input
           type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) =>
+            setQuery(e.target.value)
+          }
           placeholder="Search users, posts, or hashtags..."
-          className="w-full rounded-full border border-foreground/20 bg-background px-4 py-3 pl-10 outline-none focus:border-accent-secondary focus:ring-2 focus:ring-accent-secondary"
+          className="
+            min-w-0
+            flex-1
+            bg-transparent
+            text-sm
+            outline-none
+            placeholder:text-foreground/50
+          "
         />
       </div>
 
-      {/* Results */}
+      {/* --------------------------------
+          Default Page
+          -------------------------------- */}
       {query.trim() === "" ? (
-        <div className="mt-10 flex flex-col items-center text-center">
-          <p className="text-lg font-semibold">
-            Start searching
-          </p>
-
-          <p className="mt-2 text-sm text-foreground/50">
-            Find users, fandoms, events, and posts.
-          </p>
-        </div>
+        <PullToRefresh onRefresh={refreshFeed}>
+          <section className="min-h-[80vh] no-scrollbar">
+            {loadingPosts ? (
+              <div className="flex h-40 items-center justify-center">
+                <p className="text-sm text-foreground/40">
+                  Loading posts...
+                </p>
+              </div>
+            ) : (
+              <PostGrid
+                posts={defaultGridPosts}
+                onPostClick={handlePostClick}
+              />
+            )}
+          </section>
+        </PullToRefresh>
       ) : loading ? (
+        /* --------------------------------
+           Searching
+           -------------------------------- */
         <div className="mt-10 flex justify-center">
           <p className="text-sm text-foreground/40">
             Searching...
           </p>
         </div>
-      ) : results.length === 0 && searched ? (
-        <div className="mt-10 flex justify-center">
-          <p className="text-sm text-foreground/40">
-            No users found for &ldquo;{query}&rdquo;.
-          </p>
-        </div>
       ) : (
-        <div className="mt-4 divide-y divide-foreground/10">
-          {results.map((result) => (
-            <div
-              key={result.id}
-              className="flex items-center gap-3 py-3"
-            >
-              <Link
-                href={`/profile/${result.username}`}
-                className="flex flex-1 items-center gap-3"
-              >
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent/20">
-                  {result.avatar_url ? (
-                    <Image
-                      src={result.avatar_url}
-                      alt={result.username}
-                      width={48}
-                      height={48}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <UserIcon
-                      size={22}
-                      className="text-foreground/30"
-                    />
-                  )}
-                </div>
+        <>
+          {/* --------------------------------
+              Users
+              -------------------------------- */}
+          {results.length > 0 && (
+            <section>
+              <h2 className="mt-3 ml-4 mb-2 text-sm font-semibold text-foreground/60">
+                Users
+              </h2>
 
-                <div className="min-w-0">
-                  <p className="truncate font-semibold">
-                    {result.display_name}
-                  </p>
-                  <p className="truncate text-sm text-foreground/50">
-                    @{result.username}
-                  </p>
-                </div>
-              </Link>
+              <div className=" ml-2">
+                {results.map(
+                  (result) => (
+                    <Link
+                      key={result.id}
+                      href={`/profile/${result.username}`}
+                      className="flex w-full items-center gap-3 rounded-lg px-2 py-2"
+                    >
+                      {/* Avatar */}
+                      <div className="relative h-17 w-17 shrink-0 overflow-hidden rounded-full bg-accent/20">
+                        {result.avatar_url ? (
+                          <Image
+                            src={result.avatar_url}
+                            alt={`${result.display_name}'s avatar`}
+                            fill
+                            sizes="68px"
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <UserIcon
+                              size={48}
+                              className="text-foreground/20"
+                            />
+                          </div>
+                        )}
+                      </div>
 
-              <FollowButton
-                targetUserId={result.id}
-                initialIsFollowing={result.isFollowing}
-                onChange={(isFollowing) =>
-                  setResults((prev) =>
-                    prev.map((r) =>
-                      r.id === result.id
-                        ? { ...r, isFollowing }
-                        : r
-                    )
+                      {/* Username + display name */}
+                      <div className="min-w-0">
+                        <p className="text-base font-bold">
+                          {result.username}
+                        </p>
+
+                        <p className="-mt-0.5 truncate text-base text-foreground/75">
+                          {result.display_name}
+                        </p>
+                      </div>
+                    </Link>
                   )
-                }
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* --------------------------------
+              Posts
+              -------------------------------- */}
+          {postResults.length > 0 && (
+            <section>
+              <h2 className="mt-3 ml-4 mb-2 text-sm font-semibold text-foreground/60">
+                Posts
+              </h2>
+
+              <PostGrid
+                posts={searchedGridPosts}
+                onPostClick={handlePostClick}
               />
-            </div>
-          ))}
-        </div>
+            </section>
+          )}
+
+          {/* --------------------------------
+              No Results
+              -------------------------------- */}
+          {searched &&
+            results.length === 0 &&
+            postResults.length === 0 && (
+              <div className="mt-10 flex justify-center">
+                <p className="text-sm text-foreground/40">
+                  No results found for{" "}
+                  &ldquo;{query}&rdquo;.
+                </p>
+              </div>
+            )}
+        </>
       )}
 
       <CreatePostButton />
     </main>
   );
 }
+
