@@ -1,5 +1,9 @@
 "use client";
 
+import EventResults from "@/components/Search/EventResults";
+import FandomResults from "@/components/Search/FandomResults";
+import PostResults from "@/components/Search/PostResults";
+import UserResults from "@/components/Search/UserResults";
 import { Search, ChevronLeft } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState } from "react";
@@ -149,33 +153,21 @@ export default function SearchResultsPage() {
       </header>
 
       {/* Search Results */}
-      <section className="p-4">
-        <p className="mb-4 text-sm text-foreground/60">
-          Results for "{query}"
-        </p>
-
+      <section>
         {activeTab === "posts" && (
-          <div>
-            Posts results
-          </div>
+          <PostResults query={query}/>
         )}
 
         {activeTab === "users" && (
-          <div>
-            Users results
-          </div>
+          <UserResults query={query} />
         )}
 
         {activeTab === "fandoms" && (
-          <div>
-            Fandom results
-          </div>
+          <FandomResults query={query} />
         )}
 
         {activeTab === "events" && (
-          <div>
-            Events results
-          </div>
+          <EventResults query={query} />
         )}
       </section>
     </main>
