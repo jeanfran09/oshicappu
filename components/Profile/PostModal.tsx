@@ -5,6 +5,7 @@ import { ChevronLeft } from "lucide-react";
 import { useState } from "react";
 import Post from "@/components/Post";
 import CommentsSheet from "@/components/CommentsSheet";
+import Divider from "../Divider";
 
 type Oshi = {
   id: string;
@@ -110,7 +111,7 @@ export default function PostModal({
           ref={scrollRef}
           className="flex-1 overflow-y-auto"
         >
-          {posts.map((post) => (
+          {posts.map((post, index) => (
             <div
               key={post.id}
               id={`profile-post-${post.id}`}
@@ -135,6 +136,9 @@ export default function PostModal({
                 }
                 onDeleted={onPostDeleted}
               />
+              {index < posts.length - 1 && (
+                <Divider />
+              )}
             </div>
           ))}
         </div>
