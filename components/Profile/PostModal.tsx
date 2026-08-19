@@ -81,11 +81,9 @@ export default function PostModal({
             z-10
             flex
             items-center
-            gap-3
             border-b
             border-foreground/10
             bg-background
-            px-3
             py-3
           "
         >
@@ -104,7 +102,7 @@ export default function PostModal({
             <ChevronLeft size={22} />
           </button>
 
-          <p className="font-semibold">{username}</p>
+          <p className="absolute left-1/2 -translate-x-1/2 text-lg font-semibold">{username}</p>
         </div>
 
         {/* Scrollable feed of this user's posts, Instagram-style */}

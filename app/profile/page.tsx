@@ -378,11 +378,11 @@ export default function ProfilePage() {
     <div className="md:hidden min-h-screen flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-50 flex items-center justify-between border-b border-foreground/10 bg-background px-4 py-3">
-        <h1 className="text-xl font-semibold">
-          @{profile?.username ?? "username"}
+        <h1 className="absolute left-1/2 -translate-x-1/2 text-lg font-semibold">
+          {profile?.username ?? "username"}
         </h1>
 
-        <button onClick={handleLogout}>
+        <button onClick={handleLogout} className="ml-auto flex h-9 w-9 items-center justify-center">
           <LogOut size={22} />
         </button>
       </header>

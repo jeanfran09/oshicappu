@@ -208,7 +208,7 @@ export default function UserList({
       className="fixed inset-0 z-[999] flex flex-col bg-background"
     >
       {/* Header */}
-      <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-foreground/10 bg-background px-3 py-3">
+      <header className="sticky top-0 z-10 flex items-center border-b border-foreground/10 bg-background py-3">
         <button
           type="button"
           onClick={onClose}

@@ -177,7 +177,7 @@ export default function PostPage() {
   if (error || !post) {
     return (
       <div className="md:hidden min-h-screen bg-background">
-        <header className="sticky top-0 z-50 flex items-center gap-3 border-b border-foreground/10 bg-background px-3 py-3">
+        <header className="sticky top-0 z-50 flex items-center border-b border-foreground/10 bg-background py-3">
           <button
             type="button"
             onClick={() => router.back()}
@@ -203,7 +203,7 @@ export default function PostPage() {
   return (
     <div className="md:hidden min-h-screen bg-background pb-16">
       {/* Header */}
-      <header className="sticky top-0 z-50 flex items-center gap-3 border-b border-foreground/10 bg-background px-3 py-3">
+      <header className="sticky top-0 z-50 flex items-center border-b border-foreground/10 bg-background py-3">
         <button
           type="button"
           onClick={() => router.back()}

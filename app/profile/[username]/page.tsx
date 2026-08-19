@@ -349,7 +349,7 @@ export default function PublicProfilePage() {
   return (
     <div className="md:hidden min-h-screen flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-50 flex items-center gap-3 border-b border-foreground/10 bg-background px-4 py-3">
+      <header className="sticky top-0 z-50 flex items-center border-b border-foreground/10 bg-background py-3">
         <button
           onClick={() => router.back()}
           className="flex h-9 w-9 items-center justify-center rounded-full"
@@ -357,8 +357,8 @@ export default function PublicProfilePage() {
           <ChevronLeft size={22} />
         </button>
 
-        <h1 className="text-xl font-semibold">
-          @{profile.username}
+        <h1 className="absolute left-1/2 -translate-x-1/2 text-lg font-semibold">
+          {profile.username}
         </h1>
       </header>
 
