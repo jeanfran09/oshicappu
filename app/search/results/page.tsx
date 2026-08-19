@@ -1,5 +1,6 @@
 "use client";
 
+import CreatePostButton from "@/components/CreatePostButton";
 import EventResults from "@/components/Search/EventResults";
 import FandomResults from "@/components/Search/FandomResults";
 import PostResults from "@/components/Search/PostResults";
@@ -170,6 +171,8 @@ export default function SearchResultsPage() {
           <EventResults query={query} />
         )}
       </section>
+
+      <CreatePostButton />
     </main>
   );
 }

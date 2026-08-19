@@ -6,7 +6,7 @@ import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
 import {
   Home,
   Search,
-  Users,
+  Calendar,
   SquarePlus,
   Bell,
   User
@@ -59,11 +59,11 @@ export default function BottomNav() {
         />
       </Link> */}
 
-      <Link href="/community" onClick={() => handleNav("/community")}>
-        <Users
+      <Link href="/event" onClick={() => handleNav("/event")}>
+        <Calendar
           size={24}
           fill={
-            pathname === "/community"
+            pathname === "/event" || pathname.startsWith("/event/")
               ? "#616161"
               : "none"
           }
