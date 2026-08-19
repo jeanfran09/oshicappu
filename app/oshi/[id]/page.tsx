@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
-  ArrowLeft,
+  ChevronLeft,
   Pencil,
   User as UserIcon,
 } from "lucide-react";
@@ -264,7 +264,7 @@ export default function OshiPage() {
             rounded-full
           "
         >
-          <ArrowLeft size={22} />
+          <ChevronLeft size={22} />
         </button>
 
         {/* Title */}

@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Search, X } from "lucide-react";
+import { ChevronLeft, Search, X } from "lucide-react";
 import { motion } from "framer-motion";
 
 import { supabase } from "@/lib/supabase";
@@ -202,7 +202,7 @@ export default function UserList({
       animate={{ x: 0 }}
       exit={{ x: "100%" }}
       transition={{
-        duration: 0.25,
+        duration: 0.10,
         ease: "easeOut",
       }}
       className="fixed inset-0 z-[999] flex flex-col bg-background"
@@ -214,7 +214,7 @@ export default function UserList({
           onClick={onClose}
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
         >
-          <ArrowLeft size={22} />
+          <ChevronLeft size={22} />
         </button>
 
         <p className="font-semibold">

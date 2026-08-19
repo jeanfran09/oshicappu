@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { useState } from "react";
 import Post from "@/components/Post";
 import CommentsSheet from "@/components/CommentsSheet";
@@ -101,7 +101,7 @@ export default function PostModal({
               rounded-full
             "
           >
-            <ArrowLeft size={22} />
+            <ChevronLeft size={22} />
           </button>
 
           <p className="font-semibold">{username}</p>

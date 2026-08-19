@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
@@ -183,7 +183,7 @@ export default function PostPage() {
             onClick={() => router.back()}
             className="flex h-9 w-9 items-center justify-center rounded-full"
           >
-            <ArrowLeft size={22} />
+            <ChevronLeft size={22} />
           </button>
 
           <h1 className="font-semibold">
@@ -209,7 +209,7 @@ export default function PostPage() {
           onClick={() => router.back()}
           className="flex h-9 w-9 items-center justify-center rounded-full"
         >
-          <ArrowLeft size={22} />
+          <ChevronLeft size={22} />
         </button>
 
         <h1 className="font-semibold">

@@ -41,7 +41,7 @@ export default function BottomNav() {
         <Search
           size={24}
           strokeWidth={
-            pathname === "/search"
+            pathname === "/search" || pathname.startsWith("/search/")
               ? "4"
               : "2"
           }

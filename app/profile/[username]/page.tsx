@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import { ArrowLeft, User as UserIcon } from "lucide-react";
+import { ChevronLeft, User as UserIcon } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 
 import { supabase } from "@/lib/supabase";
@@ -354,7 +354,7 @@ export default function PublicProfilePage() {
           onClick={() => router.back()}
           className="flex h-9 w-9 items-center justify-center rounded-full"
         >
-          <ArrowLeft size={22} />
+          <ChevronLeft size={22} />
         </button>
 
         <h1 className="text-xl font-semibold">
