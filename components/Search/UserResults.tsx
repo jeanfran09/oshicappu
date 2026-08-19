@@ -195,7 +195,7 @@ export default function UserResults({
             className="flex min-w-0 flex-1 items-center gap-3 text-left"
           >
             {/* Avatar */}
-            <div className="relative h-17 w-17 shrink-0 overflow-hidden rounded-full bg-accent/20">
+            <div className="relative h-17 w-17 shrink-0 overflow-hidden rounded-full bg-accent">
               {user.avatar_url ? (
                 <Image
                   src={user.avatar_url}
@@ -207,8 +207,8 @@ export default function UserResults({
               ) : (
                 <div className="flex h-full w-full items-center justify-center">
                   <UserIcon
-                    size={48}
-                    className="text-foreground/20"
+                    size={40}
+                    className="text-foreground/30"
                   />
                 </div>
               )}

@@ -233,7 +233,7 @@ export default function SearchPage() {
                     className="flex w-full items-center gap-3 rounded-lg px-2 py-2"
                   >
                     {/* Avatar */}
-                    <div className="relative h-15 w-15 shrink-0 overflow-hidden rounded-full bg-accent/20">
+                    <div className="relative h-15 w-15 shrink-0 overflow-hidden rounded-full bg-accent">
                       {result.avatar_url ? (
                         <Image
                           src={result.avatar_url}
@@ -245,8 +245,8 @@ export default function SearchPage() {
                       ) : (
                         <div className="flex h-full w-full items-center justify-center">
                           <UserIcon
-                            size={48}
-                            className="text-foreground/20"
+                            size={36}
+                            className="text-foreground/30"
                           />
                         </div>
                       )}
@@ -287,4 +287,3 @@ export default function SearchPage() {
     </main>
   );
 }
-

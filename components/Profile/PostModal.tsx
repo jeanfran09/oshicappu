@@ -35,7 +35,7 @@ type PostModalProps = {
   posts: ProfilePost[];
   initialPostId: string;
   username: string;
-  avatar: string;
+  avatar: string | null;
   ownerId?: string;
   onClose: () => void;
   onPostDeleted?: (postId: string) => void;

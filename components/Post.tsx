@@ -10,7 +10,8 @@ import {
   Bookmark,
   MoreHorizontal,
   Pencil,
-  Trash2
+  Trash2,
+  User as UserIcon
 } from "lucide-react";
 import BottomSheet from "./BottomSheet";
 import Divider from "./Divider";
@@ -34,7 +35,7 @@ type PostProps = {
   id: string;
   userId?: string;
   username: string;
-  avatar: string;
+  avatar: string | null;
   images: string[];
   caption: string;
   likes?: number;
@@ -212,14 +213,25 @@ export default function Post({
             {/* Header */}
             <div className="flex items-center justify-between p-3">
                 <div className="flex items-center gap-3">
-                <Image
-                    src={avatar}
-                    alt={username}
-                    width={40}
-                    height={40}
-                    className="rounded-full object-cover"
-                    priority={priority}
-                />
+                <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-accent">
+                  {avatar ? (
+                    <Image
+                        src={avatar}
+                        alt={username}
+                        width={40}
+                        height={40}
+                        className="h-full w-full rounded-full object-cover"
+                        priority={priority}
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <UserIcon
+                        size={22}
+                        className="text-foreground/30"
+                      />
+                    </div>
+                  )}
+                </div>
 
                 <div>
                     <p className="font-semibold text-sm">{username}</p>

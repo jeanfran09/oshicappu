@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ChevronLeft, Camera, User as UserIcon, X } from "lucide-react";
+import { ChevronLeft, Camera, X, User as UserIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
 import { motion } from "framer-motion";
@@ -26,6 +26,7 @@ export default function EditProfileModal({ onClose }: Props) {
     profile?.banner_url ?? null
   );
   const [bannerRemoved, setBannerRemoved] = useState(false);
+  const [avatarRemoved, setAvatarRemoved] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -39,6 +40,13 @@ export default function EditProfileModal({ onClose }: Props) {
 
     setAvatarFile(file);
     setAvatarPreview(URL.createObjectURL(file));
+    setAvatarRemoved(false);
+  }
+
+  function handleRemoveAvatar() {
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    setAvatarRemoved(true);
   }
 
   function handleBannerSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -96,6 +104,8 @@ export default function EditProfileModal({ onClose }: Props) {
 
       if (avatarFile) {
         avatarUrl = await uploadImage(avatarFile, "avatar");
+      } else if (avatarRemoved) {
+        avatarUrl = null;
       }
 
       if (bannerFile) {
@@ -212,7 +222,7 @@ export default function EditProfileModal({ onClose }: Props) {
 
           {/* Avatar, overlapping the bottom of the banner */}
           <div className="absolute -bottom-10 left-4">
-            <div className="relative h-20 w-20 overflow-hidden rounded-full border-4 border-background bg-accent/20">
+            <div className="relative h-20 w-20 overflow-hidden rounded-full border-4 border-background bg-accent">
               {avatarPreview ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -222,10 +232,23 @@ export default function EditProfileModal({ onClose }: Props) {
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center">
-                  <UserIcon size={32} className="text-foreground/20" />
+                  <UserIcon
+                    size={32}
+                    className="text-foreground/30"
+                  />
                 </div>
               )}
             </div>
+
+            {avatarPreview && (
+              <button
+                type="button"
+                onClick={handleRemoveAvatar}
+                className="absolute -top-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white"
+              >
+                <X size={13} />
+              </button>
+            )}
 
             <button
               type="button"

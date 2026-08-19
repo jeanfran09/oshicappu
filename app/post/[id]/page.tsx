@@ -20,7 +20,7 @@ type PostData = {
   likes_count: number;
   comments_count: number;
   username: string;
-  avatar: string;
+  avatar: string | null;
   oshis: {
     id: string;
     name: string;
@@ -127,8 +127,7 @@ export default function PostPage() {
           username: postData.profiles?.username ?? "username",
 
           avatar:
-            postData.profiles?.avatar_url ??
-            "/icons/temp.jpg",
+            postData.profiles?.avatar_url ?? null,
 
           oshis: (postData.post_oshis ?? [])
             .map((item: any) => item.oshis)

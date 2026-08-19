@@ -6,11 +6,11 @@ import { motion } from "framer-motion";
 import {
   X,
   Send,
-  User as UserIcon,
   Trash2,
   Flag,
   MoreHorizontal,
   Pencil,
+  User as UserIcon,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
@@ -545,7 +545,7 @@ export default function CommentsSheet({
                     {/* Avatar */}
                     <Link
                       href={`/profile/${c.username}`}
-                      className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent/30"
+                      className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent"
                     >
                       {c.avatar_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -771,7 +771,7 @@ export default function CommentsSheet({
 
             <div className="flex items-end gap-2">
               {/* Current user's PFP */}
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent/30">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent">
                 {currentUserProfile?.avatar_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img

@@ -394,7 +394,7 @@ export default function PublicProfilePage() {
               shrink-0
               overflow-hidden
               rounded-full
-              bg-accent/20
+              bg-accent
               ${
                 profile.banner_url
                   ? "border-4 border-background"
@@ -408,13 +408,15 @@ export default function PublicProfilePage() {
                 alt={`${profile.display_name}'s avatar`}
                 width={96}
                 height={96}
-                className="object-cover"
+                className="h-full w-full object-cover"
               />
             ) : (
-              <UserIcon
-                size={48}
-                className="text-foreground/20"
-              />
+              <div className="flex h-full w-full items-center justify-center">
+                <UserIcon
+                  size={48}
+                  className="text-foreground/30"
+                />
+              </div>
             )}
           </div>
 
@@ -529,10 +531,7 @@ export default function PublicProfilePage() {
           posts={posts}
           initialPostId={selectedPostId}
           username={profile.username}
-          avatar={
-            profile.avatar_url ||
-            "/icons/temp.jpg"
-          }
+          avatar={profile.avatar_url}
           ownerId={profile.id}
           onClose={() =>
             setSelectedPostId(null)

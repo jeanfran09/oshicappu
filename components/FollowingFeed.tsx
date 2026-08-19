@@ -17,7 +17,7 @@ type PostData = {
   likes_count: number;
   comments_count: number;
   username: string;
-  avatar: string;
+  avatar: string | null;
   oshis: {
     id: string;
     name: string;
@@ -162,7 +162,7 @@ export default function FollowingFeed({
 
             avatar:
               post.profiles?.avatar_url ??
-              "/icons/temp.jpg",
+              null,
 
             oshis: (
               post.post_oshis ?? []
@@ -247,6 +247,7 @@ export default function FollowingFeed({
         <div key={post.id}>
           <Post
             id={post.id}
+            userId={post.user_id}
             username={post.username}
             avatar={post.avatar}
             images={parsePostImages(
@@ -266,6 +267,11 @@ export default function FollowingFeed({
             hashtags={post.hashtags}
             onCommentClick={() =>
               onCommentClick(post.id)
+            }
+            onDeleted={(postId) =>
+              setPosts((prev) =>
+                prev.filter((p) => p.id !== postId)
+              )
             }
             priority={index === 0}
           />
