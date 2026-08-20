@@ -347,6 +347,7 @@ export default function OshiPage() {
               </p>
             )}
 
+            {/*
             {oshi.fandom && (
               <div className="mt-4">
                 <p className="text-xs text-foreground/40">
@@ -358,7 +359,7 @@ export default function OshiPage() {
                 </p>
               </div>
             )}
-
+            */}
           </div>
 
         </div>

@@ -313,6 +313,7 @@ export default function AddOshiForm({
       </div>
 
       {/* Fandom */}
+      {/*
       <div className="space-y-2">
         <label
           htmlFor="oshi-fandom"
@@ -342,7 +343,7 @@ export default function AddOshiForm({
           "
         />
       </div>
-
+      */}
       {/* Notes */}
       <div className="space-y-2">
         <label

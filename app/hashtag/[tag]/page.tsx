@@ -138,7 +138,7 @@ export default function HashtagPage() {
   if (loading) {
     return (
       <div className="md:hidden min-h-screen bg-background">
-        <header className="sticky top-0 z-50 flex items-center border-b border-foreground/10 bg-background px-3 py-3">
+        <header className="sticky top-0 z-50 flex items-center border-b border-foreground/10 bg-background py-3">
           <button
             type="button"
             onClick={() => router.back()}
@@ -167,7 +167,7 @@ export default function HashtagPage() {
   if (!hashtag) {
     return (
       <div className="md:hidden min-h-screen bg-background">
-        <header className="sticky top-0 z-50 flex items-center border-b border-foreground/10 bg-background px-3 py-3">
+        <header className="sticky top-0 z-50 flex items-center border-b border-foreground/10 bg-background py-3">
           <button
             type="button"
             onClick={() => router.back()}
@@ -193,7 +193,7 @@ export default function HashtagPage() {
   return (
     <main className="md:hidden min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 flex items-center border-b border-foreground/10 bg-background px-3 py-3">
+      <header className="sticky top-0 z-50 flex items-center border-b border-foreground/10 bg-background  py-3">
         <button
           type="button"
           onClick={() => router.back()}
