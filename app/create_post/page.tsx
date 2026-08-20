@@ -880,6 +880,7 @@ export default function CreatePostPage() {
             prefix="#"
           />
 
+          {/*
           <TagInput
             label="Fandoms"
             placeholder="Add a fandom"
@@ -887,7 +888,7 @@ export default function CreatePostPage() {
             setItems={setFandoms}
             maxItems={5}
           />
-
+          */}
           {oshisLoading ? (
             <p className="text-sm text-foreground/50">
               Loading oshis...

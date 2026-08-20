@@ -3,43 +3,44 @@
 import { useEffect, useState } from "react";
 
 import { supabase } from "@/lib/supabase";
+import Link from "next/link";
 
-type FandomResult = {
+type HashtagResult = {
   id: string;
-  name: string;
+  tag: string;
 };
 
-type FandomResultsProps = {
+type HashtagResultsProps = {
   query?: string;
 };
 
-export default function FandomResults({
+export default function TagResults({
   query = "",
-}: FandomResultsProps) {
-  const [fandoms, setFandoms] = useState<FandomResult[]>(
-    []
-  );
+}: HashtagResultsProps) {
+  const [hashtags, setHashtags] = useState<
+    HashtagResult[]
+  >([]);
 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const term = query.trim();
+    const term = query.trim().replace(/^#/, "");
 
     if (!term) {
-      setFandoms([]);
+      setHashtags([]);
       setLoading(false);
       return;
     }
 
-    async function searchFandoms() {
+    async function searchHashtags() {
       setLoading(true);
 
       try {
         const { data, error } = await supabase
-          .from("fandoms")
-          .select("id, name")
-          .ilike("name", `%${term}%`)
-          .order("name", {
+          .from("hashtags")
+          .select("id, tag")
+          .ilike("tag", `%${term}%`)
+          .order("tag", {
             ascending: true,
           })
           .limit(20);
@@ -48,37 +49,37 @@ export default function FandomResults({
           throw error;
         }
 
-        setFandoms(data ?? []);
+        setHashtags(data ?? []);
       } catch (error) {
         console.error(
-          "Error searching fandoms:",
+          "Error searching hashtags:",
           error
         );
 
-        setFandoms([]);
+        setHashtags([]);
       } finally {
         setLoading(false);
       }
     }
 
-    searchFandoms();
+    searchHashtags();
   }, [query]);
 
   if (loading) {
     return (
       <div className="flex h-40 items-center justify-center">
         <p className="text-sm text-foreground/40">
-          Searching fandoms...
+          Searching hashtags...
         </p>
       </div>
     );
   }
 
-  if (fandoms.length === 0) {
+  if (hashtags.length === 0) {
     return (
       <div className="flex h-40 items-center justify-center">
         <p className="text-sm text-foreground/40">
-          No fandoms found for "{query}"
+          No hashtags found for "{query}"
         </p>
       </div>
     );
@@ -86,19 +87,18 @@ export default function FandomResults({
 
   return (
     <div className="px-2">
-      {fandoms.map((fandom) => (
-        <button
-          key={fandom.id}
-          type="button"
-          className="flex w-full items-center rounded-lg px-3 py-3 text-left"
+      {hashtags.map((hashtag) => (
+        <Link
+          key={hashtag.id}
+          href={`/hashtag/${encodeURIComponent(
+            hashtag.tag
+          )}`}
+          className="flex w-full items-center rounded-lg px-3 py-3"
         >
-
-          <div className="ml-3 min-w-0">
-            <p className="truncate text-base font-semibold">
-              {fandom.name}
-            </p>
-          </div>
-        </button>
+          <p className="truncate text-base font-semibold">
+            #{hashtag.tag}
+          </p>
+        </Link>
       ))}
     </div>
   );

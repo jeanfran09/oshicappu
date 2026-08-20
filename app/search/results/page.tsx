@@ -2,7 +2,7 @@
 
 import CreatePostButton from "@/components/CreatePostButton";
 import EventResults from "@/components/Search/EventResults";
-import FandomResults from "@/components/Search/FandomResults";
+import TagResults from "@/components/Search/TagResults";
 import PostResults from "@/components/Search/PostResults";
 import UserResults from "@/components/Search/UserResults";
 import { Search, ChevronLeft } from "lucide-react";
@@ -12,7 +12,7 @@ import { useState } from "react";
 type SearchTab =
   | "posts"
   | "users"
-  | "fandoms"
+  | "hashtag"
   | "events";
 
 export default function SearchResultsPage() {
@@ -50,8 +50,8 @@ export default function SearchResultsPage() {
       label: "Users",
     },
     {
-      id: "fandoms",
-      label: "Fandoms",
+      id: "hashtag",
+      label: "Hashtags",
     },
     {
       id: "events",
@@ -163,8 +163,8 @@ export default function SearchResultsPage() {
           <UserResults query={query} />
         )}
 
-        {activeTab === "fandoms" && (
-          <FandomResults query={query} />
+        {activeTab === "hashtag" && (
+          <TagResults query={query} />
         )}
 
         {activeTab === "events" && (
