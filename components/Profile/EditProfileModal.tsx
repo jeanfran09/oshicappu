@@ -240,6 +240,7 @@ export default function EditProfileModal({ onClose }: Props) {
               )}
             </div>
 
+            {/*<}
             {avatarPreview && (
               <button
                 type="button"
@@ -248,7 +249,8 @@ export default function EditProfileModal({ onClose }: Props) {
               >
                 <X size={13} />
               </button>
-            )}
+              )}
+            */}
 
             <button
               type="button"
@@ -283,7 +285,7 @@ export default function EditProfileModal({ onClose }: Props) {
             <input
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full rounded-xl border border-foreground/20 bg-transparent px-3 py-2 text-sm outline-none"
+              className="w-full rounded-xl border border-foreground/20 bg-transparent px-3 py-2 text-base outline-none"
               placeholder="Your name"
             />
           </div>
@@ -301,7 +303,7 @@ export default function EditProfileModal({ onClose }: Props) {
                     e.target.value.replace(/\s/g, "").toLowerCase()
                   )
                 }
-                className="w-full bg-transparent px-2 py-2 text-sm outline-none"
+                className="w-full bg-transparent px-2 py-2 text-base outline-none"
                 placeholder="username"
               />
             </div>
@@ -316,7 +318,7 @@ export default function EditProfileModal({ onClose }: Props) {
               onChange={(e) => setBio(e.target.value)}
               rows={4}
               maxLength={150}
-              className="w-full resize-none rounded-xl border border-foreground/20 bg-transparent px-3 py-2 text-sm outline-none"
+              className="w-full resize-none rounded-xl border border-foreground/20 bg-transparent px-3 py-2 text-base outline-none"
               placeholder="Tell people about yourself..."
             />
             <p className="mt-1 text-right text-xs text-foreground/40">
