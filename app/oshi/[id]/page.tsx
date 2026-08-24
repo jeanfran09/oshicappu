@@ -299,15 +299,15 @@ export default function OshiPage() {
 
 
       {/* Profile */}
-      <section className="px-4 pt-6">
+      <section className="px-4 pt-4 flex flex-col items-center text-center">
 
         <div className="flex items-center gap-5">
 
           {/* Oshi Image */}
           <div className="
             flex
-            h-24
-            w-24
+            h-40
+            w-40
             shrink-0
             items-center
             justify-center
@@ -331,10 +331,11 @@ export default function OshiPage() {
             )}
           </div>
 
-          {/* Basic Info */}
-          <div className="flex-1">
+        </div>
 
-            <h2 className="text-xl font-bold">
+        <div className="flex-1 pt-2">
+
+            <h2 className="text-2xl font-bold">
               {oshi.name}
             </h2>
 
@@ -362,16 +363,14 @@ export default function OshiPage() {
             */}
           </div>
 
-        </div>
-
 
         {/* Notes */}
         {oshi.notes && (
-          <div className="mt-5">
+          <div className="mt-1">
             <p className="
               whitespace-pre-wrap
               break-words
-              text-sm
+              text-base
               leading-relaxed
             ">
               {oshi.notes}
@@ -383,7 +382,7 @@ export default function OshiPage() {
 
 
       {/* Posts */}
-      <section className="mt-8">
+      <section className="mt-3">
 
         <div className="
           border-b
@@ -392,7 +391,7 @@ export default function OshiPage() {
           pb-3
         ">
           <h2 className="font-semibold">
-            Posts
+            Album
           </h2>
         </div>
 
