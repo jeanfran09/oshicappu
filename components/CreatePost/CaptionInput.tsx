@@ -48,7 +48,7 @@ export default function CaptionInput({
         bg-background
         p-4
         pb-8
-        text-sm
+        text-base
         outline-none
         transition
         focus:border-accent

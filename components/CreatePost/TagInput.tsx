@@ -105,7 +105,7 @@ export default function TagInput({
             className="
               px-4
               py-3
-              text-sm
+              text-base
               outline-none
               focus:border-accent
             "
@@ -141,7 +141,7 @@ export default function TagInput({
               bg-accent
               px-3
               py-1.5
-              text-sm
+              text-base
             "
           >
             <span>

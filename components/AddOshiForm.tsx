@@ -271,6 +271,7 @@ export default function AddOshiForm({
             border-foreground/10
             bg-accent/10
             px-4
+            text-base
             outline-none
             focus:border-accent
           "
@@ -287,8 +288,7 @@ export default function AddOshiForm({
         </label>
 
         <p className="text-xs text-foreground/60">
-          The date you started considering them
-          your oshi.
+          The date they became your oshi.
         </p>
 
         <input
@@ -306,6 +306,7 @@ export default function AddOshiForm({
             border-foreground/10
             bg-accent/10
             px-4
+            text-base
             outline-none
             focus:border-accent
           "
@@ -370,6 +371,7 @@ export default function AddOshiForm({
             bg-accent/10
             px-4
             py-3
+            text-base
             outline-none
             focus:border-accent
           "

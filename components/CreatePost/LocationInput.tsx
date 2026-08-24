@@ -35,7 +35,7 @@ export default function LocationInput({
             py-3
             pl-11
             pr-4
-            text-sm
+            text-base
             outline-none
             transition
             focus:border-accent
