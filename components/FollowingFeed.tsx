@@ -31,7 +31,7 @@ type PostData = {
 };
 
 type Props = {
-  onCommentClick: (postId: string) => void;
+  onCommentClick: (postId: string, ownerId: string) => void;
 };
 
 export default function FollowingFeed({
@@ -266,7 +266,7 @@ export default function FollowingFeed({
             fandoms={post.fandoms}
             hashtags={post.hashtags}
             onCommentClick={() =>
-              onCommentClick(post.id)
+              onCommentClick(post.id, post.user_id)
             }
             onDeleted={(postId) =>
               setPosts((prev) =>

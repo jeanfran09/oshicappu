@@ -21,6 +21,9 @@ export default function HomePage() {
   const { isLoggedIn, isLoading } = useSupabaseAuth();
   const router = useRouter();
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+  const [selectedPostOwnerId, setSelectedPostOwnerId] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     if (!isLoading && !isLoggedIn) {
@@ -40,8 +43,9 @@ export default function HomePage() {
     return null;
   }
 
-  function openComments(postId: string) {
+  function openComments(postId: string, ownerId: string) {
     setSelectedPostId(postId);
+    setSelectedPostOwnerId(ownerId);
   }
 
   return (
@@ -103,7 +107,11 @@ export default function HomePage() {
       {selectedPostId && (
         <CommentsSheet
           postId={selectedPostId}
-          onClose={() => setSelectedPostId(null)}
+          postOwnerId={selectedPostOwnerId ?? undefined}
+          onClose={() => {
+            setSelectedPostId(null);
+            setSelectedPostOwnerId(null);
+          }}
         />
       )}
       <CreatePostButton />

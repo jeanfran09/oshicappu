@@ -241,6 +241,7 @@ export default function PostPage() {
       {activeCommentsPostId && (
         <CommentsSheet
           postId={activeCommentsPostId}
+          postOwnerId={post.user_id}
           onClose={() => setActiveCommentsPostId(null)}
         />
       )}

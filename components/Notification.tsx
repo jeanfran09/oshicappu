@@ -1,15 +1,20 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Heart, MessageCircle, UserPlus } from "lucide-react";
+import { User as UserIcon } from "lucide-react";
 
 type NotificationType = "like" | "comment" | "follow";
 
 type NotificationProps = {
   type: NotificationType;
   username: string;
-  avatar: string;
+  avatar: string | null;
   content?: string;
   time: string;
-  image?: string; // post preview image
+  image?: string | null; // post preview image
+  read?: boolean;
+  onClick?: () => void;
 };
 
 export default function Notification({
@@ -19,7 +24,19 @@ export default function Notification({
   content,
   time,
   image,
+  read = true,
+  onClick,
 }: NotificationProps) {
+  const [avatarFailed, setAvatarFailed] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setAvatarFailed(false);
+  }, [avatar]);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [image]);
 
   const notificationText = {
     like: "liked your post",
@@ -27,19 +44,40 @@ export default function Notification({
     follow: "started following you",
   };
 
+  const showAvatar = !!avatar && !avatarFailed;
+  const showImage =
+    (type === "like" || type === "comment") &&
+    !!image &&
+    !imageFailed;
+
   return (
-    <div className="flex items-center gap-3 p-4">
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex w-full items-center gap-3 p-4 text-left ${
+        read ? "" : "bg-accent/15"
+      }`}
+    >
       {/* User Avatar */}
-      <Image
-        src={avatar}
-        alt={username}
-        width={48}
-        height={48}
-        className="rounded-full object-cover"
-      />
+      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-accent">
+        {showAvatar ? (
+          <Image
+            src={avatar as string}
+            alt={username}
+            fill
+            sizes="48px"
+            className="object-cover"
+            onError={() => setAvatarFailed(true)}
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center">
+            <UserIcon size={24} className="text-foreground/30" />
+          </div>
+        )}
+      </div>
 
       {/* Notification Content */}
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <p className="text-base">
           <span className="font-semibold">
             {username}
@@ -60,23 +98,18 @@ export default function Notification({
       </div>
 
       {/* Post Preview */}
-      {(type === "like" || type === "comment") && image && (
-        <Image
-          src={image}
-          alt="Post preview"
-          width={50}
-          height={50}
-          className="rounded-md aspect-square object-cover"
-        />
+      {showImage && (
+        <div className="relative h-[50px] w-[50px] shrink-0 overflow-hidden rounded-md">
+          <Image
+            src={image as string}
+            alt="Post preview"
+            fill
+            sizes="50px"
+            className="object-cover"
+            onError={() => setImageFailed(true)}
+          />
+        </div>
       )}
-
-      {/* Follow icon
-      {type === "follow" && (
-        <UserPlus
-          size={22}
-          className="text-foreground"
-        />
-      )} */}
-    </div>
+    </button>
   );
 }

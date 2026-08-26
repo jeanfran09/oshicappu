@@ -1,8 +1,10 @@
- "use client";
+"use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
+import { supabase } from "@/lib/supabase";
 import {
   Home,
   Search,
@@ -15,7 +17,48 @@ import {
 export default function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
-  const { isLoggedIn } = useSupabaseAuth();
+  const { isLoggedIn, user } = useSupabaseAuth();
+
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) {
+      setUnreadCount(0);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function fetchUnreadCount() {
+      const { count, error } = await supabase
+        .from("notifications")
+        .select("id", {
+          count: "exact",
+          head: true,
+        })
+        .eq("recipient_id", user!.id)
+        .eq("read", false);
+
+      if (!cancelled) {
+        if (error) {
+          console.error(
+            "Error fetching unread notifications count:",
+            error
+          );
+        } else {
+          setUnreadCount(count ?? 0);
+        }
+      }
+    }
+
+    fetchUnreadCount();
+
+    return () => {
+      cancelled = true;
+    };
+    // Re-check whenever the person navigates (e.g. after
+    // visiting /notifs, which marks everything read).
+  }, [user, pathname]);
 
   const handleNav = (href: string) => {
     if (!isLoggedIn) {
@@ -70,7 +113,7 @@ export default function BottomNav() {
         />
       </Link>
 
-      <Link href="/notifs" onClick={() => handleNav("/notifs")}>
+      <Link href="/notifs" onClick={() => handleNav("/notifs")} className="relative">
         <Bell
           size={24}
           fill={
@@ -79,6 +122,12 @@ export default function BottomNav() {
               : "none"
           }
         />
+
+        {unreadCount > 0 && (
+          <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
+        )}
       </Link>
 
       <Link href="/profile" onClick={() => handleNav("/profile")}>

@@ -136,6 +136,26 @@ export default function Post({
             });
 
           if (error) throw error;
+
+          // Notify the post owner, unless they're liking their own post.
+          if (userId && userId !== user.id) {
+            void supabase
+              .from("notifications")
+              .insert({
+                recipient_id: userId,
+                sender_id: user.id,
+                type: "like",
+                entity_id: id,
+              })
+              .then(({ error: notificationError }) => {
+                if (notificationError) {
+                  console.error(
+                    "Error creating like notification:",
+                    notificationError
+                  );
+                }
+              });
+          }
         } else {
           const { error } = await supabase
             .from("likes")

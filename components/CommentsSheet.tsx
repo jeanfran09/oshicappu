@@ -36,12 +36,14 @@ type UserProfile = {
 
 type Props = {
   postId: string;
+  postOwnerId?: string;
   onClose: () => void;
   size?: "small" | "large";
 };
 
 export default function CommentsSheet({
   postId,
+  postOwnerId,
   onClose,
   size = "large",
 }: Props) {
@@ -291,6 +293,8 @@ export default function CommentsSheet({
 
     setPosting(true);
 
+    const commentText = newComment.trim();
+
     /*
      * Keep replies to one level.
      */
@@ -299,12 +303,21 @@ export default function CommentsSheet({
       replyingTo?.id ??
       null;
 
+    /*
+     * Who to notify: the person being replied to for a reply,
+     * otherwise the post's owner for a top-level comment. Never
+     * notify yourself.
+     */
+    const notifyUserId = replyingTo
+      ? replyingTo.user_id
+      : postOwnerId;
+
     const { error } = await supabase
       .from("comments")
       .insert({
         post_id: postId,
         user_id: user.id,
-        comment_text: newComment.trim(),
+        comment_text: commentText,
         parent_comment_id: parentCommentId,
       });
 
@@ -319,6 +332,26 @@ export default function CommentsSheet({
 
       if (textareaRef.current) {
         textareaRef.current.style.height = "auto";
+      }
+
+      if (notifyUserId && notifyUserId !== user.id) {
+        void supabase
+          .from("notifications")
+          .insert({
+            recipient_id: notifyUserId,
+            sender_id: user.id,
+            type: "comment",
+            entity_id: postId,
+            content: commentText.slice(0, 140),
+          })
+          .then(({ error: notificationError }) => {
+            if (notificationError) {
+              console.error(
+                "Error creating comment notification:",
+                notificationError
+              );
+            }
+          });
       }
 
       await fetchComments();

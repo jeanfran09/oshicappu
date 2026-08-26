@@ -147,6 +147,7 @@ export default function PostModal({
       {activeCommentsPostId && (
         <CommentsSheet
           postId={activeCommentsPostId}
+          postOwnerId={ownerId}
           onClose={() => setActiveCommentsPostId(null)}
         />
       )}
