@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { User as UserIcon } from "lucide-react";
 
 type NotificationType = "like" | "comment" | "follow";
@@ -12,7 +13,7 @@ type NotificationProps = {
   avatar: string | null;
   content?: string;
   time: string;
-  image?: string | null; // post preview image
+  image?: string | null;
   read?: boolean;
   onClick?: () => void;
 };
@@ -45,21 +46,41 @@ export default function Notification({
   };
 
   const showAvatar = !!avatar && !avatarFailed;
+
   const showImage =
     (type === "like" || type === "comment") &&
     !!image &&
     !imageFailed;
 
+  const handleNotificationClick = (
+    e: React.MouseEvent<HTMLDivElement>
+  ) => {
+    // Don't trigger the notification click
+    // when clicking the username.
+    if (
+      (e.target as HTMLElement).closest(
+        "[data-profile-link]"
+      )
+    ) {
+      return;
+    }
+
+    onClick?.();
+  };
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex w-full items-center gap-3 p-4 text-left ${
+    <div
+      onClick={handleNotificationClick}
+      className={`flex w-full items-center gap-3 p-4 ${
         read ? "" : "bg-accent/15"
       }`}
     >
       {/* User Avatar */}
-      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-accent">
+      <Link
+        href={`/profile/${username}`}
+        data-profile-link
+        className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-accent"
+      >
         {showAvatar ? (
           <Image
             src={avatar as string}
@@ -71,24 +92,29 @@ export default function Notification({
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
-            <UserIcon size={24} className="text-foreground/30" />
+            <UserIcon
+              size={24}
+              className="text-foreground/30"
+            />
           </div>
         )}
-      </div>
+      </Link>
 
       {/* Notification Content */}
       <div className="min-w-0 flex-1">
         <p className="text-base leading-tight line-clamp-3">
-          <span className="font-semibold">
+          <Link
+            href={`/profile/${username}`}
+            data-profile-link
+            className="font-semibold hover:underline"
+          >
             {username}
-          </span>{" "}
+          </Link>{" "}
           {notificationText[type]}
 
           {/* Comment text */}
           {type === "comment" && content && (
-            <span>
-              : {content}
-            </span>
+            <span>: {content}</span>
           )}
         </p>
 
@@ -110,6 +136,6 @@ export default function Notification({
           />
         </div>
       )}
-    </button>
+    </div>
   );
 }
