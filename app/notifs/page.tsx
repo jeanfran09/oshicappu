@@ -203,7 +203,7 @@ export default function NotifsPage() {
         <Divider/>
       </header>
       <PullToRefresh onRefresh={fetchNotifications}>
-        <div className="pb-16">
+        <div className="pb-16 min-h-[80vh]">
           {loading ? (
             <p className="p-4 text-center text-sm text-foreground/40">
               Loading...

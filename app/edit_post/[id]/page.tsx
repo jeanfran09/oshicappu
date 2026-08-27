@@ -678,7 +678,7 @@ export default function EditPostPage() {
           pt-4
         "
       >
-        <h1 className="text-2xl">
+        <h1 className="text-xl font-bold">
           Edit Post
         </h1>
 

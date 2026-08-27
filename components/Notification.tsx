@@ -78,23 +78,23 @@ export default function Notification({
 
       {/* Notification Content */}
       <div className="min-w-0 flex-1">
-        <p className="text-base">
+        <p className="text-base leading-tight line-clamp-3">
           <span className="font-semibold">
             {username}
           </span>{" "}
           {notificationText[type]}
+
+          {/* Comment text */}
+          {type === "comment" && content && (
+            <span>
+              : {content}
+            </span>
+          )}
         </p>
 
-        {/* Comment text */}
-        {type === "comment" && content && (
-          <p className="text-base text-gray-500 line-clamp-1">
-            {content}
-          </p>
-        )}
-
-        <p className="text-xs text-gray-400">
+        <span className="text-xs text-gray-400">
           {time}
-        </p>
+        </span>
       </div>
 
       {/* Post Preview */}

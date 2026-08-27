@@ -808,7 +808,7 @@ export default function CreatePostPage() {
           border-foreground/30
         "
       >
-        <h1 className="text-2xl">
+        <h1 className="text-xl font-bold">
           Create Post
         </h1>
 

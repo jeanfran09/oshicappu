@@ -268,7 +268,7 @@ export default function OshiPage() {
         </button>
 
         {/* Title */}
-        <h1 className="font-semibold">
+        <h1 className="text-lg font-semibold">
           {oshi.name}
         </h1>
 
