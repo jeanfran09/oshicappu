@@ -31,7 +31,7 @@ export default function TagInput({
     if (!text) return;
 
     if (prefix === "#") {
-        text = text.replace(/^#/, "");
+        text = text.replace(/^#/, "").replace(/\s+/g, "");
     }
 
 
@@ -77,12 +77,12 @@ export default function TagInput({
   }
 
   return (
-    <div className="space-y-3">
+    <div>
       <label className="text-sm font-semibold">
         {label}
       </label>
 
-      <div className="flex gap-2 ">
+      <div className="flex gap-2 pb-2">
         <div className="flex w-full items-center rounded-xl border border-foreground/25">
           {label === "Hashtags" && (
             <span className="pl-5 text-base text-foreground/40">#</span>
@@ -129,14 +129,14 @@ export default function TagInput({
         </button>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap">
         {items.map((item) => (
           <div
             key={item}
             className="
               flex
               items-center
-              gap-2
+              mb-1 mr-1
               rounded-full
               bg-accent
               px-3
