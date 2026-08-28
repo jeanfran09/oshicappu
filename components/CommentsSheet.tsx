@@ -180,7 +180,7 @@ export default function CommentsSheet({
       )
       .eq("post_id", postId)
       .order("created_at", {
-        ascending: true,
+        ascending: false,
       });
 
     if (error) {
@@ -611,7 +611,7 @@ export default function CommentsSheet({
                           </Link>
 
                           {/* Time */}
-                          <p className="shrink-0 text-base text-foreground/40">
+                          <p className="shrink-0 text-sm leading-none text-foreground/50 translate-y-[1px]">
                             {formatCommentTime(
                               c.created_at
                             )}
@@ -619,7 +619,7 @@ export default function CommentsSheet({
 
                           {/* Edited */}
                           {isEdited && (
-                            <span className="shrink-0 text-sm text-foreground/40">
+                            <span className="shrink-0 text-sm leading-none text-foreground/50 translate-y-[1px]">
                               Edited
                             </span>
                           )}
