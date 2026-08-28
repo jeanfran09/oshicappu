@@ -1,28 +1,31 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
-import { LogOut, User as UserIcon } from "lucide-react";
-import Image from "next/image";
 import { useEffect, useState } from "react";
+import Image from "next/image";
+import { LogOut, User as UserIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
+import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
 import CreatePostButton from "@/components/CreatePostButton";
 import OshiList from "@/components/Profile/OshiList";
 import BottomSheet from "@/components/BottomSheet";
 import ProfileTabs from "@/components/Profile/ProfileTabs";
 import PullToRefresh from "@/components/PullToRefresh";
 import PostGrid from "@/components/Profile/PostGrid";
-import PostModal from "@/components/Profile/PostModal";
+import PostModal, {
+  type ProfilePost,
+} from "@/components/Profile/PostModal";
 import EditProfileModal from "@/components/Profile/EditProfileModal";
 import AddOshiForm from "@/components/AddOshiForm";
 import ImageCropper from "@/components/CreatePost/ImageCropper";
 import type { Oshi } from "@/components/CreatePost/OshiPicker";
+import UserList from "@/components/UserList";
+
 import {
   formatTimeAgo,
   parsePostImages,
 } from "@/utils/formatNumber";
-import UserList from "@/components/UserList";
-import { AnimatePresence } from "framer-motion";
 
 interface Post {
   id: string;
@@ -45,11 +48,6 @@ interface Post {
   hashtags: string[];
 }
 
-interface LikedPost {
-  id: string;
-  image: string | null;
-}
-
 export default function ProfilePage() {
   const {
     user,
@@ -61,106 +59,66 @@ export default function ProfilePage() {
 
   const router = useRouter();
 
-  const [userListType, setUserListType] =
-    useState<
-      "followers" | "following" | null
-    >(null);
+  const [userListType, setUserListType] = useState<
+    "followers" | "following" | null
+  >(null);
 
   const [posts, setPosts] = useState<Post[]>([]);
-  const [loadingPosts, setLoadingPosts] =
-    useState(true);
+  const [oshis, setOshis] = useState<Oshi[]>([]);
+  const [oshisLoading, setOshisLoading] = useState(true);
 
-  const [showBottomSheet, setShowBottomSheet] =
-    useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
 
-  const [activeTab, setActiveTab] =
-    useState<
-      "posts" | "saved" | "liked"
-    >("posts");
+  const [activeTab, setActiveTab] = useState<
+    "posts" | "saved" | "liked"
+  >("posts");
 
   const [selectedPostId, setSelectedPostId] =
     useState<string | null>(null);
 
+  const [showBottomSheet, setShowBottomSheet] =
+    useState(false);
+
   const [showEditProfile, setShowEditProfile] =
     useState(false);
 
-  const [oshis, setOshis] = useState<Oshi[]>([]);
-  const [oshisLoading, setOshisLoading] =
-    useState(true);
-
-  const [followersCount, setFollowersCount] =
-    useState(0);
-
-  const [followingCount, setFollowingCount] =
-    useState(0);
-
-  /*
-   * Liked Posts
-   *
-   * These are only fetched the first time
-   * the Liked tab is opened.
-   */
   const [likedPosts, setLikedPosts] =
-    useState<LikedPost[]>([]);
+    useState<ProfilePost[]>([]);
 
   const [likedPostsLoaded, setLikedPostsLoaded] =
     useState(false);
 
-  const [loadingLikedPosts, setLoadingLikedPosts] =
-    useState(false);
-
-  /*
-   * Oshi cropper state
-   */
-  const [showCropper, setShowCropper] =
-    useState(false);
-
+  const [showCropper, setShowCropper] = useState(false);
   const [cropImage, setCropImage] =
     useState<string | null>(null);
 
   const [croppedOshiImage, setCroppedOshiImage] =
     useState<File | null>(null);
 
-  /*
-   * User posts for PostGrid
-   */
   const userPosts = posts.map((post) => ({
     id: post.id,
-    image:
-      parsePostImages(
-        post.image_url
-      )[0] ?? null,
+    image: parsePostImages(post.image_url)[0] ?? null,
   }));
 
-  /*
-   * Posts for PostModal
-   */
-  const profileFeedPosts = posts.map(
+  const profileFeedPosts: ProfilePost[] = posts.map(
     (post) => ({
       id: post.id,
-      images: parsePostImages(
-        post.image_url
-      ),
+      images: parsePostImages(post.image_url),
       caption: post.content,
-      time: formatTimeAgo(
-        post.created_at
-      ),
-      location:
-        post.location ?? undefined,
+      time: formatTimeAgo(post.created_at),
+      location: post.location ?? undefined,
       likes: post.likes_count,
       comments: post.comments_count,
       oshis: post.oshis,
       fandoms: post.fandoms,
       hashtags: post.hashtags,
+      username: profile?.username ?? "username",
+      avatar: profile?.avatar_url ?? null,
+      userId: post.user_id,
     })
   );
 
-  /*
-   * Saved Posts
-   *
-   * Replace this with your saved-post
-   * fetching logic later.
-   */
   const savedPosts = [
     {
       id: "3",
@@ -168,74 +126,42 @@ export default function ProfilePage() {
     },
   ];
 
-  /*
-   * Redirect if not logged in
-   */
   useEffect(() => {
-    if (
-      !isLoading &&
-      !isLoggedIn
-    ) {
+    if (!isLoading && !isLoggedIn) {
       router.push("/login");
     }
-  }, [
-    isLoggedIn,
-    isLoading,
-    router,
-  ]);
+  }, [isLoggedIn, isLoading, router]);
 
-  /*
-   * Initial profile data
-   */
   useEffect(() => {
-    if (user) {
-      fetchUserPosts();
-      fetchUserOshis();
-      fetchFollowCounts();
-    }
+    if (!user) return;
+
+    fetchUserPosts();
+    fetchUserOshis();
+    fetchFollowCounts();
   }, [user]);
 
-  /*
-   * Fetch liked posts ONLY the first time
-   * the Liked tab is opened.
-   */
   useEffect(() => {
     if (
-      activeTab !== "liked" ||
-      likedPostsLoaded ||
-      !user
+      activeTab === "liked" &&
+      user &&
+      !likedPostsLoaded
     ) {
-      return;
+      fetchLikedPosts();
     }
+  }, [activeTab, user, likedPostsLoaded]);
 
-    fetchLikedPosts();
-  }, [
-    activeTab,
-    user,
-    likedPostsLoaded,
-  ]);
+  const fetchFollowCounts = async () => {
+    if (!user) return;
 
-  /*
-   * Fetch follower/following counts
-   */
-  const fetchFollowCounts =
-    async () => {
-      if (!user) return;
-
-      const [
-        followersRes,
-        followingRes,
-      ] = await Promise.all([
+    const [followersRes, followingRes] =
+      await Promise.all([
         supabase
           .from("follows")
           .select("id", {
             count: "exact",
             head: true,
           })
-          .eq(
-            "following_id",
-            user.id
-          ),
+          .eq("following_id", user.id),
 
         supabase
           .from("follows")
@@ -243,106 +169,155 @@ export default function ProfilePage() {
             count: "exact",
             head: true,
           })
-          .eq(
-            "follower_id",
-            user.id
-          ),
+          .eq("follower_id", user.id),
       ]);
 
-      if (followersRes.error) {
-        console.error(
-          "Error fetching followers count:",
-          followersRes.error
-        );
-      } else {
-        setFollowersCount(
-          followersRes.count ?? 0
-        );
+    if (followersRes.error) {
+      console.error(
+        "Error fetching followers count:",
+        followersRes.error
+      );
+    } else {
+      setFollowersCount(followersRes.count ?? 0);
+    }
+
+    if (followingRes.error) {
+      console.error(
+        "Error fetching following count:",
+        followingRes.error
+      );
+    } else {
+      setFollowingCount(followingRes.count ?? 0);
+    }
+  };
+
+  const fetchUserOshis = async () => {
+    if (!user) return;
+
+    setOshisLoading(true);
+
+    try {
+      const { data, error } = await supabase
+        .from("oshis")
+        .select("id, name, image_url")
+        .eq("user_id", user.id)
+        .order("created_at", {
+          ascending: true,
+        });
+
+      if (error) {
+        console.error("Error fetching oshis:", error);
+        return;
       }
 
-      if (followingRes.error) {
-        console.error(
-          "Error fetching following count:",
-          followingRes.error
-        );
-      } else {
-        setFollowingCount(
-          followingRes.count ?? 0
-        );
+      setOshis(
+        (data ?? []).map((oshi) => ({
+          id: oshi.id,
+          name: oshi.name,
+          image: oshi.image_url ?? "",
+        }))
+      );
+    } finally {
+      setOshisLoading(false);
+    }
+  };
+
+  const fetchUserPosts = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("posts")
+        .select(
+          `
+          *,
+          likes(count),
+          comments(count),
+          post_oshis(oshis(id, name, image_url)),
+          post_fandoms(fandoms(id, name)),
+          post_hashtags(hashtags(tag))
+          `
+        )
+        .eq("user_id", user.id)
+        .order("created_at", {
+          ascending: false,
+        });
+
+      if (error) {
+        console.error("Error fetching posts:", error);
+        return;
       }
-    };
 
-  /*
-   * Fetch user's Oshis
-   */
-  const fetchUserOshis =
-    async () => {
-      if (!user) return;
+      setPosts(
+        (data ?? []).map((post: any) => ({
+          id: post.id,
+          user_id: post.user_id,
+          content: post.content,
+          image_url: post.image_url,
+          created_at: post.created_at,
+          location: post.location,
 
-      try {
-        setOshisLoading(true);
+          likes_count:
+            post.likes?.[0]?.count ?? 0,
 
-        const {
-          data,
-          error,
-        } = await supabase
-          .from("oshis")
-          .select(
-            "id, name, image_url"
-          )
-          .eq(
-            "user_id",
-            user.id
-          )
-          .order(
-            "created_at",
-            {
-              ascending: true,
-            }
-          );
+          comments_count:
+            post.comments?.[0]?.count ?? 0,
 
-        if (error) {
-          console.error(
-            "Error fetching oshis:",
-            error
-          );
-        } else {
-          setOshis(
-            (data ?? []).map(
-              (o) => ({
-                id: o.id,
-                name: o.name,
-                image:
-                  o.image_url ??
-                  "",
-              })
-            )
-          );
-        }
-      } catch (error) {
+          oshis: (post.post_oshis ?? []).map(
+            (item: any) => ({
+              id: item.oshis.id,
+              name: item.oshis.name,
+              image:
+                item.oshis.image_url ?? "",
+            })
+          ),
+
+          fandoms: (post.post_fandoms ?? []).map(
+            (item: any) => ({
+              id: item.fandoms.id,
+              name: item.fandoms.name,
+            })
+          ),
+
+          hashtags: (post.post_hashtags ?? []).map(
+            (item: any) => item.hashtags.tag
+          ),
+        }))
+      );
+    } catch (error) {
+      console.error("Error fetching posts:", error);
+    }
+  };
+
+  const fetchLikedPosts = async () => {
+    if (!user) return;
+
+    try {
+      const { data: likedRows, error: likesError } =
+        await supabase
+          .from("likes")
+          .select("post_id")
+          .eq("user_id", user.id);
+
+      if (likesError) {
         console.error(
-          "Error fetching oshis:",
-          error
+          "Error fetching liked posts:",
+          likesError
         );
-      } finally {
-        setOshisLoading(false);
+        return;
       }
-    };
 
-  /*
-   * Fetch user's posts
-   */
-  const fetchUserPosts =
-    async () => {
-      if (!user) return;
+      const postIds =
+        likedRows?.map((row) => row.post_id) ?? [];
 
-      try {
-        setLoadingPosts(true);
+      if (postIds.length === 0) {
+        setLikedPosts([]);
+        setLikedPostsLoaded(true);
+        return;
+      }
 
-        const {
-          data,
-          error,
-        } = await supabase
+      const { data: postData, error: postsError } =
+        await supabase
           .from("posts")
           .select(
             `
@@ -354,318 +329,180 @@ export default function ProfilePage() {
             post_hashtags(hashtags(tag))
             `
           )
-          .eq(
-            "user_id",
-            user.id
-          )
-          .order(
-            "created_at",
-            {
-              ascending: false,
-            }
-          );
+          .in("id", postIds)
+          .order("created_at", {
+            ascending: false,
+          });
 
-        if (error) {
-          console.error(
-            "Error fetching posts:",
-            error
-          );
-        } else {
-          setPosts(
-            (data || []).map(
-              (post: any) => ({
-                id: post.id,
-                user_id:
-                  post.user_id,
-                content:
-                  post.content,
-                image_url:
-                  post.image_url,
-                created_at:
-                  post.created_at,
-                location:
-                  post.location,
-
-                likes_count:
-                  post.likes?.[0]
-                    ?.count ?? 0,
-
-                comments_count:
-                  post.comments?.[0]
-                    ?.count ?? 0,
-
-                oshis: (
-                  post.post_oshis ??
-                  []
-                ).map(
-                  (po: any) => ({
-                    id: po.oshis.id,
-                    name:
-                      po.oshis.name,
-                    image:
-                      po.oshis
-                        .image_url ??
-                      "",
-                  })
-                ),
-
-                fandoms: (
-                  post.post_fandoms ??
-                  []
-                ).map(
-                  (pf: any) => ({
-                    id:
-                      pf.fandoms.id,
-                    name:
-                      pf.fandoms.name,
-                  })
-                ),
-
-                hashtags: (
-                  post.post_hashtags ??
-                  []
-                ).map(
-                  (ph: any) =>
-                    ph.hashtags
-                      .tag
-                ),
-              })
-            )
-          );
-        }
-      } catch (error) {
+      if (postsError) {
         console.error(
-          "Error fetching posts:",
-          error
+          "Error fetching liked posts:",
+          postsError
         );
-      } finally {
-        setLoadingPosts(false);
-      }
-    };
-
-  /*
-   * Fetch posts liked by the current user.
-   *
-   * This is called only once per page load,
-   * when the user first opens the Liked tab.
-   */
-  const fetchLikedPosts =
-    async () => {
-      if (
-        !user ||
-        likedPostsLoaded
-      ) {
         return;
       }
 
-      try {
-        setLoadingLikedPosts(true);
+      const fetchedPosts = postData ?? [];
 
-        /*
-         * Get all post IDs liked
-         * by the current user.
-         */
-        const {
-          data: likesData,
-          error: likesError,
-        } = await supabase
-          .from("likes")
-          .select("post_id")
-          .eq(
-            "user_id",
-            user.id
-          );
-
-        if (likesError) {
-          console.error(
-            "Error fetching liked posts:",
-            likesError
-          );
-
-          return;
-        }
-
-        const postIds =
-          (likesData ?? []).map(
-            (like) =>
-              like.post_id
-          );
-
-        if (
-          postIds.length === 0
-        ) {
-          setLikedPosts([]);
-          setLikedPostsLoaded(true);
-          return;
-        }
-
-        /*
-         * Fetch the actual posts.
-         */
-        const {
-          data: postsData,
-          error: postsError,
-        } = await supabase
-          .from("posts")
-          .select(
-            "id, image_url, created_at"
+      const posterIds = [
+        ...new Set(
+          fetchedPosts.map(
+            (post: any) => post.user_id
           )
-          .in(
-            "id",
-            postIds
-          )
-          .order(
-            "created_at",
-            {
-              ascending: false,
-            }
-          );
+        ),
+      ];
 
-        if (postsError) {
-          console.error(
-            "Error fetching liked post details:",
-            postsError
-          );
+      const { data: profiles, error: profilesError } =
+        await supabase
+          .from("profiles")
+          .select("id, username, avatar_url")
+          .in("id", posterIds);
 
-          return;
-        }
-
-        setLikedPosts(
-          (postsData ?? []).map(
-            (post) => ({
-              id: post.id,
-              image:
-                parsePostImages(
-                  post.image_url
-                )[0] ?? null,
-            })
-          )
-        );
-
-        setLikedPostsLoaded(true);
-      } catch (error) {
+      if (profilesError) {
         console.error(
-          "Error fetching liked posts:",
-          error
+          "Error fetching poster profiles:",
+          profilesError
         );
-      } finally {
-        setLoadingLikedPosts(false);
+        return;
       }
-    };
 
-  /*
-   * Logout
-   */
-  const handleLogout =
-    async () => {
-      await logout();
-      router.push("/login");
-    };
-
-  /*
-   * Open Oshi cropper
-   */
-  const handleOpenOshiCropper =
-    (
-      imageUrl: string
-    ) => {
-      setCropImage(imageUrl);
-      setShowCropper(true);
-    };
-
-  /*
-   * Crop completed
-   */
-  const handleOshiCropComplete =
-    (
-      croppedFile: File
-    ) => {
-      setCroppedOshiImage(
-        croppedFile
+      const profileMap = new Map(
+        (profiles ?? []).map((poster) => [
+          poster.id,
+          poster,
+        ])
       );
 
-      setShowCropper(false);
+      const formattedPosts: ProfilePost[] =
+        fetchedPosts.map((post: any) => {
+          const poster = profileMap.get(
+            post.user_id
+          );
 
-      if (cropImage) {
-        URL.revokeObjectURL(
-          cropImage
-        );
-      }
+          return {
+            id: post.id,
+            images: parsePostImages(
+              post.image_url
+            ),
+            caption: post.content,
+            time: formatTimeAgo(
+              post.created_at
+            ),
+            location:
+              post.location ?? undefined,
 
-      setCropImage(null);
-    };
+            likes:
+              post.likes?.[0]?.count ?? 0,
 
-  /*
-   * Cancel cropping
-   */
-  const handleCancelOshiCropper =
-    () => {
-      if (cropImage) {
-        URL.revokeObjectURL(
-          cropImage
-        );
-      }
+            comments:
+              post.comments?.[0]?.count ?? 0,
 
-      setCropImage(null);
-      setShowCropper(false);
-    };
+            oshis: (
+              post.post_oshis ?? []
+            ).map((item: any) => ({
+              id: item.oshis.id,
+              name: item.oshis.name,
+              image:
+                item.oshis.image_url ?? "",
+            })),
 
-  /*
-   * Completely close/reset
-   * the Add Oshi flow.
-   */
-  const resetOshiForm =
-    () => {
-      setShowBottomSheet(
-        false
+            fandoms: (
+              post.post_fandoms ?? []
+            ).map((item: any) => ({
+              id: item.fandoms.id,
+              name: item.fandoms.name,
+            })),
+
+            hashtags: (
+              post.post_hashtags ?? []
+            ).map(
+              (item: any) =>
+                item.hashtags.tag
+            ),
+
+            username:
+              poster?.username ?? "username",
+
+            avatar:
+              poster?.avatar_url ?? null,
+
+            userId: post.user_id,
+          };
+        });
+
+      setLikedPosts(formattedPosts);
+      setLikedPostsLoaded(true);
+    } catch (error) {
+      console.error(
+        "Error fetching liked posts:",
+        error
       );
+    }
+  };
 
-      setCroppedOshiImage(
-        null
-      );
+  const handleLogout = async () => {
+    await logout();
+    router.push("/login");
+  };
 
-      if (cropImage) {
-        URL.revokeObjectURL(
-          cropImage
-        );
-      }
+  const handleOpenOshiCropper = (
+    imageUrl: string
+  ) => {
+    setCropImage(imageUrl);
+    setShowCropper(true);
+  };
 
-      setCropImage(null);
-      setShowCropper(false);
-    };
+  const handleOshiCropComplete = (
+    croppedFile: File
+  ) => {
+    setCroppedOshiImage(croppedFile);
+    setShowCropper(false);
 
-  /*
-   * Refresh profile
-   */
-  const refreshFeed =
-    async () => {
-      if (!user) return;
+    if (cropImage) {
+      URL.revokeObjectURL(cropImage);
+    }
 
-      await Promise.all([
-        fetchUserPosts(),
-        fetchUserOshis(),
-        fetchFollowCounts(),
-      ]);
+    setCropImage(null);
+  };
 
-      /*
-       * If liked posts have already been
-       * loaded, refresh them too.
-       *
-       * Resetting this flag allows the next
-       * fetch to get the latest data.
-       */
-      if (likedPostsLoaded) {
-        setLikedPostsLoaded(false);
-        await fetchLikedPosts();
-      }
-    };
+  const handleCancelOshiCropper = () => {
+    if (cropImage) {
+      URL.revokeObjectURL(cropImage);
+    }
 
-  /*
-   * Loading
-   */
+    setCropImage(null);
+    setShowCropper(false);
+  };
+
+  const resetOshiForm = () => {
+    setShowBottomSheet(false);
+    setCroppedOshiImage(null);
+
+    if (cropImage) {
+      URL.revokeObjectURL(cropImage);
+    }
+
+    setCropImage(null);
+    setShowCropper(false);
+  };
+
+  const refreshFeed = async () => {
+    if (!user) return;
+
+    await Promise.all([
+      fetchUserPosts(),
+      fetchUserOshis(),
+      fetchFollowCounts(),
+    ]);
+
+    if (likedPostsLoaded) {
+      await fetchLikedPosts();
+    }
+  };
+
   if (isLoading) {
     return (
-      <div className="md:hidden min-h-screen flex flex-col items-center justify-center">
+      <div className="md:hidden min-h-screen flex items-center justify-center">
         <p className="text-foreground">
           Loading...
         </p>
@@ -673,46 +510,35 @@ export default function ProfilePage() {
     );
   }
 
-  if (
-    !isLoggedIn ||
-    !user
-  ) {
+  if (!isLoggedIn || !user) {
     return null;
   }
 
+  const selectedLikedPost =
+    likedPosts.find(
+      (post) => post.id === selectedPostId
+    );
+
   return (
     <div className="md:hidden min-h-screen flex flex-col">
-
-      {/* Header */}
       <header className="sticky top-0 z-50 flex items-center justify-between border-b border-foreground/10 bg-background px-4 py-3">
         <h1 className="absolute left-1/2 -translate-x-1/2 text-lg font-semibold">
-          {profile?.username ??
-            "username"}
+          {profile?.username ?? "username"}
         </h1>
 
         <button
-          onClick={
-            handleLogout
-          }
+          onClick={handleLogout}
           className="ml-auto flex h-9 w-9 items-center justify-center"
         >
           <LogOut size={22} />
         </button>
       </header>
 
-      <PullToRefresh
-        onRefresh={
-          refreshFeed
-        }
-      >
-
-        {/* Banner */}
+      <PullToRefresh onRefresh={refreshFeed}>
         {profile?.banner_url && (
           <div className="relative h-32 w-full bg-accent/20">
             <Image
-              src={
-                profile.banner_url
-              }
+              src={profile.banner_url}
               alt="Profile banner"
               fill
               className="object-cover"
@@ -720,41 +546,24 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* Profile Content */}
         <div className="px-4">
-
           <div
-            className={`
-              flex items-center gap-6
-              ${
-                profile?.banner_url
-                  ? "relative z-10 -mt-12"
-                  : "mt-5"
-              }
-            `}
+            className={`flex items-center gap-6 ${
+              profile?.banner_url
+                ? "relative z-10 -mt-12"
+                : "mt-5"
+            }`}
           >
-
-            {/* Profile Avatar */}
             <div
-              className={`
-                h-24
-                w-24
-                shrink-0
-                overflow-hidden
-                rounded-full
-                bg-accent
-                ${
-                  profile?.banner_url
-                    ? "border-4 border-background"
-                    : ""
-                }
-              `}
+              className={`h-24 w-24 shrink-0 overflow-hidden rounded-full bg-accent ${
+                profile?.banner_url
+                  ? "border-4 border-background"
+                  : ""
+              }`}
             >
               {profile?.avatar_url ? (
                 <Image
-                  src={
-                    profile.avatar_url
-                  }
+                  src={profile.avatar_url}
                   alt={`${profile.display_name}'s avatar`}
                   width={96}
                   height={96}
@@ -771,17 +580,13 @@ export default function ProfilePage() {
             </div>
 
             <div
-              className={`
-                flex-1
-                ${
-                  profile?.banner_url
-                    ? "translate-y-8"
-                    : ""
-                }
-              `}
+              className={`flex-1 ${
+                profile?.banner_url
+                  ? "translate-y-8"
+                  : ""
+              }`}
             >
               <div className="flex justify-around">
-
                 <div className="text-center">
                   <p className="font-semibold">
                     {posts.length}
@@ -794,16 +599,12 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={() =>
-                    setUserListType(
-                      "followers"
-                    )
+                    setUserListType("followers")
                   }
                   className="text-center"
                 >
                   <p className="font-semibold">
-                    {
-                      followersCount
-                    }
+                    {followersCount}
                   </p>
                   <p className="text-xs">
                     Followers
@@ -813,52 +614,38 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={() =>
-                    setUserListType(
-                      "following"
-                    )
+                    setUserListType("following")
                   }
                   className="text-center"
                 >
                   <p className="font-semibold">
-                    {
-                      followingCount
-                    }
+                    {followingCount}
                   </p>
                   <p className="text-xs">
                     Following
                   </p>
                 </button>
-
               </div>
             </div>
-
           </div>
 
           <div className="mt-2 space-y-1">
-
             <p className="font-semibold">
-              {
-                profile?.display_name
-              }
+              {profile?.display_name}
             </p>
 
             {profile?.bio && (
               <p className="text-sm text-foreground/70">
-                {
-                  profile.bio
-                }
+                {profile.bio}
               </p>
             )}
-
           </div>
 
           <button
             onClick={() =>
-              setShowEditProfile(
-                true
-              )
+              setShowEditProfile(true)
             }
-            className="mt-3 h-10 w-full rounded-lg border border-foreground/20 font-medium bg-accent/50 text-base"
+            className="mt-3 h-10 w-full rounded-lg border border-foreground/20 bg-accent/50 text-base font-medium"
           >
             Edit Profile
           </button>
@@ -867,101 +654,74 @@ export default function ProfilePage() {
             <OshiList
               oshis={oshis}
               onAdd={() =>
-                setShowBottomSheet(
-                  true
-                )
+                setShowBottomSheet(true)
               }
             />
           )}
-
         </div>
 
-        {/* Tabs */}
         <ProfileTabs
           activeTab={activeTab}
-          setActiveTab={
-            setActiveTab
-          }
+          setActiveTab={setActiveTab}
         />
 
-        {/* Posts */}
-        {activeTab ===
-          "posts" && (
+        {activeTab === "posts" && (
           <PostGrid
-            posts={
-              userPosts
-            }
-            onPostClick={
-              setSelectedPostId
-            }
+            posts={userPosts}
+            onPostClick={setSelectedPostId}
           />
         )}
 
-        {/* Saved */}
-        {activeTab ===
-          "saved" && (
-          <PostGrid
-            posts={
-              savedPosts
-            }
-          />
+        {activeTab === "saved" && (
+          <PostGrid posts={savedPosts} />
         )}
 
-        {/* Liked */}
-        {activeTab ===
-          "liked" && (
-          loadingLikedPosts ? (
-            <div className="flex min-h-40 items-center justify-center">
-              <p className="text-sm text-foreground/40">
-                Loading liked posts...
-              </p>
-            </div>
-          ) : likedPosts.length >
-            0 ? (
-            <PostGrid
-              posts={
-                likedPosts
-              }
-              onPostClick={
-                setSelectedPostId
-              }
-            />
-          ) : (
-            <div className="flex min-h-40 items-center justify-center">
-              <p className="text-sm text-foreground/40">
-                No liked posts yet.
-              </p>
-            </div>
-          )
+        {activeTab === "liked" && (
+          <>
+            {!likedPostsLoaded ? (
+              <div className="flex min-h-40 items-center justify-center">
+                <p className="text-sm text-foreground/40">
+                  Loading liked posts...
+                </p>
+              </div>
+            ) : likedPosts.length === 0 ? (
+              <div className="flex min-h-40 items-center justify-center">
+                <p className="text-sm text-foreground/40">
+                  No liked posts yet.
+                </p>
+              </div>
+            ) : (
+              <PostGrid
+                posts={likedPosts.map(
+                  (post) => ({
+                    id: post.id,
+                    image:
+                      post.images[0] ?? null,
+                  })
+                )}
+                onPostClick={setSelectedPostId}
+              />
+            )}
+          </>
         )}
-
       </PullToRefresh>
 
       <CreatePostButton />
 
-      {/* Add Oshi Bottom Sheet */}
       {showBottomSheet && (
         <BottomSheet
           title="Add Oshi"
-          onClose={
-            resetOshiForm
-          }
+          onClose={resetOshiForm}
         >
           <AddOshiForm
-            onCreated={(
-              newOshi
-            ) =>
-              setOshis(
-                (prev) => [
-                  ...prev,
-                  newOshi,
-                ]
-              )
+            onCreated={(newOshi) =>
+              setOshis((prev) => [
+                ...prev,
+                newOshi,
+              ])
             }
             onClose={() =>
-              setShowBottomSheet(
-                false
-              )
+              setShowBottomSheet(false)
             }
             onOpenCropper={
               handleOpenOshiCropper
@@ -973,102 +733,97 @@ export default function ProfilePage() {
         </BottomSheet>
       )}
 
-      {/* Oshi Image Cropper */}
-      {showCropper &&
-        cropImage && (
-          <div className="fixed inset-0 z-[1100]">
-            <ImageCropper
-              image={
-                cropImage
-              }
-              aspectRatio={1}
-              isFirstImage={true}
-              onCropChange={() => {}}
-              onRatioChange={() => {}}
-              onComplete={
-                handleOshiCropComplete
-              }
-              onCancel={
-                handleCancelOshiCropper
-              }
-            />
-          </div>
-        )}
+      {showCropper && cropImage && (
+        <div className="fixed inset-0 z-[1100]">
+          <ImageCropper
+            image={cropImage}
+            aspectRatio={1}
+            isFirstImage={true}
+            onCropChange={() => {}}
+            onRatioChange={() => {}}
+            onComplete={
+              handleOshiCropComplete
+            }
+            onCancel={
+              handleCancelOshiCropper
+            }
+          />
+        </div>
+      )}
 
-      {/* Post Modal */}
       {selectedPostId && (
         <PostModal
           posts={
-            profileFeedPosts
+            activeTab === "liked"
+              ? likedPosts
+              : profileFeedPosts
           }
-          initialPostId={
-            selectedPostId
-          }
+          initialPostId={selectedPostId}
           username={
-            profile?.username ??
-            "username"
+            activeTab === "liked"
+              ? selectedLikedPost?.username ??
+                "username"
+              : profile?.username ??
+                "username"
           }
           avatar={
-            profile?.avatar_url ??
-            null
+            activeTab === "liked"
+              ? selectedLikedPost?.avatar ??
+                null
+              : profile?.avatar_url ??
+                null
           }
-          ownerId={user.id}
+          ownerId={
+            activeTab === "liked"
+              ? selectedLikedPost?.userId
+              : user.id
+          }
           onClose={() =>
-            setSelectedPostId(
-              null
-            )
+            setSelectedPostId(null)
           }
-          onPostDeleted={(
-            postId
-          ) => {
-            setPosts(
-              (prev) =>
+          onPostDeleted={(postId) => {
+            if (activeTab === "liked") {
+              setLikedPosts((prev) =>
                 prev.filter(
-                  (p) =>
-                    p.id !==
-                    postId
+                  (post) =>
+                    post.id !== postId
                 )
-            );
+              );
+            } else {
+              setPosts((prev) =>
+                prev.filter(
+                  (post) =>
+                    post.id !== postId
+                )
+              );
+            }
 
-            setSelectedPostId(
-              null
-            );
+            setSelectedPostId(null);
           }}
         />
       )}
 
-      {/* Edit Profile */}
       <AnimatePresence>
         {showEditProfile && (
           <EditProfileModal
             onClose={() =>
-              setShowEditProfile(
-                false
-              )
+              setShowEditProfile(false)
             }
           />
         )}
       </AnimatePresence>
 
-      {/* Following/Follower List */}
       <AnimatePresence>
         {userListType && (
           <UserList
-            userId={
-              user.id
-            }
-            type={
-              userListType
-            }
+            userId={user.id}
+            type={userListType}
             onClose={() =>
-              setUserListType(
-                null
-              )
+              setUserListType(null)
             }
           />
         )}
       </AnimatePresence>
-
     </div>
   );
 }

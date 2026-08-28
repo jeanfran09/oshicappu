@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronLeft } from "lucide-react";
-import { useState } from "react";
 import Post from "@/components/Post";
 import CommentsSheet from "@/components/CommentsSheet";
 import Divider from "../Divider";
@@ -20,6 +19,9 @@ type Fandom = {
 
 export type ProfilePost = {
   id: string;
+  userId: string;
+  username: string;
+  avatar: string | null;
   images: string[];
   caption: string;
   time: string;
@@ -34,8 +36,8 @@ export type ProfilePost = {
 type PostModalProps = {
   posts: ProfilePost[];
   initialPostId: string;
-  username: string;
-  avatar: string | null;
+  username?: string;
+  avatar?: string | null;
   ownerId?: string;
   onClose: () => void;
   onPostDeleted?: (postId: string) => void;
@@ -50,15 +52,21 @@ export default function PostModal({
   onClose,
   onPostDeleted,
 }: PostModalProps) {
-  const [activeCommentsPostId, setActiveCommentsPostId] = useState<
-    string | null
-  >(null);
+  const [activeCommentsPostId, setActiveCommentsPostId] =
+    useState<string | null>(null);
+
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Jump straight to the post that was tapped, instantly.
+  // Jump straight to the selected post.
   useEffect(() => {
-    const el = document.getElementById(`profile-post-${initialPostId}`);
-    el?.scrollIntoView({ block: "start" });
+    const el = document.getElementById(
+      `profile-post-${initialPostId}`
+    );
+
+    el?.scrollIntoView({
+      block: "start",
+    });
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -103,10 +111,12 @@ export default function PostModal({
             <ChevronLeft size={22} />
           </button>
 
-          <p className="absolute left-1/2 -translate-x-1/2 text-lg font-semibold">{username}</p>
+          <p className="absolute left-1/2 -translate-x-1/2 text-lg font-semibold">
+            {username ?? "username"}
+          </p>
         </div>
 
-        {/* Scrollable feed of this user's posts, Instagram-style */}
+        {/* Scrollable posts */}
         <div
           ref={scrollRef}
           className="flex-1 overflow-y-auto"
@@ -119,9 +129,9 @@ export default function PostModal({
             >
               <Post
                 id={post.id}
-                userId={ownerId}
-                username={username}
-                avatar={avatar}
+                userId={post.userId}
+                username={post.username ?? "username"}
+                avatar={post.avatar ?? null}
                 images={post.images}
                 caption={post.caption}
                 time={post.time}
@@ -136,9 +146,8 @@ export default function PostModal({
                 }
                 onDeleted={onPostDeleted}
               />
-              {index < posts.length - 1 && (
-                <Divider />
-              )}
+
+              {index < posts.length - 1 && <Divider />}
             </div>
           ))}
         </div>
@@ -147,8 +156,15 @@ export default function PostModal({
       {activeCommentsPostId && (
         <CommentsSheet
           postId={activeCommentsPostId}
-          postOwnerId={ownerId}
-          onClose={() => setActiveCommentsPostId(null)}
+          postOwnerId={
+            posts.find(
+              (post) =>
+                post.id === activeCommentsPostId
+            )?.userId ?? ownerId
+          }
+          onClose={() =>
+            setActiveCommentsPostId(null)
+          }
         />
       )}
     </>
