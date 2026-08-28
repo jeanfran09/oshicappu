@@ -183,7 +183,7 @@ export default function PublicProfilePage() {
               name: po.oshis.name,
               image:
                 po.oshis.image_url ??
-                "/icons/temp.jpg",
+                "",
             })),
             fandoms: (
               post.post_fandoms ?? []
@@ -229,7 +229,7 @@ export default function PublicProfilePage() {
             name: o.name,
             image:
               o.image_url ??
-              "/icons/temp.jpg",
+              "",
           }))
         );
       }

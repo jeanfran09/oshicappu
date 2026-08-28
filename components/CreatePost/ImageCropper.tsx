@@ -3,12 +3,9 @@
 import { useState } from "react";
 import Cropper, { Area } from "react-easy-crop";
 
-
 type Props = {
   image: string;
-  aspectRatio: number;
-  isFirstImage: boolean;
-
+  aspectRatio?: number;
   initialCrop?: {
     crop: {
       x: number;
@@ -16,33 +13,27 @@ type Props = {
     };
     zoom: number;
   };
-
-  onCropChange: (data: {
+  isFirstImage?: boolean;
+  onCropChange?: (data: {
     crop: {
       x: number;
       y: number;
     };
     zoom: number;
   }) => void;
-
-  onRatioChange: (ratio: number) => void;
-
+  onRatioChange?: (ratio: number) => void;
   onComplete: (file: File) => void;
   onCancel: () => void;
 };
 
-
-
 export default function ImageCropper({
   image,
-  aspectRatio,
+  aspectRatio = 1,
   initialCrop,
   onCropChange,
   onComplete,
   onCancel,
 }: Props) {
-
-
   const [crop, setCrop] = useState(
     initialCrop?.crop ?? {
       x: 0,
@@ -50,49 +41,35 @@ export default function ImageCropper({
     }
   );
 
-
   const [zoom, setZoom] = useState(
     initialCrop?.zoom ?? 1
   );
 
-
   const [croppedAreaPixels, setCroppedAreaPixels] =
     useState<Area | null>(null);
 
-
-
   function handleCropChange(
     newCrop: {
-      x:number;
-      y:number;
+      x: number;
+      y: number;
     }
   ) {
-
     setCrop(newCrop);
 
-    onCropChange({
+    onCropChange?.({
       crop: newCrop,
       zoom,
     });
-
   }
 
-
-
-  function handleZoomChange(
-    newZoom:number
-  ) {
-
+  function handleZoomChange(newZoom: number) {
     setZoom(newZoom);
 
-    onCropChange({
+    onCropChange?.({
       crop,
-      zoom:newZoom,
+      zoom: newZoom,
     });
-
   }
-
-
 
   function onCropComplete(
     _: Area,
@@ -101,52 +78,36 @@ export default function ImageCropper({
     setCroppedAreaPixels(pixels);
   }
 
-
-
-
-  async function createCroppedImage(){
-
-    if(!croppedAreaPixels)
-      return;
-
+  async function createCroppedImage() {
+    if (!croppedAreaPixels) return;
 
     const canvas =
       document.createElement("canvas");
 
-
     const imageElement =
       document.createElement("img");
 
+    imageElement.src = image;
 
-    imageElement.src=image;
-
-
-    await new Promise((resolve)=>{
-      imageElement.onload=resolve;
+    await new Promise<void>((resolve, reject) => {
+      imageElement.onload = () => resolve();
+      imageElement.onerror = () =>
+        reject(new Error("Failed to load image"));
     });
-
-
 
     const {
       width,
       height,
       x,
-      y
+      y,
     } = croppedAreaPixels;
 
+    canvas.width = width;
+    canvas.height = height;
 
+    const ctx = canvas.getContext("2d");
 
-    canvas.width=width;
-    canvas.height=height;
-
-
-    const ctx =
-      canvas.getContext("2d");
-
-
-    if(!ctx)
-      return;
-
+    if (!ctx) return;
 
     ctx.drawImage(
       imageElement,
@@ -160,84 +121,79 @@ export default function ImageCropper({
       height
     );
 
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) return;
 
-
-    canvas.toBlob(blob=>{
-
-      if(!blob)
-        return;
-
-
-      const file =
-        new File(
+        const file = new File(
           [blob],
           `cropped-${Date.now()}.jpg`,
           {
-            type:"image/jpeg"
+            type: "image/jpeg",
           }
         );
 
-
-      onComplete(file);
-
-
-    },"image/jpeg");
-
+        onComplete(file);
+      },
+      "image/jpeg"
+    );
   }
 
-
-
   return (
-
-    <div 
+    <div
       data-cropper
       className="fixed inset-0 z-[10000] bg-black"
       style={{
         touchAction: "none",
       }}
-      onPointerDown={(e) => e.stopPropagation()}
-      onPointerMove={(e) => e.stopPropagation()}
-      onPointerUp={(e) => e.stopPropagation()}
-      onTouchStart={(e) => e.stopPropagation()}
-      onTouchMove={(e) => e.stopPropagation()}
-      onTouchEnd={(e) => e.stopPropagation()}
+      onPointerDown={(e) =>
+        e.stopPropagation()
+      }
+      onPointerMove={(e) =>
+        e.stopPropagation()
+      }
+      onPointerUp={(e) =>
+        e.stopPropagation()
+      }
+      onTouchStart={(e) =>
+        e.stopPropagation()
+      }
+      onTouchMove={(e) =>
+        e.stopPropagation()
+      }
+      onTouchEnd={(e) =>
+        e.stopPropagation()
+      }
     >
-
-
       <Cropper
         image={image}
         crop={crop}
         zoom={zoom}
-
         aspect={aspectRatio}
-
         cropShape="rect"
         showGrid={true}
-
         minZoom={1}
         maxZoom={3}
-
         zoomWithScroll={false}
         restrictPosition={true}
-
         onCropChange={handleCropChange}
         onZoomChange={handleZoomChange}
         onCropComplete={onCropComplete}
       />
 
-
-
-      <div className="
-        absolute
-        bottom-6
-        left-0
-        right-0
-        flex
-        justify-center
-        gap-4
-      ">
-
+      <div
+        className="
+          absolute
+          bottom-6
+          left-0
+          right-0
+          flex
+          justify-center
+          gap-4
+        "
+      >
         <button
+          type="button"
           onClick={onCancel}
           className="
             rounded-full
@@ -250,9 +206,8 @@ export default function ImageCropper({
           Cancel
         </button>
 
-
-
         <button
+          type="button"
           onClick={createCroppedImage}
           className="
             rounded-full
@@ -264,12 +219,8 @@ export default function ImageCropper({
         >
           Done
         </button>
-
-
       </div>
-
-
     </div>
-
   );
 }
+

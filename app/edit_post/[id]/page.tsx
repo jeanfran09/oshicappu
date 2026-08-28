@@ -326,7 +326,7 @@ export default function EditPostPage() {
                 name: oshi.name,
                 image:
                   oshi.image_url ??
-                  "/icons/temp.jpg",
+                  "",
               })
             )
           );

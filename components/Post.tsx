@@ -372,13 +372,13 @@ export default function Post({
 
             {/* Oshis */}
             {oshis.length > 0 && (
-            <div className="px-3 pt-2">
+              <div className="px-3 pt-2">
                 <div className="flex flex-wrap gap-2">
-                {oshis.map((oshi) => (
+                  {oshis.map((oshi) => (
                     <Link
-                    key={oshi.id}
-                    href={`/oshi/${oshi.id}`}
-                    className="
+                      key={oshi.id}
+                      href={`/oshi/${oshi.id}`}
+                      className="
                         flex
                         items-center
                         gap-2
@@ -387,24 +387,32 @@ export default function Post({
                         pl-1.5
                         pr-2.5
                         py-1.5
-                    "
+                      "
                     >
-                    <div className="relative h-5 w-5 overflow-hidden rounded-full">
-                        <Image
+                      <div className="flex h-5 w-5 items-center justify-center overflow-hidden rounded-full bg-background/50">
+                        {oshi.image ? (
+                          <Image
                             src={oshi.image}
                             alt={oshi.name}
-                            fill
-                            className="rounded-full object-cover"
-                        />
-                    </div>
+                            width={20}
+                            height={20}
+                            className="h-full w-full rounded-full object-cover"
+                          />
+                        ) : (
+                          <UserIcon
+                            size={13}
+                            className="text-foreground/30"
+                          />
+                        )}
+                      </div>
 
-                    <span className="text-base font-medium">
+                      <span className="text-base font-medium">
                         {oshi.name}
-                    </span>
+                      </span>
                     </Link>
-                ))}
+                  ))}
                 </div>
-            </div>
+              </div>
             )}
 
             {/* Fandoms */}

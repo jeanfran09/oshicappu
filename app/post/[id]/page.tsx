@@ -186,7 +186,7 @@ export default function PostPage() {
                 name: oshi.name,
                 image:
                   oshi.image_url ??
-                  "/icons/temp.jpg",
+                  "",
               })
             ),
 

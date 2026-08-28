@@ -113,7 +113,7 @@ export default function CreatePostPage() {
             name: o.name,
             image:
               o.image_url ??
-              "/icons/temp.jpg",
+              "",
           }))
         );
       }

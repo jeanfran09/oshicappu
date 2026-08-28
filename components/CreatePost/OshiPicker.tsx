@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Check, Plus } from "lucide-react";
+import { Check, Plus, User as UserIcon } from "lucide-react";
 
 export type Oshi = {
   id: string;
@@ -43,12 +43,11 @@ export default function OshiPicker({
       </label>
 
       <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
-
         {/* None */}
         <button
           type="button"
           onClick={selectNone}
-          className="flex flex-col items-center gap-2 flex-shrink-0"
+          className="flex flex-shrink-0 flex-col items-center gap-2"
         >
           <div
             className={`
@@ -84,9 +83,9 @@ export default function OshiPicker({
                   items-center
                   justify-center
                   rounded-full
-                  bg-accent
                   border-2
                   border-background
+                  bg-accent
                 "
               >
                 <Check
@@ -114,9 +113,10 @@ export default function OshiPicker({
               onClick={() =>
                 toggleOshi(oshi.id)
               }
-              className="flex flex-col items-center gap-2 flex-shrink-0"
+              className="flex flex-shrink-0 flex-col items-center gap-2"
             >
-              <div className={`
+              <div
+                className={`
                   relative
                   h-16
                   w-16
@@ -130,14 +130,33 @@ export default function OshiPicker({
                   }
                 `}
               >
-                <div className="relative h-full w-full overflow-hidden rounded-full">
+                <div
+                  className="
+                    relative
+                    flex
+                    h-full
+                    w-full
+                    items-center
+                    justify-center
+                    overflow-hidden
+                    rounded-full
+                    bg-accent/20
+                  "
+                >
+                  {oshi.image ? (
                     <Image
-                    src={oshi.image}
-                    alt={oshi.name}
-                    fill
-                    sizes="64px"
-                    className="object-cover"
+                      src={oshi.image}
+                      alt={oshi.name}
+                      fill
+                      sizes="64px"
+                      className="object-cover"
                     />
+                  ) : (
+                    <UserIcon
+                      size={28}
+                      className="text-foreground/30"
+                    />
+                  )}
                 </div>
 
                 {isSelected && (
@@ -152,9 +171,9 @@ export default function OshiPicker({
                       items-center
                       justify-center
                       rounded-full
-                      bg-accent
                       border-2
                       border-background
+                      bg-accent
                     "
                   >
                     <Check
@@ -176,7 +195,7 @@ export default function OshiPicker({
         <button
           type="button"
           onClick={onAdd}
-          className="flex flex-col items-center gap-2 flex-shrink-0"
+          className="flex flex-shrink-0 flex-col items-center gap-2"
         >
           <div
             className="
@@ -200,7 +219,6 @@ export default function OshiPicker({
             Add
           </span>
         </button>
-
       </div>
     </div>
   );

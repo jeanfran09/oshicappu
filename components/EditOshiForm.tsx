@@ -1,81 +1,125 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, User as UserIcon } from "lucide-react";
+import {
+  Camera,
+  User as UserIcon,
+} from "lucide-react";
+
 import { supabase } from "@/lib/supabase";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
-import type { Oshi } from "@/components/CreatePost/OshiPicker";
+
+type EditOshi = {
+  id: string;
+  user_id: string;
+  name: string;
+  image_url: string | null;
+  anniversary: string | null;
+  notes: string | null;
+  fandom: string | null;
+};
 
 type Props = {
-  onCreated: (oshi: Oshi) => void;
+  oshi: EditOshi;
+  onUpdated: (oshi: EditOshi) => void;
+  onDeleted: (oshiId: string) => void;
   onClose: () => void;
   onOpenCropper: (image: string) => void;
   croppedImage: File | null;
 };
 
-export default function AddOshiForm({
-  onCreated,
+export default function EditOshiForm({
+  oshi,
+  onUpdated,
+  onDeleted,
   onClose,
   onOpenCropper,
   croppedImage,
 }: Props) {
   const { user } = useSupabaseAuth();
 
-  const [name, setName] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [name, setName] = useState(
+    oshi.name ?? ""
+  );
 
-  const [fandom, setFandom] = useState("");
-  const [anniversary, setAnniversary] = useState("");
-  const [notes, setNotes] = useState("");
+  const [imageFile, setImageFile] =
+    useState<File | null>(null);
 
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+  const [imagePreview, setImagePreview] =
+    useState<string | null>(
+      oshi.image_url ?? null
+    );
 
-  const canSave = name.trim() !== "";
+  const [anniversary, setAnniversary] =
+    useState(
+      oshi.anniversary ?? ""
+    );
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [notes, setNotes] = useState(
+    oshi.notes ?? ""
+  );
+
+  const [saving, setSaving] =
+    useState(false);
+
+  const [deleting, setDeleting] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  const fileInputRef =
+    useRef<HTMLInputElement>(null);
+
+  const canSave =
+    name.trim() !== "";
 
   /*
-   * Receive the cropped image from ProfilePage.
-   *
-   * The BottomSheet stays mounted while the cropper
-   * is displayed, so all form data is preserved.
+   * Receive cropped image from OshiPage.
    */
   useEffect(() => {
     if (!croppedImage) return;
 
     setImageFile(croppedImage);
 
-    const previewUrl = URL.createObjectURL(croppedImage);
+    const previewUrl =
+      URL.createObjectURL(
+        croppedImage
+      );
 
     setImagePreview((previousUrl) => {
-      if (previousUrl) {
-        URL.revokeObjectURL(previousUrl);
+      if (
+        previousUrl &&
+        previousUrl.startsWith("blob:")
+      ) {
+        URL.revokeObjectURL(
+          previousUrl
+        );
       }
 
       return previewUrl;
     });
 
     return () => {
-      URL.revokeObjectURL(previewUrl);
+      URL.revokeObjectURL(
+        previewUrl
+      );
     };
   }, [croppedImage]);
 
   /*
-   * Select an image.
-   *
-   * The original image is sent to ProfilePage,
-   * which displays the cropper above the BottomSheet.
+   * Select a new image.
    */
   function handleImageSelect(
     e: React.ChangeEvent<HTMLInputElement>
   ) {
-    const file = e.target.files?.[0];
+    const file =
+      e.target.files?.[0];
 
     if (!file) return;
 
-    const imageUrl = URL.createObjectURL(file);
+    const imageUrl =
+      URL.createObjectURL(file);
 
     onOpenCropper(imageUrl);
 
@@ -83,11 +127,16 @@ export default function AddOshiForm({
     e.target.value = "";
   }
 
+  /*
+   * Save changes.
+   */
   async function handleSave() {
     if (!user) return;
 
     if (!name.trim()) {
-      setError("Give your oshi a name");
+      setError(
+        "Give your oshi a name"
+      );
       return;
     }
 
@@ -95,83 +144,106 @@ export default function AddOshiForm({
     setSaving(true);
 
     try {
-      let imageUrl: string | null = null;
+      let imageUrl =
+        oshi.image_url;
 
       /*
-       * Upload the cropped image.
+       * Upload new image only
+       * when one was selected.
        */
       if (imageFile) {
         const ext =
-          imageFile.name.split(".").pop() || "jpg";
+          imageFile.name
+            .split(".")
+            .pop() || "jpg";
 
         const path =
           `${user.id}/oshi-${Date.now()}.${ext}`;
 
-        const { error: uploadError } =
-          await supabase.storage
-            .from("avatars")
-            .upload(path, imageFile, {
+        const {
+          error: uploadError,
+        } = await supabase.storage
+          .from("avatars")
+          .upload(
+            path,
+            imageFile,
+            {
               cacheControl: "3600",
               upsert: false,
               contentType:
-                imageFile.type || `image/${ext}`,
-            });
+                imageFile.type ||
+                `image/${ext}`,
+            }
+          );
 
         if (uploadError) {
-          throw new Error(uploadError.message);
+          throw new Error(
+            uploadError.message
+          );
         }
 
         const {
-          data: { publicUrl },
-        } = supabase.storage
-          .from("avatars")
-          .getPublicUrl(path);
+          data: {
+            publicUrl,
+          },
+        } =
+          supabase.storage
+            .from("avatars")
+            .getPublicUrl(path);
 
         imageUrl = publicUrl;
       }
 
       /*
-       * Create the Oshi.
+       * Update Oshi.
        */
       const {
         data,
-        error: insertError,
+        error: updateError,
       } = await supabase
         .from("oshis")
-        .insert({
-          user_id: user.id,
+        .update({
           name: name.trim(),
           image_url: imageUrl,
-          fandom: fandom.trim() || null,
-          anniversary: anniversary || null,
-          notes: notes.trim() || null,
+          anniversary:
+            anniversary || null,
+          notes:
+            notes.trim() || null,
         })
+        .eq("id", oshi.id)
+        .eq(
+          "user_id",
+          user.id
+        )
         .select()
         .single();
 
-      if (insertError) {
-        throw new Error(insertError.message);
+      if (updateError) {
+        throw new Error(
+          updateError.message
+        );
       }
 
       /*
-       * Immediately update the OshiList.
-       *
-       * Keep image_url as null when there is no image.
-       * OshiPicker will display the UserIcon instead.
+       * Immediately update OshiPage.
        */
-      onCreated({
+      onUpdated({
         id: data.id,
+        user_id: data.user_id,
         name: data.name,
-        image: data.image_url,
+        image_url:
+          data.image_url,
+        anniversary:
+          data.anniversary,
+        notes: data.notes,
+        fandom:
+          data.fandom ?? null,
       });
 
-      /*
-       * Close the BottomSheet after successfully saving.
-       */
       onClose();
     } catch (err) {
       console.error(
-        "Error creating oshi:",
+        "Error updating oshi:",
         err
       );
 
@@ -185,11 +257,58 @@ export default function AddOshiForm({
     }
   }
 
+  /*
+   * Delete Oshi.
+   */
+  async function handleDelete() {
+    if (!user) return;
+
+    setError("");
+    setDeleting(true);
+
+    try {
+      const {
+        error: deleteError,
+      } = await supabase
+        .from("oshis")
+        .delete()
+        .eq("id", oshi.id)
+        .eq(
+          "user_id",
+          user.id
+        );
+
+      if (deleteError) {
+        throw new Error(
+          deleteError.message
+        );
+      }
+
+      onDeleted(oshi.id);
+      onClose();
+    } catch (err) {
+      console.error(
+        "Error deleting oshi:",
+        err
+      );
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : "An unexpected error occurred"
+      );
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <div className="w-full space-y-3">
+
       {/* Oshi Photo */}
       <div className="flex justify-center">
         <div className="relative shrink-0">
+
           <div
             className="
               flex
@@ -234,6 +353,7 @@ export default function AddOshiForm({
               rounded-full
               bg-accent
             "
+            aria-label="Change Oshi photo"
           >
             <Camera size={15} />
           </button>
@@ -251,14 +371,14 @@ export default function AddOshiForm({
       {/* Name */}
       <div className="space-y-2">
         <label
-          htmlFor="oshi-name"
+          htmlFor="edit-oshi-name"
           className="text-sm font-semibold text-foreground"
         >
           Name
         </label>
 
         <input
-          id="oshi-name"
+          id="edit-oshi-name"
           type="text"
           value={name}
           onChange={(e) =>
@@ -280,10 +400,10 @@ export default function AddOshiForm({
         />
       </div>
 
-      {/* Oshi Anniversary */}
+      {/* Anniversary */}
       <div className="space-y-2">
         <label
-          htmlFor="oshi-anniversary"
+          htmlFor="edit-oshi-anniversary"
           className="text-sm font-semibold text-foreground"
         >
           Oshi Anniversary
@@ -294,11 +414,13 @@ export default function AddOshiForm({
         </p>
 
         <input
-          id="oshi-anniversary"
+          id="edit-oshi-anniversary"
           type="date"
           value={anniversary}
           onChange={(e) =>
-            setAnniversary(e.target.value)
+            setAnniversary(
+              e.target.value
+            )
           }
           className="
             h-11
@@ -315,50 +437,17 @@ export default function AddOshiForm({
         />
       </div>
 
-      {/* Fandom */}
-      {/*
-      <div className="space-y-2">
-        <label
-          htmlFor="oshi-fandom"
-          className="text-sm font-semibold text-foreground"
-        >
-          Fandom
-        </label>
-
-        <input
-          id="oshi-fandom"
-          type="text"
-          value={fandom}
-          onChange={(e) =>
-            setFandom(e.target.value)
-          }
-          placeholder="Enter fandom"
-          className="
-            h-11
-            w-full
-            rounded-xl
-            border
-            border-foreground/10
-            bg-accent/10
-            px-4
-            outline-none
-            focus:border-accent
-          "
-        />
-      </div>
-      */}
-
       {/* Notes */}
       <div className="space-y-2">
         <label
-          htmlFor="oshi-notes"
+          htmlFor="edit-oshi-notes"
           className="text-sm font-semibold text-foreground"
         >
           Notes
         </label>
 
         <textarea
-          id="oshi-notes"
+          id="edit-oshi-notes"
           value={notes}
           onChange={(e) =>
             setNotes(e.target.value)
@@ -392,7 +481,11 @@ export default function AddOshiForm({
       <button
         type="button"
         onClick={handleSave}
-        disabled={!canSave || saving}
+        disabled={
+          !canSave ||
+          saving ||
+          deleting
+        }
         className="
           h-11
           w-full
@@ -404,8 +497,36 @@ export default function AddOshiForm({
           disabled:opacity-40
         "
       >
-        {saving ? "Saving..." : "Add Oshi"}
+        {saving
+          ? "Saving..."
+          : "Save Changes"}
       </button>
+
+      {/* Delete */}
+      <button
+        type="button"
+        onClick={handleDelete}
+        disabled={
+          saving ||
+          deleting
+        }
+        className="
+          h-11
+          w-full
+          rounded-xl
+          border
+          border-red-500/30
+          font-semibold
+          text-red-500
+          transition-opacity
+          disabled:opacity-40
+        "
+      >
+        {deleting
+          ? "Deleting..."
+          : "Delete Oshi"}
+      </button>
+
     </div>
   );
 }

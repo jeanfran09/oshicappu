@@ -194,7 +194,7 @@ export default function ProfilePage() {
             name: o.name,
             image:
               o.image_url ??
-              "/icons/temp.jpg",
+              "",
           }))
         );
       }
@@ -255,7 +255,7 @@ export default function ProfilePage() {
                 name: po.oshis.name,
                 image:
                   po.oshis.image_url ??
-                  "/icons/temp.jpg",
+                  "",
               })
             ),
             fandoms: (post.post_fandoms ?? []).map(

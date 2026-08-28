@@ -154,7 +154,7 @@ export default function ForYouFeed({
                 name: oshi.name,
                 image:
                   oshi.image_url ??
-                  "/icons/temp.jpg",
+                  "",
               })),
 
             fandoms: (

@@ -177,7 +177,7 @@ export default function FollowingFeed({
                 name: oshi.name,
                 image:
                   oshi.image_url ??
-                  "/icons/temp.jpg",
+                  "",
               })),
 
             fandoms: (
