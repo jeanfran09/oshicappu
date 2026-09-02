@@ -9,7 +9,7 @@ import {
   Home,
   Search,
   Calendar,
-  SquarePlus,
+  MessageCircle,
   Bell,
   User
 } from "lucide-react";
@@ -20,6 +20,8 @@ export default function BottomNav() {
   const { isLoggedIn, user } = useSupabaseAuth();
 
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadMessageCount, setUnreadMessageCount] =
+    useState(0);
 
   useEffect(() => {
     if (!user) {
@@ -60,12 +62,48 @@ export default function BottomNav() {
     // visiting /notifs, which marks everything read).
   }, [user, pathname]);
 
+  useEffect(() => {
+    if (!user) {
+      setUnreadMessageCount(0);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function fetchUnreadMessageCount() {
+      const { data, error } = await supabase.rpc(
+        "get_unread_message_count"
+      );
+
+      if (!cancelled) {
+        if (error) {
+          console.error(
+            "Error fetching unread message count:",
+            error
+          );
+        } else {
+          setUnreadMessageCount(data ?? 0);
+        }
+      }
+    }
+
+    fetchUnreadMessageCount();
+
+    return () => {
+      cancelled = true;
+    };
+    // Re-check whenever the person navigates (e.g. after
+    // reading a conversation, which marks it read).
+  }, [user, pathname]);
+
   const handleNav = (href: string) => {
     if (!isLoggedIn) {
       router.push("/login");
     }
     // Otherwise let the Link handle navigation naturally
   };
+
+  const activeColor = "var(--accent-secondary)";
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 h-16 bg-background border-t-1 border-foreground/25 flex justify-around items-center">
@@ -74,8 +112,13 @@ export default function BottomNav() {
           size={24}
           fill={
             pathname === "/"
-              ? "#616161"
+              ? activeColor
               : "none"
+          }
+          className={
+            pathname === "/"
+              ? "text-[var(--accent-secondary)]"
+              : ""
           }
         />
       </Link>
@@ -88,27 +131,52 @@ export default function BottomNav() {
               ? "4"
               : "2"
           }
+          className={
+            pathname === "/search" || pathname.startsWith("/search/")
+              ? "text-[var(--accent-secondary)]"
+              : ""
+          }
         />
       </Link>
 
-      {/* <Link href="/create_post">
-        <SquarePlus
+      <Link
+        href="/messages"
+        onClick={() => handleNav("/messages")}
+        className="relative"
+      >
+        <MessageCircle
           size={24}
-          strokeWidth={
-            pathname === "/create_post"
-              ? "3"
-              : "2"
+          fill={
+            pathname === "/messages" || pathname.startsWith("/messages/")
+              ? activeColor
+              : "none"
+          }
+          className={
+            pathname === "/messages" || pathname.startsWith("/messages/")
+              ? "text-[var(--accent-secondary)]"
+              : ""
           }
         />
-      </Link> */}
+
+        {unreadMessageCount > 0 && (
+          <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
+            {unreadMessageCount > 9 ? "9+" : unreadMessageCount}
+          </span>
+        )}
+      </Link>
 
       <Link href="/event" onClick={() => handleNav("/event")}>
         <Calendar
           size={24}
           fill={
             pathname === "/event" || pathname.startsWith("/event/")
-              ? "#616161"
+              ? activeColor
               : "none"
+          }
+          className={
+            pathname === "/event" || pathname.startsWith("/event/")
+              ? "text-[var(--accent-secondary)]"
+              : ""
           }
         />
       </Link>
@@ -118,8 +186,13 @@ export default function BottomNav() {
           size={24}
           fill={
             pathname === "/notifs"
-              ? "#616161"
+              ? activeColor
               : "none"
+          }
+          className={
+            pathname === "/notifs"
+              ? "text-[var(--accent-secondary)]"
+              : ""
           }
         />
 
@@ -135,8 +208,13 @@ export default function BottomNav() {
           size={24}
           fill={
             pathname === "/profile"
-              ? "#616161"
+              ? activeColor
               : "none"
+          }
+          className={
+            pathname === "/profile"
+              ? "text-[var(--accent-secondary)]"
+              : ""
           }
         />
       </Link>
