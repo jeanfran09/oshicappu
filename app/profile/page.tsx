@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { LogOut, User as UserIcon } from "lucide-react";
+import { LogOut, Settings, User as UserIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
@@ -707,12 +707,21 @@ export default function ProfilePage() {
           {profile?.username ?? "username"}
         </h1>
 
-        <button
-          onClick={handleLogout}
-          className="ml-auto flex h-9 w-9 items-center justify-center"
-        >
-          <LogOut size={22} />
-        </button>
+        <div className="ml-auto flex items-center gap-1">
+          <button
+            onClick={() => router.push("/settings")}
+            className="flex h-9 w-9 items-center justify-center"
+          >
+            <Settings size={22} />
+          </button>
+
+          <button
+            onClick={handleLogout}
+            className="flex h-9 w-9 items-center justify-center"
+          >
+            <LogOut size={22} />
+          </button>
+        </div>
       </header>
 
       <PullToRefresh onRefresh={refreshFeed}>
