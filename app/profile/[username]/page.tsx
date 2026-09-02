@@ -15,6 +15,7 @@ import PostModal, {
   type ProfilePost,
 } from "@/components/Profile/PostModal";
 import FollowButton from "@/components/FollowButton";
+import MessageButton from "@/components/MessageButton";
 import UserList from "@/components/UserList";
 
 import {
@@ -497,12 +498,19 @@ export default function PublicProfilePage() {
           )}
         </div>
 
-        {/* Follow Button */}
-        <FollowButton
-          targetUserId={profile.id}
-          onChange={handleFollowChange}
-          className="mt-3 h-10 w-full"
-        />
+        {/* Follow + Message Buttons */}
+        <div className="mt-3 flex gap-2">
+          <FollowButton
+            targetUserId={profile.id}
+            onChange={handleFollowChange}
+            className="flex-1"
+          />
+
+          <MessageButton
+            targetUserId={profile.id}
+            className="flex-1"
+          />
+        </div>
 
         {/* Oshis */}
         {!oshisLoading &&

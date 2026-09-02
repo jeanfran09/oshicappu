@@ -3,7 +3,7 @@ import { Geist, Geist_Mono, Sacramento, Patrick_Hand, M_PLUS_Rounded_1c } from "
 import { SupabaseAuthProvider } from "@/components/SupabaseAuthContext";
 import { ThemeProvider } from "@/components/ThemeContext";
 import "./globals.css";
-import BottomNav from "@/components/BottomNav";
+import ConditionalBottomNav from "@/components/ConditionalBottomNav";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -61,7 +61,7 @@ export default function RootLayout({
                 {children}
               </div>
 
-              <BottomNav />
+              <ConditionalBottomNav />
             </div>
 
             {/* Desktop view */}
