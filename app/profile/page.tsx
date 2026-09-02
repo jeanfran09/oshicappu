@@ -816,7 +816,7 @@ export default function ProfilePage() {
             </p>
 
             {profile?.bio && (
-              <p className="text-sm text-foreground/70">
+              <p className="whitespace-pre-line text-sm text-foreground/70">
                 {profile.bio}
               </p>
             )}
