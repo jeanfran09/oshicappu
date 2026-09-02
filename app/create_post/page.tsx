@@ -846,6 +846,9 @@ export default function CreatePostPage() {
               aspectRatio={
                 aspectRatio
               }
+              onSelectImages={
+                handleSelectImages
+              }
             />
 
             <ThumbnailStrip

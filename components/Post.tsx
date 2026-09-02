@@ -346,7 +346,7 @@ export default function Post({
 
                     <button className="flex items-center gap-1" onClick={onCommentClick}>
                         <MessageCircle size={24} />
-                        {comments !== undefined && comments > 0 &&(<span className="text-sm font-medium pl-1">{comments}</span>)}
+                        {comments !== undefined && comments > 0 &&(<span className="text-sm font-medium pl-1">{formatCount(comments)}</span>)}
                     </button>
 
                     <button>

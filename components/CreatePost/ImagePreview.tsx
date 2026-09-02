@@ -9,6 +9,9 @@ type ImagePreviewProps = {
   currentIndex: number;
   setCurrentIndex: React.Dispatch<React.SetStateAction<number>>;
   onEdit: () => void;
+  onSelectImages: (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => void;
   aspectRatio: number;
 };
 
@@ -17,22 +20,18 @@ export default function ImagePreview({
   currentIndex,
   setCurrentIndex,
   onEdit,
+  onSelectImages,
   aspectRatio,
 }: ImagePreviewProps) {
-
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-
   useEffect(() => {
-
     if (images.length === 0) {
       setPreviewUrl(null);
       return;
     }
 
-    const url = URL.createObjectURL(
-      images[currentIndex]
-    );
+    const url = URL.createObjectURL(images[currentIndex]);
 
     setPreviewUrl(url);
 
@@ -41,44 +40,59 @@ export default function ImagePreview({
     };
   }, [images, currentIndex]);
 
-
   if (images.length === 0) {
     return (
-      <div className="
-        flex
-        aspect-square
-        w-full
-        flex-col
-        items-center
-        justify-center
-        gap-3
-        rounded-xl
-        border
-        border-foreground/25
-        bg-accent/20
-        text-foreground/75
-      ">
-        <div className="
+      <label
+        className="
           flex
-          h-16
-          w-16
+          aspect-square
+          w-full
+          flex-col
           items-center
           justify-center
-          rounded-full
-          bg-accent/40
-        ">
+          gap-3
+          rounded-xl
+          border
+          border-foreground/25
+          bg-accent/20
+          text-foreground/75
+          cursor-pointer
+        "
+      >
+        <div
+          className="
+            flex
+            h-16
+            w-16
+            items-center
+            justify-center
+            rounded-full
+            bg-accent/40
+          "
+        >
           <ImageIcon
             size={32}
             className="text-[#7f8480]"
           />
         </div>
 
-
         <p className="text-sm">
           No images selected
         </p>
 
-      </div>
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          hidden
+          onChange={(e) => {
+            onSelectImages(e);
+
+            // Allow selecting the same image again
+            e.target.value = "";
+          }}
+        />
+      </label>
     );
   }
 
@@ -95,7 +109,6 @@ export default function ImagePreview({
         aspectRatio: aspectRatio,
       }}
     >
-
       {previewUrl && (
         <Image
           src={previewUrl}
@@ -104,7 +117,6 @@ export default function ImagePreview({
           className="object-cover"
         />
       )}
-
 
       {/* Edit button */}
       <button
@@ -126,29 +138,28 @@ export default function ImagePreview({
           hover:bg-black/80
         "
       >
-        <Pencil size={18}/>
+        <Pencil size={18} />
       </button>
-
-
 
       {/* Image counter */}
       {images.length > 1 && (
-        <div className="
-          absolute
-          bottom-3
-          left-1/2
-          -translate-x-1/2
-          rounded-full
-          bg-black/60
-          px-3
-          py-1
-          text-xs
-          text-white
-        ">
+        <div
+          className="
+            absolute
+            bottom-3
+            left-1/2
+            -translate-x-1/2
+            rounded-full
+            bg-black/60
+            px-3
+            py-1
+            text-xs
+            text-white
+          "
+        >
           {currentIndex + 1} / {images.length}
         </div>
       )}
-
     </div>
   );
 }

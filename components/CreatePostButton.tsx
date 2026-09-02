@@ -24,7 +24,7 @@ export default function FloatingCreateButton() {
         active:scale-95
       "
     >
-      <Plus size={24} strokeWidth={2} className="text-foreground/75"/>
+      <Plus size={24} strokeWidth={2} className="text-foreground"/>
     </Link>
   );
 }

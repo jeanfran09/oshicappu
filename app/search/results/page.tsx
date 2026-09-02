@@ -53,10 +53,6 @@ export default function SearchResultsPage() {
       id: "hashtag",
       label: "Hashtags",
     },
-    {
-      id: "events",
-      label: "Events",
-    },
   ];
 
   return (
@@ -165,10 +161,6 @@ export default function SearchResultsPage() {
 
         {activeTab === "hashtag" && (
           <TagResults query={query} />
-        )}
-
-        {activeTab === "events" && (
-          <EventResults query={query} />
         )}
       </section>
 
