@@ -949,21 +949,19 @@ export default function ProfilePage() {
       )}
 
       {showCropper && cropImage && (
-        <div className="fixed inset-0 z-[1100]">
-          <ImageCropper
-            image={cropImage}
-            aspectRatio={1}
-            isFirstImage={true}
-            onCropChange={() => {}}
-            onRatioChange={() => {}}
-            onComplete={
-              handleOshiCropComplete
-            }
-            onCancel={
-              handleCancelOshiCropper
-            }
-          />
-        </div>
+        <ImageCropper
+          image={cropImage}
+          aspectRatio={1}
+          isFirstImage={true}
+          onCropChange={() => {}}
+          onRatioChange={() => {}}
+          onComplete={
+            handleOshiCropComplete
+          }
+          onCancel={
+            handleCancelOshiCropper
+          }
+        />
       )}
 
       {selectedPostId && (
