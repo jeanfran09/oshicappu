@@ -58,7 +58,7 @@ export default function EventPage() {
         <button
           type="button"
           onClick={() => {
-            // router.push("/events/create");
+            router.push("/event/create");
           }}
           className="
             flex

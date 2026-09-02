@@ -152,7 +152,7 @@ export default function TagInput({
             <button
               type="button"
               onClick={() => removeItem(item)}
-              className="opacity-70 hover:opacity-100"
+              className="ml-2 flex translate-y-[2px] items-center justify-center "
             >
               <X size={14} />
             </button>
