@@ -59,6 +59,13 @@ export default function ConversationPage() {
   const [otherUser, setOtherUser] =
     useState<OtherParticipant | null>(null);
 
+  // Timestamp of the last message the other participant has
+  // read (their conversation_participants.last_read_at), used
+  // to render "Seen" under the most recent message they've read.
+  const [otherReadAt, setOtherReadAt] = useState<
+    string | null
+  >(null);
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [notAllowed, setNotAllowed] = useState(false);
@@ -94,7 +101,7 @@ export default function ConversationPage() {
         await supabase
           .from("conversation_participants")
           .select(
-            "user_id, profiles!conversation_participants_user_id_fkey(id, username, display_name, avatar_url)"
+            "user_id, last_read_at, profiles!conversation_participants_user_id_fkey(id, username, display_name, avatar_url)"
           )
           .eq("conversation_id", conversationId!);
 
@@ -138,6 +145,8 @@ export default function ConversationPage() {
             otherProfile?.display_name ?? "User",
           avatar_url: otherProfile?.avatar_url ?? null,
         });
+
+        setOtherReadAt(other.last_read_at ?? null);
       }
 
       const { data: messageRows, error: messagesError } =
@@ -229,6 +238,39 @@ export default function ConversationPage() {
       supabase.removeChannel(channel);
     };
   }, [conversationId, user]);
+
+  // Live updates for the other participant's read state, so
+  // "Seen" appears without needing to reload the page.
+  useEffect(() => {
+    if (!conversationId || !otherUser) return;
+
+    const channel = supabase
+      .channel(`read-receipts:${conversationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "conversation_participants",
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const updated = payload.new as {
+            user_id: string;
+            last_read_at: string | null;
+          };
+
+          if (updated.user_id === otherUser.id) {
+            setOtherReadAt(updated.last_read_at);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [conversationId, otherUser]);
 
   // Keep the view scrolled to the latest message.
   useEffect(() => {
@@ -446,67 +488,107 @@ export default function ConversationPage() {
             No messages yet. Say hi 👋
           </p>
         ) : (
-          messages.map((message) => {
-            const isMine = message.sender_id === user?.id;
+          (() => {
+            // Find the most recent message I sent that the
+            // other participant has read, so we only show a
+            // single "Seen" label (like most chat apps) rather
+            // than repeating it on every message.
+            let lastSeenMessageId: string | null = null;
 
-            return (
-              <div
-                key={message.id}
-                className={`flex ${
-                  isMine ? "justify-end" : "justify-start"
-                }`}
-              >
-                <div
-                  className={`max-w-[75%] rounded-2xl px-1.5 pb-1 pt-1.5 ${
-                    isMine
-                      ? "bg-accent-secondary"
-                      : "bg-accent/40"
-                  } ${
-                    message.image_url ? "" : "px-3.5"
-                  }`}
-                >
-                  {message.image_url && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setViewingImage(
-                          message.image_url as string
-                        )
-                      }
-                      className="relative mb-1 block w-full overflow-hidden rounded-xl"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={message.image_url}
-                        alt="Sent attachment"
-                        className="max-h-72 w-full object-cover"
-                      />
-                    </button>
-                  )}
+            if (otherReadAt) {
+              const readAtTime = new Date(
+                otherReadAt
+              ).getTime();
 
-                  {message.content && (
-                    <p
-                      className={`whitespace-pre-line break-words text-[15px] ${
-                        message.image_url ? "px-2" : ""
-                      }`}
-                    >
-                      {message.content}
-                    </p>
-                  )}
+              for (let i = messages.length - 1; i >= 0; i--) {
+                const m = messages[i];
+                if (
+                  m.sender_id === user?.id &&
+                  new Date(m.created_at).getTime() <=
+                    readAtTime
+                ) {
+                  lastSeenMessageId = m.id;
+                  break;
+                }
+              }
+            }
 
-                  <p
-                    className={`mt-0.5 text-right text-[10px] text-foreground/40 ${
-                      message.image_url ? "px-2" : ""
+            return messages.map((message) => {
+              const isMine = message.sender_id === user?.id;
+              const showSeen =
+                isMine &&
+                message.id === lastSeenMessageId;
+
+              return (
+                <div key={message.id}>
+                  <div
+                    className={`flex ${
+                      isMine
+                        ? "justify-end"
+                        : "justify-start"
                     }`}
                   >
-                    {formatMessageTime(
-                      message.created_at
-                    )}
-                  </p>
+                    <div
+                      className={`max-w-[75%] rounded-2xl px-1.5 pb-1 pt-1.5 ${
+                        isMine
+                          ? "bg-accent-secondary"
+                          : "bg-accent/40"
+                      } ${
+                        message.image_url ? "" : "px-3.5"
+                      }`}
+                    >
+                      {message.image_url && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setViewingImage(
+                              message.image_url as string
+                            )
+                          }
+                          className="relative mb-1 block w-full overflow-hidden rounded-xl"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={message.image_url}
+                            alt="Sent attachment"
+                            className="max-h-72 w-full object-cover"
+                          />
+                        </button>
+                      )}
+
+                      {message.content && (
+                        <p
+                          className={`whitespace-pre-line break-words text-[15px] ${
+                            message.image_url
+                              ? "px-2"
+                              : ""
+                          }`}
+                        >
+                          {message.content}
+                        </p>
+                      )}
+
+                      <p
+                        className={`mt-0.5 text-right text-[10px] text-foreground/40 ${
+                          message.image_url ? "px-2" : ""
+                        }`}
+                      >
+                        {formatMessageTime(
+                          message.created_at
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  {showSeen && (
+                    <p className="mt-1 text-right text-[11px] text-foreground/40">
+                      Seen
+                    </p>
+                  )}
                 </div>
-              </div>
-            );
-          })
+              );
+            });
+          })()
         )}
 
         <div ref={bottomRef} />
