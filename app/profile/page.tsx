@@ -89,6 +89,12 @@ export default function ProfilePage() {
   const [likedPostsLoaded, setLikedPostsLoaded] =
     useState(false);
 
+  const [savedPosts, setSavedPosts] =
+    useState<ProfilePost[]>([]);
+
+  const [savedPostsLoaded, setSavedPostsLoaded] =
+    useState(false);
+
   const [showCropper, setShowCropper] = useState(false);
   const [cropImage, setCropImage] =
     useState<string | null>(null);
@@ -119,13 +125,6 @@ export default function ProfilePage() {
     })
   );
 
-  const savedPosts = [
-    {
-      id: "3",
-      image: "/posts/post1.png",
-    },
-  ];
-
   useEffect(() => {
     if (!isLoading && !isLoggedIn) {
       router.push("/login");
@@ -149,6 +148,16 @@ export default function ProfilePage() {
       fetchLikedPosts();
     }
   }, [activeTab, user, likedPostsLoaded]);
+
+  useEffect(() => {
+    if (
+      activeTab === "saved" &&
+      user &&
+      !savedPostsLoaded
+    ) {
+      fetchSavedPosts();
+    }
+  }, [activeTab, user, savedPostsLoaded]);
 
   const fetchFollowCounts = async () => {
     if (!user) return;
@@ -440,6 +449,169 @@ export default function ProfilePage() {
     }
   };
 
+  const fetchSavedPosts = async () => {
+    if (!user) return;
+
+    try {
+      const { data: savedRows, error: savedError } =
+        await supabase
+          .from("saved_posts")
+          .select("post_id")
+          .eq("user_id", user.id)
+          .order("created_at", {
+            ascending: false,
+          });
+
+      if (savedError) {
+        console.error(
+          "Error fetching saved posts:",
+          savedError
+        );
+        return;
+      }
+
+      const postIds =
+        savedRows?.map((row) => row.post_id) ?? [];
+
+      if (postIds.length === 0) {
+        setSavedPosts([]);
+        setSavedPostsLoaded(true);
+        return;
+      }
+
+      const { data: postData, error: postsError } =
+        await supabase
+          .from("posts")
+          .select(
+            `
+            *,
+            likes(count),
+            comments(count),
+            post_oshis(oshis(id, name, image_url)),
+            post_fandoms(fandoms(id, name)),
+            post_hashtags(hashtags(tag))
+            `
+          )
+          .in("id", postIds);
+
+      if (postsError) {
+        console.error(
+          "Error fetching saved posts:",
+          postsError
+        );
+        return;
+      }
+
+      const fetchedPosts = postData ?? [];
+
+      // Preserve the order the posts were saved in.
+      const postsById = new Map(
+        fetchedPosts.map((post: any) => [
+          post.id,
+          post,
+        ])
+      );
+
+      const orderedPosts = postIds
+        .map((postId) => postsById.get(postId))
+        .filter(Boolean) as any[];
+
+      const posterIds = [
+        ...new Set(
+          orderedPosts.map(
+            (post: any) => post.user_id
+          )
+        ),
+      ];
+
+      const { data: profiles, error: profilesError } =
+        await supabase
+          .from("profiles")
+          .select("id, username, avatar_url")
+          .in("id", posterIds);
+
+      if (profilesError) {
+        console.error(
+          "Error fetching poster profiles:",
+          profilesError
+        );
+        return;
+      }
+
+      const profileMap = new Map(
+        (profiles ?? []).map((poster) => [
+          poster.id,
+          poster,
+        ])
+      );
+
+      const formattedPosts: ProfilePost[] =
+        orderedPosts.map((post: any) => {
+          const poster = profileMap.get(
+            post.user_id
+          );
+
+          return {
+            id: post.id,
+            images: parsePostImages(
+              post.image_url
+            ),
+            caption: post.content,
+            time: formatTimeAgo(
+              post.created_at
+            ),
+            location:
+              post.location ?? undefined,
+
+            likes:
+              post.likes?.[0]?.count ?? 0,
+
+            comments:
+              post.comments?.[0]?.count ?? 0,
+
+            oshis: (
+              post.post_oshis ?? []
+            ).map((item: any) => ({
+              id: item.oshis.id,
+              name: item.oshis.name,
+              image:
+                item.oshis.image_url ?? "",
+            })),
+
+            fandoms: (
+              post.post_fandoms ?? []
+            ).map((item: any) => ({
+              id: item.fandoms.id,
+              name: item.fandoms.name,
+            })),
+
+            hashtags: (
+              post.post_hashtags ?? []
+            ).map(
+              (item: any) =>
+                item.hashtags.tag
+            ),
+
+            username:
+              poster?.username ?? "username",
+
+            avatar:
+              poster?.avatar_url ?? null,
+
+            userId: post.user_id,
+          };
+        });
+
+      setSavedPosts(formattedPosts);
+      setSavedPostsLoaded(true);
+    } catch (error) {
+      console.error(
+        "Error fetching saved posts:",
+        error
+      );
+    }
+  };
+
   const handleLogout = async () => {
     await logout();
     router.push("/login");
@@ -498,6 +670,10 @@ export default function ProfilePage() {
     if (likedPostsLoaded) {
       await fetchLikedPosts();
     }
+
+    if (savedPostsLoaded) {
+      await fetchSavedPosts();
+    }
   };
 
   if (isLoading) {
@@ -516,6 +692,11 @@ export default function ProfilePage() {
 
   const selectedLikedPost =
     likedPosts.find(
+      (post) => post.id === selectedPostId
+    );
+
+  const selectedSavedPost =
+    savedPosts.find(
       (post) => post.id === selectedPostId
     );
 
@@ -673,7 +854,32 @@ export default function ProfilePage() {
         )}
 
         {activeTab === "saved" && (
-          <PostGrid posts={savedPosts} />
+          <>
+            {!savedPostsLoaded ? (
+              <div className="flex min-h-40 items-center justify-center">
+                <p className="text-sm text-foreground/40">
+                  Loading saved posts...
+                </p>
+              </div>
+            ) : savedPosts.length === 0 ? (
+              <div className="flex min-h-40 items-center justify-center">
+                <p className="text-sm text-foreground/40">
+                  No saved posts yet.
+                </p>
+              </div>
+            ) : (
+              <PostGrid
+                posts={savedPosts.map(
+                  (post) => ({
+                    id: post.id,
+                    image:
+                      post.images[0] ?? null,
+                  })
+                )}
+                onPostClick={setSelectedPostId}
+              />
+            )}
+          </>
         )}
 
         {activeTab === "liked" && (
@@ -756,12 +962,17 @@ export default function ProfilePage() {
           posts={
             activeTab === "liked"
               ? likedPosts
+              : activeTab === "saved"
+              ? savedPosts
               : profileFeedPosts
           }
           initialPostId={selectedPostId}
           username={
             activeTab === "liked"
               ? selectedLikedPost?.username ??
+                "username"
+              : activeTab === "saved"
+              ? selectedSavedPost?.username ??
                 "username"
               : profile?.username ??
                 "username"
@@ -770,12 +981,17 @@ export default function ProfilePage() {
             activeTab === "liked"
               ? selectedLikedPost?.avatar ??
                 null
+              : activeTab === "saved"
+              ? selectedSavedPost?.avatar ??
+                null
               : profile?.avatar_url ??
                 null
           }
           ownerId={
             activeTab === "liked"
               ? selectedLikedPost?.userId
+              : activeTab === "saved"
+              ? selectedSavedPost?.userId
               : user.id
           }
           onClose={() =>
@@ -784,6 +1000,13 @@ export default function ProfilePage() {
           onPostDeleted={(postId) => {
             if (activeTab === "liked") {
               setLikedPosts((prev) =>
+                prev.filter(
+                  (post) =>
+                    post.id !== postId
+                )
+              );
+            } else if (activeTab === "saved") {
+              setSavedPosts((prev) =>
                 prev.filter(
                   (post) =>
                     post.id !== postId

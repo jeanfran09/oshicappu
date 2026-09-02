@@ -75,6 +75,8 @@ export default function Post({
     const [liked, setLiked] = useState(false);
     const [likeCount, setLikeCount] = useState(likes ?? 0);
     const [likeSubmitting, setLikeSubmitting] = useState(false);
+    const [saved, setSaved] = useState(false);
+    const [saveSubmitting, setSaveSubmitting] = useState(false);
     const [currentImage, setCurrentImage] = useState(0);
     const [showMore, setShowMore] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState(false);
@@ -115,6 +117,77 @@ export default function Post({
         cancelled = true;
       };
     }, [id, user]);
+
+    // Check whether the current user has already saved this post.
+    useEffect(() => {
+      if (!user) {
+        setSaved(false);
+        return;
+      }
+
+      let cancelled = false;
+
+      async function checkSaved() {
+        const { data, error } = await supabase
+          .from("saved_posts")
+          .select("id")
+          .eq("post_id", id)
+          .eq("user_id", user!.id)
+          .maybeSingle();
+
+        if (!cancelled) {
+          if (error) {
+            console.error("Error checking saved status:", error);
+          } else {
+            setSaved(!!data);
+          }
+        }
+      }
+
+      checkSaved();
+
+      return () => {
+        cancelled = true;
+      };
+    }, [id, user]);
+
+    async function handleSaveClick() {
+      if (!user || saveSubmitting) return;
+
+      setSaveSubmitting(true);
+
+      // Optimistic update
+      const nextSaved = !saved;
+      setSaved(nextSaved);
+
+      try {
+        if (nextSaved) {
+          const { error } = await supabase
+            .from("saved_posts")
+            .insert({
+              post_id: id,
+              user_id: user.id,
+            });
+
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from("saved_posts")
+            .delete()
+            .eq("post_id", id)
+            .eq("user_id", user.id);
+
+          if (error) throw error;
+        }
+      } catch (error) {
+        console.error("Error updating saved status:", error);
+
+        // Roll back on failure
+        setSaved(!nextSaved);
+      } finally {
+        setSaveSubmitting(false);
+      }
+    }
 
     async function handleLikeClick() {
       if (!user || likeSubmitting) return;
@@ -354,8 +427,15 @@ export default function Post({
                     </button>
                 </div>
 
-                <button>
-                    <Bookmark size={24} />
+                <button
+                    onClick={handleSaveClick}
+                    disabled={saveSubmitting}
+                    className="disabled:opacity-60"
+                >
+                    <Bookmark
+                        size={24}
+                        className={saved ? "fill-foreground" : ""}
+                    />
                 </button>
             </div>
 
