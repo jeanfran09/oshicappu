@@ -109,6 +109,31 @@ function hslToRgb(h: number, s: number, l: number) {
 }
 
 /**
+ * Validates and normalizes a hex color string (with or without a
+ * leading #, 3 or 6 digits) into a lowercase 6-digit hex string.
+ * Returns null if the input isn't a valid hex color.
+ */
+export function normalizeHex(input: string): string | null {
+  const trimmed = input.trim().replace(/^#/, "");
+
+  const isShort = /^[0-9a-fA-F]{3}$/.test(trimmed);
+  const isFull = /^[0-9a-fA-F]{6}$/.test(trimmed);
+
+  if (!isShort && !isFull) {
+    return null;
+  }
+
+  const full = isShort
+    ? trimmed
+        .split("")
+        .map((c) => c + c)
+        .join("")
+    : trimmed;
+
+  return `#${full.toLowerCase()}`;
+}
+
+/**
  * Deterministically turns a string (e.g. an oshi's name) into a
  * hex color. Used as a fallback when we can't sample an image.
  */
