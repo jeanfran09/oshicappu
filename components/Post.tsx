@@ -19,6 +19,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
 import { useRouter } from "next/navigation";
+import SharePostSheet from "./SharePostSheet";
 
 type Oshi = {
   id: string;
@@ -72,32 +73,41 @@ export default function Post({
 }: PostProps) {
   const { user } = useSupabaseAuth();
 
-  const isOwner = !!user && !!userId && user.id === userId;
+  const isOwner =
+    !!user && !!userId && user.id === userId;
 
   const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(likes ?? 0);
-  const [likeSubmitting, setLikeSubmitting] = useState(false);
+  const [likeCount, setLikeCount] = useState(
+    likes ?? 0
+  );
+  const [likeSubmitting, setLikeSubmitting] =
+    useState(false);
+
   const [saved, setSaved] = useState(false);
-  const [saveSubmitting, setSaveSubmitting] = useState(false);
+  const [saveSubmitting, setSaveSubmitting] =
+    useState(false);
+
   const [currentImage, setCurrentImage] = useState(0);
+
   const [showMore, setShowMore] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmDelete, setConfirmDelete] =
+    useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState("");
+  const [deleteError, setDeleteError] =
+    useState("");
+
+  const [showShare, setShowShare] = useState(false);
 
   const router = useRouter();
 
-  // Keep the local like count in sync when the prop changes.
-  useEffect(() => {
-    setLikeCount(likes ?? 0);
-  }, [likes]);
-
-  // Check whether the current user has already liked this post.
+  // Check whether the current user has liked this post.
   useEffect(() => {
     if (!user) {
       setLiked(false);
       return;
     }
+
+    const userId = user.id;
 
     let cancelled = false;
 
@@ -106,12 +116,15 @@ export default function Post({
         .from("likes")
         .select("id")
         .eq("post_id", id)
-        .eq("user_id", user!.id)
+        .eq("user_id", userId)
         .maybeSingle();
 
       if (!cancelled) {
         if (error) {
-          console.error("Error checking like status:", error);
+          console.error(
+            "Error checking like status:",
+            error
+          );
         } else {
           setLiked(!!data);
         }
@@ -125,12 +138,14 @@ export default function Post({
     };
   }, [id, user]);
 
-  // Check whether the current user has already saved this post.
+  // Check whether the current user has saved this post.
   useEffect(() => {
     if (!user) {
       setSaved(false);
       return;
     }
+
+    const userId = user.id;
 
     let cancelled = false;
 
@@ -139,12 +154,15 @@ export default function Post({
         .from("saved_posts")
         .select("id")
         .eq("post_id", id)
-        .eq("user_id", user!.id)
+        .eq("user_id", userId)
         .maybeSingle();
 
       if (!cancelled) {
         if (error) {
-          console.error("Error checking saved status:", error);
+          console.error(
+            "Error checking saved status:",
+            error
+          );
         } else {
           setSaved(!!data);
         }
@@ -187,7 +205,10 @@ export default function Post({
         if (error) throw error;
       }
     } catch (error) {
-      console.error("Error updating saved status:", error);
+      console.error(
+        "Error updating saved status:",
+        error
+      );
 
       // Roll back on failure
       setSaved(!nextSaved);
@@ -203,13 +224,14 @@ export default function Post({
 
     // Optimistic update
     const nextLiked = !liked;
+
     const nextLikeCount =
       likeCount + (nextLiked ? 1 : -1);
 
     setLiked(nextLiked);
     setLikeCount(nextLikeCount);
 
-    // Notify parent/modal about the updated count
+    // Notify parent about the updated count.
     onLikeChange?.(nextLikeCount);
 
     try {
@@ -223,7 +245,8 @@ export default function Post({
 
         if (error) throw error;
 
-        // Notify the post owner, unless they're liking their own post.
+        // Notify the post owner unless
+        // they're liking their own post.
         if (userId && userId !== user.id) {
           void supabase
             .from("notifications")
@@ -233,14 +256,16 @@ export default function Post({
               type: "like",
               entity_id: id,
             })
-            .then(({ error: notificationError }) => {
-              if (notificationError) {
-                console.error(
-                  "Error creating like notification:",
-                  notificationError
-                );
+            .then(
+              ({ error: notificationError }) => {
+                if (notificationError) {
+                  console.error(
+                    "Error creating like notification:",
+                    notificationError
+                  );
+                }
               }
-            });
+            );
         }
       } else {
         const { error } = await supabase
@@ -252,16 +277,22 @@ export default function Post({
         if (error) throw error;
       }
     } catch (error) {
-      console.error("Error updating like status:", error);
+      console.error(
+        "Error updating like status:",
+        error
+      );
 
-      // Roll back on failure
+      // Roll back on failure.
+      const rollbackLiked = !nextLiked;
+
       const rollbackCount =
-        nextLikeCount + (nextLiked ? -1 : 1);
+        nextLikeCount +
+        (nextLiked ? -1 : 1);
 
-      setLiked(!nextLiked);
+      setLiked(rollbackLiked);
       setLikeCount(rollbackCount);
 
-      // Notify parent/modal about rollback
+      // Notify parent about rollback.
       onLikeChange?.(rollbackCount);
     } finally {
       setLikeSubmitting(false);
@@ -292,7 +323,11 @@ export default function Post({
         router.push("/");
       }
     } catch (error) {
-      console.error("Error deleting post:", error);
+      console.error(
+        "Error deleting post:",
+        error
+      );
+
       setDeleteError(
         "Couldn't delete this post. Try again."
       );
@@ -313,7 +348,8 @@ export default function Post({
     const container = e.currentTarget;
 
     const index = Math.round(
-      container.scrollLeft / container.clientWidth
+      container.scrollLeft /
+        container.clientWidth
     );
 
     setCurrentImage(index);
@@ -449,6 +485,7 @@ export default function Post({
         {/* Actions */}
         <div className="flex items-center justify-between px-3 py-2">
           <div className="flex items-center gap-5">
+            {/* Like */}
             <button
               type="button"
               onClick={handleLikeClick}
@@ -471,6 +508,7 @@ export default function Post({
               )}
             </button>
 
+            {/* Comment */}
             <button
               type="button"
               className="flex items-center gap-1"
@@ -486,11 +524,16 @@ export default function Post({
                 )}
             </button>
 
-            <button type="button">
+            {/* Share */}
+            <button
+              type="button"
+              onClick={() => setShowShare(true)}
+            >
               <Send size={24} />
             </button>
           </div>
 
+          {/* Save */}
           <button
             type="button"
             onClick={handleSaveClick}
@@ -613,6 +656,7 @@ export default function Post({
           </p>
         </div>
 
+        {/* Post Options */}
         {showMore && isOwner && (
           <BottomSheet
             title={
@@ -627,8 +671,8 @@ export default function Post({
               <div className="w-full space-y-4">
                 <p className="text-sm text-foreground/70">
                   This can't be undone. Your post,
-                  comments, and likes will be permanently
-                  removed.
+                  comments, and likes will be
+                  permanently removed.
                 </p>
 
                 {deleteError && (
@@ -691,7 +735,9 @@ export default function Post({
                   "
                   onClick={() => {
                     setShowMore(false);
-                    router.push(`/edit_post/${id}`);
+                    router.push(
+                      `/edit_post/${id}`
+                    );
                   }}
                 >
                   <div className="flex h-9 w-9 mr-3 items-center justify-center rounded-full bg-accent">
@@ -731,6 +777,14 @@ export default function Post({
               </div>
             )}
           </BottomSheet>
+        )}
+
+        {/* Share Sheet */}
+        {showShare && (
+          <SharePostSheet
+            postId={id}
+            onClose={() => setShowShare(false)}
+          />
         )}
       </article>
     </>
