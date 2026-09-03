@@ -549,7 +549,7 @@ export default function ConversationPage() {
   }
 
   return (
-    <div className="md:hidden flex min-h-screen flex-col">
+    <div className="md:hidden flex h-screen flex-col overflow-hidden">
       {/* Header */}
       <header className="sticky top-0 z-50 flex items-center gap-2 border-b border-foreground/10 bg-background px-2 py-3">
         <button
