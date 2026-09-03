@@ -704,7 +704,13 @@ export default function ConversationPage() {
                         </span>
 
                         {repliedMessage.image_url && (
-                          <span className="flex items-center gap-1.5">
+                          <span
+                            className={`flex items-center gap-1.5 ${
+                              isMine
+                                ? "flex-row-reverse"
+                                : ""
+                            }`}
+                          >
                             <span className="h-16 w-[3px] shrink-0 rounded-full bg-foreground/25" />
 
                             {/* eslint-disable-next-line @next/next/no-img-element */}
