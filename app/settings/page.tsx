@@ -1,16 +1,28 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Palette } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Palette,
+  LogOut,
+} from "lucide-react";
+import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { logout } = useSupabaseAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    router.push("/login");
+  };
 
   return (
     <div className="md:hidden min-h-screen flex flex-col">
-      {/* Header */}
       <header className="sticky top-0 z-50 flex items-center border-b border-foreground/10 bg-background py-3">
         <button
+          type="button"
           onClick={() => router.back()}
           className="flex h-9 w-9 items-center justify-center rounded-full"
         >
@@ -22,8 +34,8 @@ export default function SettingsPage() {
         </h1>
       </header>
 
-      {/* Settings list */}
       <div className="px-4 pt-2">
+        {/* Appearance */}
         <button
           type="button"
           onClick={() => router.push("/settings/appearance")}
@@ -50,6 +62,29 @@ export default function SettingsPage() {
             className="text-foreground/40"
           />
         </button>
+
+        {/* Sign Out */}
+        <div className="flex justify-center pt-6">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="
+              flex
+              items-center
+              justify-center
+              gap-2
+              rounded-full
+              bg-red-500/10
+              px-6
+              py-3
+              text-red-500
+              font-medium
+            "
+          >
+            <LogOut size={18} />
+            <span>Sign Out</span>
+          </button>
+        </div>
       </div>
     </div>
   );
