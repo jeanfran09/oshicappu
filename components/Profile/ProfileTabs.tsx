@@ -56,6 +56,11 @@ export default function ProfileTabs({
                   ? "text-foreground"
                   : "text-foreground/40"
               }
+              fill={
+                selected && (tab.id === "saved" || tab.id === "liked")
+                  ? "currentColor"
+                  : "none"
+              }
             />
 
             {selected && (

@@ -376,7 +376,7 @@ export default function UserList({
                               isFollowing
                             )
                           }
-                          className="h-9 shrink-0 px-4"
+                          className="h-9 w-27 shrink-0 px-4"
                         />
                       )}
                   </div>

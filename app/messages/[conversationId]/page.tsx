@@ -531,7 +531,7 @@ export default function ConversationPage() {
                     <div
                       className={`max-w-[75%] rounded-2xl px-1.5 pb-1 pt-1.5 ${
                         isMine
-                          ? "bg-accent-secondary"
+                          ? "bg-accent"
                           : "bg-accent/40"
                       } ${
                         message.image_url ? "" : "px-3.5"
@@ -569,7 +569,7 @@ export default function ConversationPage() {
                       )}
 
                       <p
-                        className={`mt-0.5 text-right text-[10px] text-foreground/40 ${
+                        className={`mt-0.5 text-right text-[10px] text-foreground/70 ${
                           message.image_url ? "px-2" : ""
                         }`}
                       >
@@ -660,7 +660,7 @@ export default function ConversationPage() {
             disabled={
               (!draft.trim() && !attachedFile) || sending
             }
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent-secondary disabled:opacity-50"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent disabled:opacity-50"
           >
             <Send size={18} />
           </button>
