@@ -664,6 +664,9 @@ export default function ConversationPage() {
               const isHighlighted =
                 highlightedId === message.id;
 
+              const isImageOnly =
+                !!message.image_url && !message.content;
+
               const menuOpen =
                 menuForMessageId === message.id;
 
@@ -766,12 +769,18 @@ export default function ConversationPage() {
                         e.preventDefault();
                         setMenuForMessageId(message.id);
                       }}
-                      className={`max-w-[75%] select-none rounded-2xl px-1.5 pb-1 pt-1.5 transition-colors duration-500 ${
-                        isMine
-                          ? "bg-accent"
-                          : "bg-accent/40"
-                      } ${
-                        message.image_url ? "" : "px-3.5"
+                      className={`max-w-[75%] select-none rounded-2xl transition-colors duration-500 ${
+                        isImageOnly
+                          ? ""
+                          : `${
+                              isMine
+                                ? "bg-accent"
+                                : "bg-accent/40"
+                            } px-1.5 pb-1 pt-1.5 ${
+                              message.image_url
+                                ? ""
+                                : "px-3.5"
+                            }`
                       } ${
                         isHighlighted
                           ? "ring-2 ring-accent-secondary"
@@ -790,7 +799,9 @@ export default function ConversationPage() {
                               message.image_url as string
                             );
                           }}
-                          className="relative mb-1 block w-full overflow-hidden rounded-xl"
+                          className={`relative block w-full overflow-hidden rounded-2xl ${
+                            isImageOnly ? "" : "mb-1"
+                          }`}
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
@@ -813,15 +824,19 @@ export default function ConversationPage() {
                         </p>
                       )}
 
-                      <p
-                        className={`mt-0.5 text-right text-[10px] text-foreground/70 ${
-                          message.image_url ? "px-2" : ""
-                        }`}
-                      >
-                        {formatMessageTime(
-                          message.created_at
-                        )}
-                      </p>
+                      {!isImageOnly && (
+                        <p
+                          className={`mt-0.5 text-right text-[10px] text-foreground/70 ${
+                            message.image_url
+                              ? "px-2"
+                              : ""
+                          }`}
+                        >
+                          {formatMessageTime(
+                            message.created_at
+                          )}
+                        </p>
+                      )}
                     </div>
                   </div>
 
