@@ -751,13 +751,14 @@ export default function ProfilePage() {
             <Settings size={22} />
           </button>
 
+          {/** 
           <button
             type="button"
             onClick={handleLogout}
             className="flex h-9 w-9 items-center justify-center"
           >
             <LogOut size={22} />
-          </button>
+          </button>*/}
         </div>
       </header>
 

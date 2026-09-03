@@ -207,12 +207,12 @@ export default function BottomNav() {
         <User
           size={24}
           fill={
-            pathname === "/profile"
+            pathname === "/profile" || pathname === "/settings"
               ? activeColor
               : "none"
           }
           className={
-            pathname === "/profile"
+            pathname === "/profile" || pathname === "/settings"
               ? "text-[var(--accent-secondary)]"
               : ""
           }
