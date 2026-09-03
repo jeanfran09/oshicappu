@@ -9,7 +9,6 @@ import {
   Home,
   Search,
   Calendar,
-  MessageCircle,
   Bell,
   User
 } from "lucide-react";
@@ -20,8 +19,6 @@ export default function BottomNav() {
   const { isLoggedIn, user } = useSupabaseAuth();
 
   const [unreadCount, setUnreadCount] = useState(0);
-  const [unreadMessageCount, setUnreadMessageCount] =
-    useState(0);
 
   useEffect(() => {
     if (!user) {
@@ -60,40 +57,6 @@ export default function BottomNav() {
     };
     // Re-check whenever the person navigates (e.g. after
     // visiting /notifs, which marks everything read).
-  }, [user, pathname]);
-
-  useEffect(() => {
-    if (!user) {
-      setUnreadMessageCount(0);
-      return;
-    }
-
-    let cancelled = false;
-
-    async function fetchUnreadMessageCount() {
-      const { data, error } = await supabase.rpc(
-        "get_unread_message_count"
-      );
-
-      if (!cancelled) {
-        if (error) {
-          console.error(
-            "Error fetching unread message count:",
-            error
-          );
-        } else {
-          setUnreadMessageCount(data ?? 0);
-        }
-      }
-    }
-
-    fetchUnreadMessageCount();
-
-    return () => {
-      cancelled = true;
-    };
-    // Re-check whenever the person navigates (e.g. after
-    // reading a conversation, which marks it read).
   }, [user, pathname]);
 
   const handleNav = (href: string) => {
@@ -140,32 +103,9 @@ export default function BottomNav() {
       </Link>
 
       <Link
-        href="/messages"
-        onClick={() => handleNav("/messages")}
-        className="relative"
+        href="/event"
+        onClick={() => handleNav("/event")}
       >
-        <MessageCircle
-          size={24}
-          fill={
-            pathname === "/messages" || pathname.startsWith("/messages/")
-              ? activeColor
-              : "none"
-          }
-          className={
-            pathname === "/messages" || pathname.startsWith("/messages/")
-              ? "text-[var(--accent-secondary)]"
-              : ""
-          }
-        />
-
-        {unreadMessageCount > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
-            {unreadMessageCount > 9 ? "9+" : unreadMessageCount}
-          </span>
-        )}
-      </Link>
-
-      <Link href="/event" onClick={() => handleNav("/event")}>
         <Calendar
           size={24}
           fill={
@@ -207,12 +147,12 @@ export default function BottomNav() {
         <User
           size={24}
           fill={
-            pathname === "/profile" || pathname === "/settings"
+            pathname === "/profile"
               ? activeColor
               : "none"
           }
           className={
-            pathname === "/profile" || pathname === "/settings"
+            pathname === "/profile"
               ? "text-[var(--accent-secondary)]"
               : ""
           }
