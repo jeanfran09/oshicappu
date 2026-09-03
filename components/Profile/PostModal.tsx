@@ -41,6 +41,7 @@ type PostModalProps = {
   ownerId?: string;
   onClose: () => void;
   onPostDeleted?: (postId: string) => void;
+  onLikeChange?: (postId: string, likes: number) => void;
 };
 
 export default function PostModal({
@@ -51,13 +52,35 @@ export default function PostModal({
   ownerId,
   onClose,
   onPostDeleted,
+  onLikeChange,
 }: PostModalProps) {
+  const [modalPosts, setModalPosts] = useState<ProfilePost[]>(posts);
+
   const [activeCommentsPostId, setActiveCommentsPostId] =
     useState<string | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Jump straight to the selected post.
+  // Keep modal posts in sync with the parent posts
+  useEffect(() => {
+    setModalPosts(posts);
+  }, [posts]);
+
+  // Update like count inside the modal
+  function handleLikeChange(postId: string, likes: number) {
+    setModalPosts((prev) =>
+      prev.map((post) =>
+        post.id === postId
+          ? { ...post, likes }
+          : post
+      )
+    );
+
+    // Also update the parent if a callback was provided
+    onLikeChange?.(postId, likes);
+  }
+
+  // Jump straight to the selected post
   useEffect(() => {
     const el = document.getElementById(
       `profile-post-${initialPostId}`
@@ -111,7 +134,15 @@ export default function PostModal({
             <ChevronLeft size={22} />
           </button>
 
-          <p className="absolute left-1/2 -translate-x-1/2 text-lg font-semibold">
+          <p
+            className="
+              absolute
+              left-1/2
+              -translate-x-1/2
+              text-lg
+              font-semibold
+            "
+          >
             {username ?? "username"}
           </p>
         </div>
@@ -121,7 +152,7 @@ export default function PostModal({
           ref={scrollRef}
           className="flex-1 overflow-y-auto"
         >
-          {posts.map((post, index) => (
+          {modalPosts.map((post, index) => (
             <div
               key={post.id}
               id={`profile-post-${post.id}`}
@@ -145,9 +176,12 @@ export default function PostModal({
                   setActiveCommentsPostId(post.id)
                 }
                 onDeleted={onPostDeleted}
+                onLikeChange={(likes) =>
+                  handleLikeChange(post.id, likes)
+                }
               />
 
-              {index < posts.length - 1 && <Divider />}
+              {index < modalPosts.length - 1 && <Divider />}
             </div>
           ))}
         </div>
@@ -157,7 +191,7 @@ export default function PostModal({
         <CommentsSheet
           postId={activeCommentsPostId}
           postOwnerId={
-            posts.find(
+            modalPosts.find(
               (post) =>
                 post.id === activeCommentsPostId
             )?.userId ?? ownerId

@@ -71,10 +71,9 @@ export default function PublicProfilePage() {
   const [selectedPostId, setSelectedPostId] =
     useState<string | null>(null);
 
-  const [userListType, setUserListType] =
-    useState<"followers" | "following" | null>(
-      null
-    );
+  const [userListType, setUserListType] = useState<
+    "followers" | "following" | null
+  >(null);
 
   /*
    * Fetch the target profile by username.
@@ -183,8 +182,7 @@ export default function PublicProfilePage() {
               id: po.oshis.id,
               name: po.oshis.name,
               image:
-                po.oshis.image_url ??
-                "",
+                po.oshis.image_url ?? "",
             })),
             fandoms: (
               post.post_fandoms ?? []
@@ -198,6 +196,10 @@ export default function PublicProfilePage() {
               (ph: any) =>
                 ph.hashtags.tag
             ),
+            username: profile!.username,
+            avatar:
+              profile!.avatar_url ?? null,
+            userId: profile!.id,
           }))
         );
       }
@@ -229,8 +231,7 @@ export default function PublicProfilePage() {
             id: o.id,
             name: o.name,
             image:
-              o.image_url ??
-              "",
+              o.image_url ?? "",
           }))
         );
       }
@@ -303,6 +304,30 @@ export default function PublicProfilePage() {
   );
 
   /*
+   * Update the like count in the parent posts state.
+   *
+   * This is important because PostModal is unmounted
+   * when it closes. Updating this state makes sure the
+   * new like count is still available when the modal
+   * is opened again.
+   */
+  const handleLikeChange = (
+    postId: string,
+    likes: number
+  ) => {
+    setPosts((prev) =>
+      prev.map((post) =>
+        post.id === postId
+          ? {
+              ...post,
+              likes,
+            }
+          : post
+      )
+    );
+  };
+
+  /*
    * Called immediately by FollowButton when
    * the user clicks Follow/Following.
    *
@@ -338,6 +363,7 @@ export default function PublicProfilePage() {
         </p>
 
         <button
+          type="button"
           onClick={() => router.back()}
           className="text-sm font-medium"
         >
@@ -352,6 +378,7 @@ export default function PublicProfilePage() {
       {/* Header */}
       <header className="sticky top-0 z-50 flex items-center border-b border-foreground/10 bg-background py-3">
         <button
+          type="button"
           onClick={() => router.back()}
           className="flex h-9 w-9 items-center justify-center rounded-full"
         >
@@ -544,6 +571,7 @@ export default function PublicProfilePage() {
           onClose={() =>
             setSelectedPostId(null)
           }
+          onLikeChange={handleLikeChange}
         />
       )}
 

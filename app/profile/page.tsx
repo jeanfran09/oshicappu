@@ -504,7 +504,6 @@ export default function ProfilePage() {
 
       const fetchedPosts = postData ?? [];
 
-      // Preserve the order the posts were saved in.
       const postsById = new Map(
         fetchedPosts.map((post: any) => [
           post.id,
@@ -612,6 +611,42 @@ export default function ProfilePage() {
     }
   };
 
+  const handleLikeChange = (
+    postId: string,
+    likes: number
+  ) => {
+    // Update the posts belonging to the currently
+    // active tab so the new count survives modal close.
+    if (activeTab === "liked") {
+      setLikedPosts((prev) =>
+        prev.map((post) =>
+          post.id === postId
+            ? { ...post, likes }
+            : post
+        )
+      );
+    } else if (activeTab === "saved") {
+      setSavedPosts((prev) =>
+        prev.map((post) =>
+          post.id === postId
+            ? { ...post, likes }
+            : post
+        )
+      );
+    } else {
+      setPosts((prev) =>
+        prev.map((post) =>
+          post.id === postId
+            ? {
+                ...post,
+                likes_count: likes,
+              }
+            : post
+        )
+      );
+    }
+  };
+
   const handleLogout = async () => {
     await logout();
     router.push("/login");
@@ -709,6 +744,7 @@ export default function ProfilePage() {
 
         <div className="ml-auto flex items-center gap-1">
           <button
+            type="button"
             onClick={() => router.push("/settings")}
             className="flex h-9 w-9 items-center justify-center"
           >
@@ -716,6 +752,7 @@ export default function ProfilePage() {
           </button>
 
           <button
+            type="button"
             onClick={handleLogout}
             className="flex h-9 w-9 items-center justify-center"
           >
@@ -832,6 +869,7 @@ export default function ProfilePage() {
           </div>
 
           <button
+            type="button"
             onClick={() =>
               setShowEditProfile(true)
             }
@@ -1004,6 +1042,7 @@ export default function ProfilePage() {
           onClose={() =>
             setSelectedPostId(null)
           }
+          onLikeChange={handleLikeChange}
           onPostDeleted={(postId) => {
             if (activeTab === "liked") {
               setLikedPosts((prev) =>
