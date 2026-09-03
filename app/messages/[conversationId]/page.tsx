@@ -12,6 +12,7 @@ import Link from "next/link";
 import {
   ChevronLeft,
   ImagePlus,
+  Reply as ReplyIcon,
   Send,
   User as UserIcon,
   X,
@@ -33,6 +34,7 @@ type Message = {
   sender_id: string;
   content: string | null;
   image_url: string | null;
+  reply_to_id: string | null;
   created_at: string;
 };
 
@@ -44,6 +46,12 @@ function formatMessageTime(dateString: string) {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+function replyPreviewText(message: Message) {
+  if (message.content) return message.content;
+  if (message.image_url) return "📷 Photo";
+  return "";
 }
 
 export default function ConversationPage() {
@@ -83,6 +91,37 @@ export default function ConversationPage() {
   const [viewingImage, setViewingImage] = useState<
     string | null
   >(null);
+
+  // The message currently staged as a reply target, shown as a
+  // preview above the composer until sent or cancelled.
+  const [replyingTo, setReplyingTo] = useState<Message | null>(
+    null
+  );
+
+  // Briefly highlighted when jumping to a message via its
+  // quoted-reply preview.
+  const [highlightedId, setHighlightedId] = useState<
+    string | null
+  >(null);
+
+  // Which message's long-press action popup is currently open.
+  const [menuForMessageId, setMenuForMessageId] = useState<
+    string | null
+  >(null);
+
+  const messageRefs = useRef<
+    Record<string, HTMLDivElement | null>
+  >({});
+
+  // Long-press detection state (not stored in React state since
+  // it doesn't need to trigger re-renders on its own).
+  const longPressTimer = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
+  const pressStart = useRef<{ x: number; y: number } | null>(
+    null
+  );
+  const didLongPress = useRef(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -288,6 +327,15 @@ export default function ConversationPage() {
     };
   }, [attachedPreview]);
 
+  // Clean up any pending long-press timer on unmount.
+  useEffect(() => {
+    return () => {
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+      }
+    };
+  }, []);
+
   function handleFileSelect(
     e: ChangeEvent<HTMLInputElement>
   ) {
@@ -323,6 +371,65 @@ export default function ConversationPage() {
     setAttachedFile(null);
     setAttachedPreview(null);
     setAttachError("");
+  }
+
+  function scrollToMessage(id: string) {
+    const el = messageRefs.current[id];
+    if (!el) return;
+
+    el.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+
+    setHighlightedId(id);
+    setTimeout(() => {
+      setHighlightedId((current) =>
+        current === id ? null : current
+      );
+    }, 1500);
+  }
+
+  const LONG_PRESS_MS = 450;
+  const MOVE_CANCEL_PX = 10;
+
+  function handlePressStart(
+    messageId: string,
+    x: number,
+    y: number
+  ) {
+    pressStart.current = { x, y };
+    didLongPress.current = false;
+
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+    }
+
+    longPressTimer.current = setTimeout(() => {
+      didLongPress.current = true;
+      setMenuForMessageId(messageId);
+    }, LONG_PRESS_MS);
+  }
+
+  function handlePressMove(x: number, y: number) {
+    if (!pressStart.current || !longPressTimer.current) return;
+
+    const dx = x - pressStart.current.x;
+    const dy = y - pressStart.current.y;
+
+    if (
+      Math.sqrt(dx * dx + dy * dy) > MOVE_CANCEL_PX
+    ) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }
+
+  function handlePressEnd() {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
   }
 
   async function uploadImageFile(
@@ -366,9 +473,11 @@ export default function ConversationPage() {
 
     const previousDraft = draft;
     const previousFile = attachedFile;
+    const previousReplyTo = replyingTo;
 
     setDraft("");
     clearAttachment();
+    setReplyingTo(null);
 
     try {
       let imageUrl: string | null = null;
@@ -388,6 +497,7 @@ export default function ConversationPage() {
           sender_id: user.id,
           content: content || null,
           image_url: imageUrl,
+          reply_to_id: previousReplyTo?.id ?? null,
         })
         .select()
         .single();
@@ -411,6 +521,10 @@ export default function ConversationPage() {
         setAttachedPreview(
           URL.createObjectURL(previousFile)
         );
+      }
+
+      if (previousReplyTo) {
+        setReplyingTo(previousReplyTo);
       }
     } finally {
       setSending(false);
@@ -513,38 +627,169 @@ export default function ConversationPage() {
               }
             }
 
+            const messagesById = new Map(
+              messages.map((m) => [m.id, m])
+            );
+
             return messages.map((message) => {
               const isMine = message.sender_id === user?.id;
               const showSeen =
                 isMine &&
                 message.id === lastSeenMessageId;
 
+              const repliedMessage = message.reply_to_id
+                ? messagesById.get(message.reply_to_id)
+                : null;
+
+              // Copy for the small "↩ Replied to ..." header
+              // shown above a message that's replying to
+              // something, mirroring how the sender relates to
+              // both the reply and the original message.
+              const otherName =
+                otherUser?.display_name ||
+                otherUser?.username ||
+                "them";
+
+              const replyHeaderText = repliedMessage
+                ? isMine
+                  ? repliedMessage.sender_id === user?.id
+                    ? "You replied to yourself"
+                    : `Replied to ${otherName}`
+                  : repliedMessage.sender_id ===
+                    message.sender_id
+                  ? `${otherName} replied to themself`
+                  : "Replied to you"
+                : null;
+
+              const isHighlighted =
+                highlightedId === message.id;
+
+              const menuOpen =
+                menuForMessageId === message.id;
+
               return (
-                <div key={message.id}>
+                <div
+                  key={message.id}
+                  ref={(el) => {
+                    messageRefs.current[message.id] = el;
+                  }}
+                >
+                  {repliedMessage && (
+                    <div
+                      className={`mb-1 flex ${
+                        isMine
+                          ? "justify-end"
+                          : "justify-start"
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() =>
+                          scrollToMessage(
+                            repliedMessage.id
+                          )
+                        }
+                        className={`flex flex-col gap-1 ${
+                          isMine
+                            ? "items-end"
+                            : "items-start"
+                        }`}
+                      >
+                        <span className="flex items-center gap-1.5 text-xs text-foreground/50">
+                          <ReplyIcon size={12} />
+                          <span>{replyHeaderText}</span>
+                        </span>
+
+                        {repliedMessage.image_url && (
+                          <span className="flex items-center gap-1.5">
+                            <span className="h-16 w-[3px] shrink-0 rounded-full bg-foreground/25" />
+
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={
+                                repliedMessage.image_url
+                              }
+                              alt="Replied-to attachment"
+                              className="h-16 w-16 rounded-lg object-cover"
+                            />
+                          </span>
+                        )}
+                      </button>
+                    </div>
+                  )}
+
+                  {repliedMessage &&
+                    !repliedMessage.image_url && (
+                      <div
+                        className={`flex ${
+                          isMine
+                            ? "justify-end"
+                            : "justify-start"
+                        }`}
+                      >
+                        <div className="mb-1 max-w-[75%] truncate rounded-2xl bg-foreground/10 px-3 py-1.5 text-xs text-foreground/60">
+                          {replyPreviewText(
+                            repliedMessage
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                   <div
-                    className={`flex ${
+                    className={`flex items-center gap-1 ${
                       isMine
                         ? "justify-end"
                         : "justify-start"
                     }`}
                   >
                     <div
-                      className={`max-w-[75%] rounded-2xl px-1.5 pb-1 pt-1.5 ${
+                      onPointerDown={(e) =>
+                        handlePressStart(
+                          message.id,
+                          e.clientX,
+                          e.clientY
+                        )
+                      }
+                      onPointerMove={(e) =>
+                        handlePressMove(
+                          e.clientX,
+                          e.clientY
+                        )
+                      }
+                      onPointerUp={handlePressEnd}
+                      onPointerLeave={handlePressEnd}
+                      onPointerCancel={handlePressEnd}
+                      onContextMenu={(e) => {
+                        // Right-click on desktop opens the
+                        // same popup, instead of the browser's
+                        // native context menu.
+                        e.preventDefault();
+                        setMenuForMessageId(message.id);
+                      }}
+                      className={`max-w-[75%] select-none rounded-2xl px-1.5 pb-1 pt-1.5 transition-colors duration-500 ${
                         isMine
                           ? "bg-accent"
                           : "bg-accent/40"
                       } ${
                         message.image_url ? "" : "px-3.5"
+                      } ${
+                        isHighlighted
+                          ? "ring-2 ring-accent-secondary"
+                          : ""
                       }`}
                     >
                       {message.image_url && (
                         <button
                           type="button"
-                          onClick={() =>
+                          onClick={() => {
+                            if (didLongPress.current) {
+                              didLongPress.current = false;
+                              return;
+                            }
                             setViewingImage(
                               message.image_url as string
-                            )
-                          }
+                            );
+                          }}
                           className="relative mb-1 block w-full overflow-hidden rounded-xl"
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -580,6 +825,30 @@ export default function ConversationPage() {
                     </div>
                   </div>
 
+                  {menuOpen && (
+                    <div
+                      className={`relative z-[9500] mt-1 flex ${
+                        isMine
+                          ? "justify-end"
+                          : "justify-start"
+                      }`}
+                    >
+                      <div className="flex items-center gap-1 rounded-xl border border-foreground/10 bg-background px-1 py-1 shadow-lg">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReplyingTo(message);
+                            setMenuForMessageId(null);
+                          }}
+                          className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium"
+                        >
+                          <ReplyIcon size={14} />
+                          Reply
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {showSeen && (
                     <p className="mt-1 text-right text-[11px] text-foreground/40">
                       Seen
@@ -596,6 +865,51 @@ export default function ConversationPage() {
 
       {/* Composer */}
       <div className="fixed bottom-0 left-0 right-0 border-t border-foreground/10 bg-background p-3">
+        {replyingTo && (
+          <div className="mb-2 flex items-center gap-3 rounded-2xl bg-foreground/5 px-3 py-2">
+            <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-foreground/10">
+              {replyingTo.image_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={replyingTo.image_url}
+                  alt="Replied-to attachment"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <ReplyIcon
+                  size={22}
+                  className="text-foreground/50"
+                />
+              )}
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold">
+                Replying to{" "}
+                {replyingTo.sender_id === user?.id
+                  ? "yourself"
+                  : otherUser?.display_name ||
+                    otherUser?.username ||
+                    "them"}
+              </p>
+              <p className="truncate text-sm text-foreground/50">
+                {replyingTo.image_url
+                  ? "Photo"
+                  : replyingTo.content}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setReplyingTo(null)}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-foreground/10"
+              aria-label="Cancel reply"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        )}
+
         {attachedPreview && (
           <div className="mb-2 flex items-center gap-2">
             <div className="relative h-16 w-16 overflow-hidden rounded-lg">
@@ -666,6 +980,14 @@ export default function ConversationPage() {
           </button>
         </div>
       </div>
+
+      {/* Backdrop to dismiss the message action popup */}
+      {menuForMessageId && (
+        <div
+          className="fixed inset-0 z-[9000]"
+          onClick={() => setMenuForMessageId(null)}
+        />
+      )}
 
       {/* Full-screen image viewer */}
       {viewingImage && (
