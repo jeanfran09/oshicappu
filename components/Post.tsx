@@ -360,7 +360,10 @@ export default function Post({
       <article className="bg-background">
         {/* Header */}
         <div className="flex items-center justify-between p-3">
-          <div className="flex items-center gap-3">
+          <Link
+            href={`/profile/${username}`}
+            className="flex items-center gap-3"
+          >
             <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-accent">
               {avatar ? (
                 <Image
@@ -382,7 +385,7 @@ export default function Post({
             </div>
 
             <div>
-              <p className="font-semibold text-sm">
+              <p className="text-sm font-semibold">
                 {username}
               </p>
 
@@ -392,7 +395,7 @@ export default function Post({
                 </p>
               )}
             </div>
-          </div>
+          </Link>
 
           {isOwner && (
             <button
