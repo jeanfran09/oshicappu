@@ -67,9 +67,6 @@ export default function ConversationPage() {
   const [otherUser, setOtherUser] =
     useState<OtherParticipant | null>(null);
 
-  // Timestamp of the last message the other participant has
-  // read (their conversation_participants.last_read_at), used
-  // to render "Seen" under the most recent message they've read.
   const [otherReadAt, setOtherReadAt] = useState<
     string | null
   >(null);
@@ -92,19 +89,14 @@ export default function ConversationPage() {
     string | null
   >(null);
 
-  // The message currently staged as a reply target, shown as a
-  // preview above the composer until sent or cancelled.
   const [replyingTo, setReplyingTo] = useState<Message | null>(
     null
   );
 
-  // Briefly highlighted when jumping to a message via its
-  // quoted-reply preview.
   const [highlightedId, setHighlightedId] = useState<
     string | null
   >(null);
 
-  // Which message's long-press action popup is currently open.
   const [menuForMessageId, setMenuForMessageId] = useState<
     string | null
   >(null);
@@ -113,18 +105,34 @@ export default function ConversationPage() {
     Record<string, HTMLDivElement | null>
   >({});
 
-  // Long-press detection state (not stored in React state since
-  // it doesn't need to trigger re-renders on its own).
   const longPressTimer = useRef<ReturnType<
     typeof setTimeout
   > | null>(null);
+
   const pressStart = useRef<{ x: number; y: number } | null>(
     null
   );
+
   const didLongPress = useRef(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Message textarea
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize message textarea
+  function resizeTextarea() {
+    const textarea = textareaRef.current;
+
+    if (!textarea) return;
+
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.min(
+      textarea.scrollHeight,
+      120
+    )}px`;
+  }
 
   // Load the other participant + message history, verify
   // access, and mark the conversation as read.
@@ -208,7 +216,6 @@ export default function ConversationPage() {
 
       setLoading(false);
 
-      // Mark as read now that the messages have loaded.
       void supabase
         .from("conversation_participants")
         .update({ last_read_at: new Date().toISOString() })
@@ -254,12 +261,10 @@ export default function ConversationPage() {
             ) {
               return prev;
             }
+
             return [...prev, incoming];
           });
 
-          // If the incoming message is from the other
-          // person and we're actively viewing this
-          // conversation, mark it read right away.
           if (incoming.sender_id !== user.id) {
             void supabase
               .from("conversation_participants")
@@ -278,8 +283,7 @@ export default function ConversationPage() {
     };
   }, [conversationId, user]);
 
-  // Live updates for the other participant's read state, so
-  // "Seen" appears without needing to reload the page.
+  // Live updates for the other participant's read state.
   useEffect(() => {
     if (!conversationId || !otherUser) return;
 
@@ -318,7 +322,7 @@ export default function ConversationPage() {
     });
   }, [messages.length]);
 
-  // Clean up the object URL used for the attachment preview.
+  // Clean up attachment preview URL.
   useEffect(() => {
     return () => {
       if (attachedPreview) {
@@ -327,7 +331,7 @@ export default function ConversationPage() {
     };
   }, [attachedPreview]);
 
-  // Clean up any pending long-press timer on unmount.
+  // Clean up long-press timer.
   useEffect(() => {
     return () => {
       if (longPressTimer.current) {
@@ -368,6 +372,7 @@ export default function ConversationPage() {
     if (attachedPreview) {
       URL.revokeObjectURL(attachedPreview);
     }
+
     setAttachedFile(null);
     setAttachedPreview(null);
     setAttachError("");
@@ -375,6 +380,7 @@ export default function ConversationPage() {
 
   function scrollToMessage(id: string) {
     const el = messageRefs.current[id];
+
     if (!el) return;
 
     el.scrollIntoView({
@@ -383,6 +389,7 @@ export default function ConversationPage() {
     });
 
     setHighlightedId(id);
+
     setTimeout(() => {
       setHighlightedId((current) =>
         current === id ? null : current
@@ -412,7 +419,9 @@ export default function ConversationPage() {
   }
 
   function handlePressMove(x: number, y: number) {
-    if (!pressStart.current || !longPressTimer.current) return;
+    if (!pressStart.current || !longPressTimer.current) {
+      return;
+    }
 
     const dx = x - pressStart.current.x;
     const dy = y - pressStart.current.y;
@@ -452,7 +461,9 @@ export default function ConversationPage() {
 
     const {
       data: { publicUrl },
-    } = supabase.storage.from("messages").getPublicUrl(path);
+    } = supabase.storage
+      .from("messages")
+      .getPublicUrl(path);
 
     return publicUrl;
   }
@@ -476,6 +487,14 @@ export default function ConversationPage() {
     const previousReplyTo = replyingTo;
 
     setDraft("");
+
+    // Reset textarea height after clearing the draft.
+    requestAnimationFrame(() => {
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+      }
+    });
+
     clearAttachment();
     setReplyingTo(null);
 
@@ -509,12 +528,18 @@ export default function ConversationPage() {
           if (prev.some((m) => m.id === data.id)) {
             return prev;
           }
+
           return [...prev, data as Message];
         });
       }
     } catch (error) {
       console.error("Error sending message:", error);
+
       setDraft(previousDraft);
+
+      requestAnimationFrame(() => {
+        resizeTextarea();
+      });
 
       if (previousFile) {
         setAttachedFile(previousFile);
@@ -603,10 +628,6 @@ export default function ConversationPage() {
           </p>
         ) : (
           (() => {
-            // Find the most recent message I sent that the
-            // other participant has read, so we only show a
-            // single "Seen" label (like most chat apps) rather
-            // than repeating it on every message.
             let lastSeenMessageId: string | null = null;
 
             if (otherReadAt) {
@@ -616,6 +637,7 @@ export default function ConversationPage() {
 
               for (let i = messages.length - 1; i >= 0; i--) {
                 const m = messages[i];
+
                 if (
                   m.sender_id === user?.id &&
                   new Date(m.created_at).getTime() <=
@@ -633,6 +655,7 @@ export default function ConversationPage() {
 
             return messages.map((message) => {
               const isMine = message.sender_id === user?.id;
+
               const showSeen =
                 isMine &&
                 message.id === lastSeenMessageId;
@@ -641,10 +664,6 @@ export default function ConversationPage() {
                 ? messagesById.get(message.reply_to_id)
                 : null;
 
-              // Copy for the small "↩ Replied to ..." header
-              // shown above a message that's replying to
-              // something, mirroring how the sender relates to
-              // both the reply and the original message.
               const otherName =
                 otherUser?.display_name ||
                 otherUser?.username ||
@@ -769,9 +788,6 @@ export default function ConversationPage() {
                       onPointerLeave={handlePressEnd}
                       onPointerCancel={handlePressEnd}
                       onContextMenu={(e) => {
-                        // Right-click on desktop opens the
-                        // same popup, instead of the browser's
-                        // native context menu.
                         e.preventDefault();
                         setMenuForMessageId(message.id);
                       }}
@@ -801,6 +817,7 @@ export default function ConversationPage() {
                               didLongPress.current = false;
                               return;
                             }
+
                             setViewingImage(
                               message.image_url as string
                             );
@@ -913,6 +930,7 @@ export default function ConversationPage() {
                     otherUser?.username ||
                     "them"}
               </p>
+
               <p className="truncate text-sm text-foreground/50">
                 {replyingTo.image_url
                   ? "Photo"
@@ -958,7 +976,7 @@ export default function ConversationPage() {
           </p>
         )}
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-end gap-2">
           <input
             ref={fileInputRef}
             type="file"
@@ -976,17 +994,39 @@ export default function ConversationPage() {
             <ImagePlus size={20} />
           </button>
 
-          <input
+          {/* Message Input */}
+          <textarea
+            ref={textareaRef}
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e) => {
+              setDraft(e.target.value);
+              resizeTextarea();
+            }}
+            placeholder={replyingTo ? "Reply" : "Message"}
+            rows={1}
+            className="
+              min-h-[44px]
+              max-h-[120px]
+              flex-1
+              resize-none
+              overflow-y-auto
+              rounded-2xl
+              border
+              border-foreground/20
+              bg-transparent
+              px-4
+              py-2.5
+              text-base
+              leading-5
+              outline-none
+              no-scrollbar
+            "
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 handleSend();
               }
             }}
-            placeholder="Message..."
-            className="h-11 flex-1 rounded-full border border-foreground/20 bg-transparent px-4 text-base outline-none"
           />
 
           <button
