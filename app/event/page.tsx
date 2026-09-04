@@ -1,16 +1,14 @@
 "use client";
 
-import { formatCount } from "@/utils/formatNumber";
-import {
-  CalendarDays,
-  MapPin,
-  Plus,
-  Search,
-  Users,
-} from "lucide-react";
+import { useState } from "react";
+import { Plus, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-const events = [
+import EventList, {
+  Event,
+} from "@/components/Event/EventList";
+
+const events: (Event & { yourEvent?: boolean })[] = [
   {
     id: "1",
     title: "Idol Birthday Café",
@@ -20,6 +18,7 @@ const events = [
     interested: 1700,
     going: 700,
     image: "/posts/post1.png",
+    yourEvent: false,
   },
   {
     id: "2",
@@ -30,6 +29,7 @@ const events = [
     interested: 77000,
     going: 7000,
     image: null,
+    yourEvent: true,
   },
   {
     id: "3",
@@ -40,11 +40,22 @@ const events = [
     interested: 31,
     going: 7,
     image: "/posts/post2.jpg",
+    yourEvent: false,
   },
 ];
 
+type EventTab = "recommended" | "your";
+
 export default function EventPage() {
   const router = useRouter();
+
+  const [activeTab, setActiveTab] =
+    useState<EventTab>("recommended");
+
+  const filteredEvents =
+    activeTab === "recommended"
+      ? events.filter((event) => !event.yourEvent)
+      : events.filter((event) => event.yourEvent);
 
   return (
     <main className="min-h-screen bg-background pb-20 md:hidden">
@@ -75,8 +86,55 @@ export default function EventPage() {
         </button>
       </header>
 
+      {/* Capsule Filters */}
+      <section className="px-4 pt-4">
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() =>
+              setActiveTab("recommended")
+            }
+            className={`
+              rounded-full
+              px-4
+              py-2
+              text-sm
+              font-medium
+              transition-colors
+              ${
+                activeTab === "recommended"
+                  ? "bg-accent text-foreground"
+                  : "bg-foreground/5 text-foreground/50"
+              }
+            `}
+          >
+            Recommended
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("your")}
+            className={`
+              rounded-full
+              px-4
+              py-2
+              text-sm
+              font-medium
+              transition-colors
+              ${
+                activeTab === "your"
+                  ? "bg-accent text-foreground"
+                  : "bg-foreground/5 text-foreground/50"
+              }
+            `}
+          >
+            Your Events
+          </button>
+        </div>
+      </section>
+
       {/* Search Bar */}
-      <section className="px-4 pt-4 pb-4">
+      <section className="px-4 pb-4 pt-4">
         <div className="flex items-center rounded-xl bg-foreground/5 px-4">
           <Search
             size={18}
@@ -99,83 +157,18 @@ export default function EventPage() {
         </div>
       </section>
 
-      
-      {/* Intro */}
-      {/** 
-      <section className="px-4 pb-3">
-        <h2 className="text-xl font-bold">
-          Events For You
-        </h2>
-      </section>
-      */}
-
       {/* Event List */}
-      <section className="space-y-3 px-4">
-        {events.map((event) => (
-          <button
-            key={event.id}
-            type="button"
-            className="
-              w-full
-              overflow-hidden
-              rounded-2xl
-              border
-              border-foreground/10
-              bg-accent/10
-              text-left
-            "
-          >
-            {/* Event Photo */}
-            <div className="relative h-40 w-full bg-accent/20">
-              {event.image ? (
-                <img
-                  src={event.image}
-                  alt={event.title}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center">
-                  insert default photo
-                  {/** 
-                  <CalendarDays
-                    size={42}
-                    className="text-foreground/30"
-                  />*/}
-                </div>
-              )}
-            </div>
-
-            {/* Event Information */}
-            <div className="p-4">
-              <h3 className="truncate text-base font-semibold">
-                {event.title}
-              </h3>
-
-              <p className="mt-1 text-sm text-foreground/60">
-                {event.date} at {event.time}
-              </p>
-
-              <div className="mt-3 flex items-center gap-1.5 text-sm text-foreground/60">
-                <MapPin size={15} />
-                <span className="truncate">
-                  {event.location}
-                </span>
-              </div>
-
-              <div className="mt-1.5 flex items-center gap-1.5 text-sm text-foreground/60">
-                <Users size={15} />
-                <span>
-                  {formatCount(event.interested)} interested
-                </span>
-                <span className="text-foreground/60">•</span>
-                <span>
-                  {formatCount(event.going)} going
-                </span>
-              </div>
-            </div>
-          </button>
-        ))}
-      </section>
+      {filteredEvents.length > 0 ? (
+        <EventList events={filteredEvents} />
+      ) : (
+        <div className="px-4 py-12 text-center">
+          <p className="text-sm text-foreground/40">
+            {activeTab === "recommended"
+              ? "No recommended events yet."
+              : "You haven't created any events yet."}
+          </p>
+        </div>
+      )}
     </main>
   );
 }

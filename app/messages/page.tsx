@@ -65,7 +65,7 @@ export default function MessagesInboxPage() {
       {/* Header */}
       <header className="sticky top-0 z-50 flex items-center border-b border-foreground/10 bg-background py-3">
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push("/")}
           className="flex h-9 w-9 items-center justify-center rounded-full"
         >
           <ChevronLeft size={22} />

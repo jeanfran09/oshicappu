@@ -115,8 +115,8 @@ export default function HomePage() {
             onClick={() => setActiveTab("following")}
             className={`flex-1 py-3 relative ${
               activeTab === "following"
-                ? "font-bold text-foreground text-xl"
-                : "font-bold text-foreground/50 text-xl"
+                ? "font-bold text-foreground text-lg"
+                : "font-bold text-foreground/50 text-lg"
             }`}
           >
             Following
@@ -130,8 +130,8 @@ export default function HomePage() {
             onClick={() => setActiveTab("foryou")}
             className={`flex-1 py-3 relative ${
               activeTab === "foryou"
-                ? "font-bold text-foreground text-xl"
-                : "font-bold text-foreground/50 text-xl"
+                ? "font-bold text-foreground text-lg"
+                : "font-bold text-foreground/50 text-lg"
             }`}
           >
             For You

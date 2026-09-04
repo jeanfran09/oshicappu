@@ -108,10 +108,10 @@ export default function BottomNav() {
       >
         <Calendar
           size={24}
-          fill={
+          strokeWidth={
             pathname === "/event" || pathname.startsWith("/event/")
-              ? activeColor
-              : "none"
+              ? "3"
+              : "2"
           }
           className={
             pathname === "/event" || pathname.startsWith("/event/")

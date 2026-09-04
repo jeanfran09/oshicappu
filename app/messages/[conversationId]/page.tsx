@@ -578,7 +578,7 @@ export default function ConversationPage() {
       {/* Header */}
       <header className="sticky top-0 z-50 flex items-center gap-2 border-b border-foreground/10 bg-background px-2 py-3">
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push("/messages")}
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
         >
           <ChevronLeft size={22} />
@@ -1002,7 +1002,7 @@ export default function ConversationPage() {
               setDraft(e.target.value);
               resizeTextarea();
             }}
-            placeholder={replyingTo ? "Reply" : "Message"}
+            placeholder={replyingTo ? "Reply..." : "Message..."}
             rows={1}
             className="
               min-h-[44px]
