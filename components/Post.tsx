@@ -555,9 +555,9 @@ export default function Post({
         {/* Caption */}
         {caption && (
           <div className="px-3 pt-1 whitespace-pre-line break-words leading-tight">
-            <span className="mr-2 font-semibold">
-              {username}
-            </span>
+            <Link href={`/profile/${username}`} className="mr-2">
+              <span className="font-semibold"> {username} </span>
+            </Link>
 
             <span>{caption}</span>
           </div>
