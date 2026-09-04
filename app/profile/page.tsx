@@ -737,7 +737,7 @@ export default function ProfilePage() {
 
   return (
     <div className="md:hidden min-h-screen flex flex-col">
-      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-foreground/10 bg-background px-4 py-3">
+      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-foreground/10 bg-background pr-1 py-3">
         <h1 className="absolute left-1/2 -translate-x-1/2 text-lg font-semibold">
           {profile?.username ?? "username"}
         </h1>
