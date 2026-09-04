@@ -29,7 +29,7 @@ const events: (Event & { yourEvent?: boolean })[] = [
     interested: 77000,
     going: 7000,
     image: null,
-    yourEvent: true,
+    yourEvent: false,
   },
   {
     id: "3",
@@ -60,7 +60,7 @@ export default function EventPage() {
   return (
     <main className="min-h-screen bg-background pb-20 md:hidden">
       {/* Header */}
-      <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-foreground/10 bg-background px-3">
+      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-foreground/10 bg-background px-3 pt-4 pb-3">
         <h1 className="text-xl font-bold">
           Events
         </h1>

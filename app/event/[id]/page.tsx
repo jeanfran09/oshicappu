@@ -118,13 +118,40 @@ export default function EventPage() {
           </div>
         </div>
 
-        {/* Join Button */}
-        <button
-          type="button"
-          className="mt-6 w-full rounded-full bg-accent py-3 text-sm font-semibold"
-        >
-          Join Event
-        </button>
+        <div className="mt-6 flex gap-3">
+          
+          {/* Interested */}
+          <button
+            type="button"
+            className="
+              flex-1
+              rounded-full
+              border
+              border-foreground/20
+              bg-background
+              py-3
+              text-sm
+              font-semibold
+            "
+          >
+            Interested
+          </button>
+
+          {/* Join Event */}
+          <button
+            type="button"
+            className="
+              flex-1
+              rounded-full
+              bg-accent
+              py-3
+              text-sm
+              font-semibold
+            "
+          >
+            Join Event
+          </button>
+        </div>
 
         {/* Description */}
         <section className="mt-8">
@@ -138,6 +165,31 @@ export default function EventPage() {
             Meet other fans, discover new series, and enjoy
             the event together.
           </p>
+        </section>
+
+        {/* Hashtags */}
+        <section className="mt-6">
+          <h3 className="text-lg font-semibold">
+            Hashtags
+          </h3>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className="rounded-full bg-accent px-3 py-1.5 text-sm">
+              #Anime
+            </span>
+
+            <span className="rounded-full bg-accent px-3 py-1.5 text-sm">
+              #Manga
+            </span>
+
+            <span className="rounded-full bg-accent px-3 py-1.5 text-sm">
+              #Cosplay
+            </span>
+
+            <span className="rounded-full bg-accent px-3 py-1.5 text-sm">
+              #Oshikatsu
+            </span>
+          </div>
         </section>
 
         {/* Organizer */}

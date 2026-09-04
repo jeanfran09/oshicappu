@@ -49,10 +49,7 @@ export default function EventCard({
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
-            <CalendarDays
-              size={42}
-              className="text-foreground/30"
-            />
+            insert default pic
           </div>
         )}
       </div>

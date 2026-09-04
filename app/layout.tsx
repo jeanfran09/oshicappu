@@ -56,8 +56,8 @@ export default function RootLayout({
         <ThemeProvider>
           <SupabaseAuthProvider>
             {/* Mobile view */}
-            <div className="md:hidden min-h-screen flex flex-col overflow-x-hidden">
-              <div className="flex-1">
+            <div className="md:hidden flex h-screen flex-col overflow-x-hidden">
+              <div className="flex-1 overflow-y-auto">
                 {children}
               </div>
 
