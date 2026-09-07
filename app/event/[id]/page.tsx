@@ -1,6 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import {
   ChevronLeft,
@@ -12,6 +13,12 @@ import {
 
 export default function EventPage() {
   const router = useRouter();
+  const params = useParams();
+
+  const [interested, setInterested] = useState(false);
+
+  const interestedCount = 128;
+  const goingCount = 45;
 
   return (
     <div className="md:hidden min-h-screen bg-background">
@@ -21,6 +28,7 @@ export default function EventPage() {
           type="button"
           onClick={() => router.push("/event")}
           className="flex h-9 w-9 items-center justify-center rounded-full"
+          aria-label="Go back"
         >
           <ChevronLeft size={22} />
         </button>
@@ -28,10 +36,11 @@ export default function EventPage() {
         <h1 className="absolute left-1/2 -translate-x-1/2 text-lg font-semibold">
           Event
         </h1>
-    
+
         <button
           type="button"
           className="ml-auto mr-3 flex h-9 w-9 items-center justify-center rounded-full"
+          aria-label="Share event"
         >
           <Share2 size={20} />
         </button>
@@ -50,21 +59,13 @@ export default function EventPage() {
 
       {/* Event Information */}
       <main className="px-4 pb-24 pt-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            {/** 
-            <p className="mb-1 text-sm font-medium text-accent-secondary">
-              EVENT
-            </p>
-            */}
-            <h2 className="text-2xl font-bold">
-              Anime & Manga Convention 2026
-            </h2>
-          </div>
-        </div>
+        <h2 className="text-2xl font-bold">
+          Anime & Manga Convention 2026
+        </h2>
 
         {/* Event Details */}
         <div className="mt-5 space-y-4">
+          {/* Date & Time */}
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent">
               <CalendarDays size={19} />
@@ -81,6 +82,7 @@ export default function EventPage() {
             </div>
           </div>
 
+          {/* Location */}
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent">
               <MapPin size={19} />
@@ -101,6 +103,7 @@ export default function EventPage() {
             </div>
           </div>
 
+          {/* Event Interest */}
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent">
               <Users size={19} />
@@ -108,38 +111,50 @@ export default function EventPage() {
 
             <div>
               <p className="text-sm text-foreground/50">
-                Attendees
+                Event Interest
               </p>
 
               <p className="text-sm font-medium">
-                128 people are attending
+                {interestedCount + (interested ? 1 : 0)} interested
+                <span className="mx-1.5 text-foreground/40">
+                  •
+                </span>
+                {goingCount} going
               </p>
             </div>
           </div>
         </div>
 
+        {/* Event Actions */}
         <div className="mt-6 flex gap-3">
-          
           {/* Interested */}
           <button
             type="button"
-            className="
+            onClick={() => setInterested((prev) => !prev)}
+            className={`
               flex-1
               rounded-full
               border
-              border-foreground/20
-              bg-background
               py-3
               text-sm
               font-semibold
-            "
+              transition-colors
+              ${
+                interested
+                  ? "border-accent-secondary bg-accent-secondary"
+                  : "border-foreground/20 bg-background"
+              }
+            `}
           >
-            Interested
+            {interested ? "Interested ✓" : "Interested"}
           </button>
 
           {/* Join Event */}
           <button
             type="button"
+            onClick={() =>
+              router.push(`/event/${params.id}/join`)
+            }
             className="
               flex-1
               rounded-full
