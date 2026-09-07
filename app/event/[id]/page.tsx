@@ -20,6 +20,38 @@ export default function EventPage() {
   const interestedCount = 128;
   const goingCount = 45;
 
+  // Makes URLs inside the description clickable
+  function renderDescription(text: string) {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+
+  return text.split(urlRegex).map((part, index) => {
+    if (/^https?:\/\//.test(part)) {
+      return (
+        <a
+          key={index}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-accent-secondary underline"
+        >
+          {part}
+        </a>
+      );
+    }
+
+    return (
+      <span key={index}>
+        {part.split("\n").map((line, lineIndex) => (
+          <span key={lineIndex}>
+            {lineIndex > 0 && <br />}
+            {line}
+          </span>
+        ))}
+      </span>
+    );
+  });
+}
+
   return (
     <div className="md:hidden min-h-screen bg-background">
       {/* Header */}
@@ -175,10 +207,9 @@ export default function EventPage() {
           </h3>
 
           <p className="mt-2 text-sm leading-6 text-foreground/70">
-            Join fellow fans for a day filled with anime,
-            manga, cosplay, merchandise, and activities.
-            Meet other fans, discover new series, and enjoy
-            the event together.
+            {renderDescription(
+              "Join fellow fans for a day filled with anime, manga, cosplay, merchandise, and activities. Meet other fans, discover new series, and enjoy the event together.\n\nSign up here: https://forms.google.com"
+            )}
           </p>
         </section>
 
