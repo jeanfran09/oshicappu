@@ -281,7 +281,7 @@ export default function PostPage() {
             />
           </button>
 
-          <h1 className="font-semibold">
+          <h1 className="font-semibold text-xl">
             Post
           </h1>
         </header>
@@ -312,7 +312,7 @@ export default function PostPage() {
           />
         </button>
 
-        <h1 className="font-semibold">
+        <h1 className="font-semibold text-xl">
           Post
         </h1>
       </header>

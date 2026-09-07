@@ -29,7 +29,7 @@ const events: (Event & { yourEvent?: boolean })[] = [
     interested: 77000,
     going: 7000,
     image: null,
-    yourEvent: false,
+    yourEvent: true,
   },
   {
     id: "3",
