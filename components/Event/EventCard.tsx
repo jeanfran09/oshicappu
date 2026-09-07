@@ -33,7 +33,6 @@ export default function EventCard({
   const router = useRouter();
 
   const [interested, setInterested] = useState(false);
-  const [joined, setJoined] = useState(false);
 
   const handleShare = async () => {
     const url = `${window.location.origin}/event/${event.id}`;
@@ -118,7 +117,7 @@ export default function EventCard({
 
             <span>
               {formatCount(
-                event.going + (joined ? 1 : 0)
+                event.going
               )}{" "}
               going
             </span>
@@ -156,7 +155,7 @@ export default function EventCard({
           <button
             type="button"
             onClick={() =>
-              setJoined((prev) => !prev)
+              router.push(`/event/${event.id}/join`)
             }
             className={`
               flex-1
@@ -165,14 +164,10 @@ export default function EventCard({
               text-sm
               font-medium
               transition-colors
-              ${
-                joined
-                  ? "bg-accent-secondary"
-                  : "bg-accent"
-              }
+              bg-accent
             `}
           >
-            {joined ? "Going ✓" : "Join"}
+            Join
           </button>
 
           {/* Share */}
