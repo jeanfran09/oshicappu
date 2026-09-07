@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { MessageCircle } from "lucide-react";
+import { MessageCircleMore } from "lucide-react";
 import FollowingFeed from "@/components/FollowingFeed";
 import ForYouFeed from "@/components/ForYouFeed";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
@@ -96,7 +96,7 @@ export default function HomePage() {
           href="/messages"
           className="absolute right-4 top-1/2 -translate-y-1/2"
         >
-          <MessageCircle size={24} />
+          <MessageCircleMore size={24} />
 
           {unreadMessageCount > 0 && (
             <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
