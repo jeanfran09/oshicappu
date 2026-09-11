@@ -9,69 +9,155 @@ import {
   MapPin,
   Users,
   Share2,
+  Check,
 } from "lucide-react";
+
+type RSVPStatus = "interested" | "going" | null;
 
 export default function EventPage() {
   const router = useRouter();
   const params = useParams();
 
-  const [interested, setInterested] = useState(false);
+  const [rsvpStatus, setRsvpStatus] =
+    useState<RSVPStatus>(null);
 
-  const interestedCount = 128;
-  const goingCount = 45;
+  const [interestedCount, setInterestedCount] =
+    useState(128);
 
-  // Makes URLs inside the description clickable
+  const [goingCount, setGoingCount] =
+    useState(45);
+
   function renderDescription(text: string) {
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
 
-  return text.split(urlRegex).map((part, index) => {
-    if (/^https?:\/\//.test(part)) {
+    return text.split(urlRegex).map((part, index) => {
+      if (/^https?:\/\//.test(part)) {
+        return (
+          <a
+            key={index}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent-secondary underline"
+          >
+            {part}
+          </a>
+        );
+      }
+
       return (
-        <a
-          key={index}
-          href={part}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-accent-secondary underline"
-        >
-          {part}
-        </a>
+        <span key={index}>
+          {part.split("\n").map((line, lineIndex) => (
+            <span key={lineIndex}>
+              {lineIndex > 0 && <br />}
+              {line}
+            </span>
+          ))}
+        </span>
+      );
+    });
+  }
+
+  function handleInterested() {
+    if (rsvpStatus === "interested") {
+      // Deselect Interested
+      setRsvpStatus(null);
+      setInterestedCount((prev) =>
+        Math.max(0, prev - 1)
+      );
+      return;
+    }
+
+    // If currently Going, remove Going first
+    if (rsvpStatus === "going") {
+      setGoingCount((prev) =>
+        Math.max(0, prev - 1)
       );
     }
 
-    return (
-      <span key={index}>
-        {part.split("\n").map((line, lineIndex) => (
-          <span key={lineIndex}>
-            {lineIndex > 0 && <br />}
-            {line}
-          </span>
-        ))}
-      </span>
-    );
-  });
-}
+    setInterestedCount((prev) => prev + 1);
+    setRsvpStatus("interested");
+  }
+
+  function handleJoinEvent() {
+    if (rsvpStatus === "going") {
+      // Deselect Going
+      setRsvpStatus(null);
+      setGoingCount((prev) =>
+        Math.max(0, prev - 1)
+      );
+
+      return;
+    }
+
+    // If currently Interested, remove Interested first
+    if (rsvpStatus === "interested") {
+      setInterestedCount((prev) =>
+        Math.max(0, prev - 1)
+      );
+    }
+
+    setGoingCount((prev) => prev + 1);
+    setRsvpStatus("going");
+  }
 
   return (
     <div className="md:hidden min-h-screen bg-background">
+
       {/* Header */}
-      <header className="sticky top-0 z-50 flex items-center border-b border-foreground/10 bg-background py-3">
+      <header
+        className="
+          sticky
+          top-0
+          z-50
+          flex
+          items-center
+          border-b
+          border-foreground/10
+          bg-background
+          py-3
+        "
+      >
         <button
           type="button"
           onClick={() => router.push("/event")}
-          className="flex h-9 w-9 items-center justify-center rounded-full"
+          className="
+            flex
+            h-9
+            w-9
+            items-center
+            justify-center
+            rounded-full
+          "
           aria-label="Go back"
         >
           <ChevronLeft size={22} />
         </button>
 
-        <h1 className="absolute left-1/2 -translate-x-1/2 text-lg font-semibold">
+        <h1
+          className="
+            absolute
+            left-1/2
+            -translate-x-1/2
+            text-lg
+            font-semibold
+          "
+        >
           Event
         </h1>
 
         <button
           type="button"
-          className="ml-auto mr-3 flex h-9 w-9 items-center justify-center rounded-full"
+          className="
+            ml-auto
+            mr-3
+            flex
+            h-9
+            w-9
+            items-center
+            justify-center
+            rounded-full
+          "
           aria-label="Share event"
         >
           <Share2 size={20} />
@@ -79,7 +165,15 @@ export default function EventPage() {
       </header>
 
       {/* Event Image */}
-      <div className="relative aspect-[16/9] w-full overflow-hidden bg-accent">
+      <div
+        className="
+          relative
+          aspect-[16/9]
+          w-full
+          overflow-hidden
+          bg-accent
+        "
+      >
         <Image
           src="/posts/post1.png"
           alt="Event banner"
@@ -91,15 +185,28 @@ export default function EventPage() {
 
       {/* Event Information */}
       <main className="px-4 pb-24 pt-5">
+
         <h2 className="text-2xl font-bold">
           Anime & Manga Convention 2026
         </h2>
 
         {/* Event Details */}
         <div className="mt-5 space-y-4">
+
           {/* Date & Time */}
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent">
+            <div
+              className="
+                flex
+                h-10
+                w-10
+                shrink-0
+                items-center
+                justify-center
+                rounded-full
+                bg-accent
+              "
+            >
               <CalendarDays size={19} />
             </div>
 
@@ -116,7 +223,18 @@ export default function EventPage() {
 
           {/* Location */}
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent">
+            <div
+              className="
+                flex
+                h-10
+                w-10
+                shrink-0
+                items-center
+                justify-center
+                rounded-full
+                bg-accent
+              "
+            >
               <MapPin size={19} />
             </div>
 
@@ -137,7 +255,18 @@ export default function EventPage() {
 
           {/* Event Interest */}
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent">
+            <div
+              className="
+                flex
+                h-10
+                w-10
+                shrink-0
+                items-center
+                justify-center
+                rounded-full
+                bg-accent
+              "
+            >
               <Users size={19} />
             </div>
 
@@ -147,24 +276,31 @@ export default function EventPage() {
               </p>
 
               <p className="text-sm font-medium">
-                {interestedCount + (interested ? 1 : 0)} interested
+                {interestedCount} interested
+
                 <span className="mx-1.5 text-foreground/40">
                   •
                 </span>
+
                 {goingCount} going
               </p>
             </div>
           </div>
         </div>
 
-        {/* Event Actions */}
+        {/* Event RSVP */}
         <div className="mt-6 flex gap-3">
+
           {/* Interested */}
           <button
             type="button"
-            onClick={() => setInterested((prev) => !prev)}
+            onClick={handleInterested}
             className={`
+              flex
               flex-1
+              items-center
+              justify-center
+              gap-2
               rounded-full
               border
               py-3
@@ -172,32 +308,52 @@ export default function EventPage() {
               font-semibold
               transition-colors
               ${
-                interested
+                rsvpStatus === "interested"
                   ? "border-accent-secondary bg-accent-secondary"
                   : "border-foreground/20 bg-background"
               }
             `}
           >
-            {interested ? "Interested ✓" : "Interested"}
+            {rsvpStatus === "interested" && (
+              <Check size={17} />
+            )}
+
+            {rsvpStatus === "interested"
+              ? "Interested"
+              : "Interested"}
           </button>
 
           {/* Join Event */}
           <button
             type="button"
-            onClick={() =>
-              router.push(`/event/${params.id}/join`)
-            }
-            className="
+            onClick={handleJoinEvent}
+            className={`
+              flex
               flex-1
+              items-center
+              justify-center
+              gap-2
               rounded-full
-              bg-accent
               py-3
               text-sm
               font-semibold
-            "
+              transition-colors
+              ${
+                rsvpStatus === "going"
+                  ? "bg-accent-secondary"
+                  : "bg-accent"
+              }
+            `}
           >
-            Join Event
+            {rsvpStatus === "going" && (
+              <Check size={17} />
+            )}
+
+            {rsvpStatus === "going"
+              ? "Going"
+              : "Join Event"}
           </button>
+
         </div>
 
         {/* Description */}
@@ -258,6 +414,7 @@ export default function EventPage() {
             </div>
           </div>
         </section>
+
       </main>
     </div>
   );

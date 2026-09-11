@@ -27,12 +27,21 @@ type EventCardProps = {
   event: Event;
 };
 
+type RSVPStatus = "interested" | "going" | null;
+
 export default function EventCard({
   event,
 }: EventCardProps) {
   const router = useRouter();
 
-  const [interested, setInterested] = useState(false);
+  const [rsvpStatus, setRsvpStatus] =
+    useState<RSVPStatus>(null);
+
+  const [interestedCount, setInterestedCount] =
+    useState(event.interested);
+
+  const [goingCount, setGoingCount] =
+    useState(event.going);
 
   const handleShare = async () => {
     const url = `${window.location.origin}/event/${event.id}`;
@@ -45,6 +54,52 @@ export default function EventCard({
     } else {
       await navigator.clipboard.writeText(url);
     }
+  };
+
+  const handleInterested = () => {
+    if (rsvpStatus === "interested") {
+      // Deselect Interested
+      setRsvpStatus(null);
+
+      setInterestedCount((prev) =>
+        Math.max(0, prev - 1)
+      );
+
+      return;
+    }
+
+    // If currently Going, remove Going first
+    if (rsvpStatus === "going") {
+      setGoingCount((prev) =>
+        Math.max(0, prev - 1)
+      );
+    }
+
+    setInterestedCount((prev) => prev + 1);
+    setRsvpStatus("interested");
+  };
+
+  const handleJoin = () => {
+    if (rsvpStatus === "going") {
+      // Deselect Going
+      setRsvpStatus(null);
+
+      setGoingCount((prev) =>
+        Math.max(0, prev - 1)
+      );
+
+      return;
+    }
+
+    // If currently Interested, remove Interested first
+    if (rsvpStatus === "interested") {
+      setInterestedCount((prev) =>
+        Math.max(0, prev - 1)
+      );
+    }
+
+    setGoingCount((prev) => prev + 1);
+    setRsvpStatus("going");
   };
 
   return (
@@ -106,20 +161,13 @@ export default function EventCard({
             <Users size={15} />
 
             <span>
-              {formatCount(
-                event.interested +
-                  (interested ? 1 : 0)
-              )}{" "}
-              interested
+              {formatCount(interestedCount)} interested
             </span>
 
             <span>•</span>
 
             <span>
-              {formatCount(
-                event.going
-              )}{" "}
-              going
+              {formatCount(goingCount)} going
             </span>
           </div>
         </div>
@@ -128,12 +176,11 @@ export default function EventCard({
       {/* Action Buttons */}
       {!event.yourEvent && (
         <div className="flex items-center gap-2 px-4 pb-4">
+
           {/* Interested */}
           <button
             type="button"
-            onClick={() =>
-              setInterested((prev) => !prev)
-            }
+            onClick={handleInterested}
             className={`
               flex-1
               rounded-full
@@ -142,21 +189,21 @@ export default function EventCard({
               font-medium
               transition-colors
               ${
-                interested
+                rsvpStatus === "interested"
                   ? "bg-accent-secondary"
                   : "bg-foreground/5"
               }
             `}
           >
-            {interested ? "Interested ✓" : "Interested"}
+            {rsvpStatus === "interested"
+              ? "Interested ✓"
+              : "Interested"}
           </button>
 
           {/* Join */}
           <button
             type="button"
-            onClick={() =>
-              router.push(`/event/${event.id}/join`)
-            }
+            onClick={handleJoin}
             className={`
               flex-1
               rounded-full
@@ -164,10 +211,16 @@ export default function EventCard({
               text-sm
               font-medium
               transition-colors
-              bg-accent
+              ${
+                rsvpStatus === "going"
+                  ? "bg-accent-secondary"
+                  : "bg-accent"
+              }
             `}
           >
-            Join
+            {rsvpStatus === "going"
+              ? "Going ✓"
+              : "Join"}
           </button>
 
           {/* Share */}
@@ -188,6 +241,7 @@ export default function EventCard({
           >
             <Share2 size={18} />
           </button>
+
         </div>
       )}
     </div>
