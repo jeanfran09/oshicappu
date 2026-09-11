@@ -29,13 +29,17 @@ type CropData = {
 };
 
 export default function CreatePostPage() {
-  const MAX_IMAGES = 10;
+  const MAX_IMAGES = 4;
 
   const [images, setImages] = useState<File[]>([]);
-  const [originalImages, setOriginalImages] = useState<File[]>([]);
-  const [cropData, setCropData] = useState<CropData[]>([]);
-  const [pendingImages, setPendingImages] = useState<File[]>([]);
-  const [cropImage, setCropImage] = useState<string | null>(null);
+  const [originalImages, setOriginalImages] =
+    useState<File[]>([]);
+  const [cropData, setCropData] =
+    useState<CropData[]>([]);
+  const [pendingImages, setPendingImages] =
+    useState<File[]>([]);
+  const [cropImage, setCropImage] =
+    useState<string | null>(null);
 
   // Final image array index
   const [cropIndex, setCropIndex] = useState(0);
@@ -55,13 +59,15 @@ export default function CreatePostPage() {
   const [fandoms, setFandoms] = useState<string[]>([]);
   const [location, setLocation] = useState("");
 
-  const [selectedOshis, setSelectedOshis] = useState<string[]>([]);
+  const [selectedOshis, setSelectedOshis] =
+    useState<string[]>([]);
 
   const [showBottomSheet, setShowBottomSheet] =
     useState(false);
 
   const [oshis, setOshis] = useState<Oshi[]>([]);
-  const [oshisLoading, setOshisLoading] = useState(true);
+  const [oshisLoading, setOshisLoading] =
+    useState(true);
 
   /*
    * Add Oshi cropper state
@@ -192,6 +198,8 @@ export default function CreatePostPage() {
 
     setPendingImages(selected);
 
+    setPendingIndex(0);
+
     setCropIndex(startIndex);
 
     setCropImage(
@@ -203,6 +211,10 @@ export default function CreatePostPage() {
 
   /*
    * Edit an existing post image
+   *
+   * originalImages follows the same order as images,
+   * so currentIndex points to the correct original file
+   * even after thumbnails have been reordered.
    */
   function handleEditImage() {
     const original =
@@ -858,6 +870,12 @@ export default function CreatePostPage() {
                 setCurrentIndex
               }
               setImages={setImages}
+              setOriginalImages={
+                setOriginalImages
+              }
+              setCropData={
+                setCropData
+              }
               onSelectImages={
                 handleSelectImages
               }
@@ -892,6 +910,7 @@ export default function CreatePostPage() {
             maxItems={5}
           />
           */}
+
           {oshisLoading ? (
             <p className="text-sm text-foreground/50">
               Loading oshis...

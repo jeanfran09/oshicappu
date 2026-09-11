@@ -5,16 +5,29 @@ import { X, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Reorder } from "framer-motion";
 
+type CropData = {
+  crop: {
+    x: number;
+    y: number;
+  };
+  zoom: number;
+};
+
 type ThumbnailStripProps = {
   images: File[];
   currentIndex: number;
   setCurrentIndex: React.Dispatch<React.SetStateAction<number>>;
   setImages: React.Dispatch<React.SetStateAction<File[]>>;
+  setOriginalImages: React.Dispatch<
+    React.SetStateAction<File[]>
+  >;
+  setCropData: React.Dispatch<
+    React.SetStateAction<CropData[]>
+  >;
   onSelectImages: (
     e: React.ChangeEvent<HTMLInputElement>
   ) => void;
 
-  // Controls whether the Add Image button is shown
   showAddButton?: boolean;
 };
 
@@ -23,12 +36,14 @@ export default function ThumbnailStrip({
   currentIndex,
   setCurrentIndex,
   setImages,
+  setOriginalImages,
+  setCropData,
   onSelectImages,
   showAddButton = true,
 }: ThumbnailStripProps) {
   const [urls, setUrls] = useState<string[]>([]);
 
-  const MAX_IMAGES = 10;
+  const MAX_IMAGES = 4;
 
   useEffect(() => {
     const newUrls = images.map((file) =>
@@ -45,13 +60,17 @@ export default function ThumbnailStrip({
   }, [images]);
 
   function removeImage(index: number) {
-    setImages((prev) => {
-      const updated = prev.filter(
-        (_, i) => i !== index
-      );
+    setImages((prev) =>
+      prev.filter((_, i) => i !== index)
+    );
 
-      return updated;
-    });
+    setOriginalImages((prev) =>
+      prev.filter((_, i) => i !== index)
+    );
+
+    setCropData((prev) =>
+      prev.filter((_, i) => i !== index)
+    );
 
     setCurrentIndex((prev) => {
       if (prev > index) {
@@ -69,10 +88,41 @@ export default function ThumbnailStrip({
   function handleReorder(newOrder: File[]) {
     const currentFile = images[currentIndex];
 
+    /*
+     * Reorder originalImages using the exact same
+     * order as images.
+     */
+    setOriginalImages((prevOriginal) =>
+      newOrder.map((file) => {
+        const oldIndex = images.indexOf(file);
+
+        return prevOriginal[oldIndex];
+      })
+    );
+
+    /*
+     * Reorder cropData using the exact same
+     * order as images.
+     */
+    setCropData((prevCropData) =>
+      newOrder.map((file) => {
+        const oldIndex = images.indexOf(file);
+
+        return prevCropData[oldIndex];
+      })
+    );
+
+    /*
+     * Reorder the actual displayed images.
+     */
     setImages(newOrder);
 
-    // Keep the currently selected image selected
-    const newIndex = newOrder.indexOf(currentFile);
+    /*
+     * Keep the currently selected photo selected
+     * after reordering.
+     */
+    const newIndex =
+      newOrder.indexOf(currentFile);
 
     if (newIndex !== -1) {
       setCurrentIndex(newIndex);
@@ -84,7 +134,12 @@ export default function ThumbnailStrip({
       axis="x"
       values={images}
       onReorder={handleReorder}
-      className="flex gap-3 overflow-x-auto no-scrollbar"
+      className="
+        flex
+        gap-3
+        overflow-x-auto
+        no-scrollbar
+      "
     >
       {images.map((file, index) => (
         <Reorder.Item
@@ -104,7 +159,9 @@ export default function ThumbnailStrip({
                 : "border-transparent"
             }
           `}
-          onClick={() => setCurrentIndex(index)}
+          onClick={() =>
+            setCurrentIndex(index)
+          }
         >
           {/* Thumbnail */}
           {urls[index] && (
@@ -148,41 +205,42 @@ export default function ThumbnailStrip({
       ))}
 
       {/* Add image */}
-      {showAddButton && images.length < MAX_IMAGES && (
-        <label
-          className="
-            flex
-            h-20
-            w-20
-            flex-shrink-0
-            cursor-pointer
-            items-center
-            justify-center
-            rounded-xl
-            border-2
-            border-dashed
-            border-foreground/25
-          "
-        >
-          <Plus
-            size={24}
-            className="text-foreground/75"
-          />
+      {showAddButton &&
+        images.length < MAX_IMAGES && (
+          <label
+            className="
+              flex
+              h-20
+              w-20
+              flex-shrink-0
+              cursor-pointer
+              items-center
+              justify-center
+              rounded-xl
+              border-2
+              border-dashed
+              border-foreground/25
+            "
+          >
+            <Plus
+              size={24}
+              className="text-foreground/75"
+            />
 
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            hidden
-            onChange={(e) => {
-              onSelectImages(e);
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              hidden
+              onChange={(e) => {
+                onSelectImages(e);
 
-              // Allow selecting the same image again
-              e.target.value = "";
-            }}
-          />
-        </label>
-      )}
+                // Allow selecting the same image again
+                e.target.value = "";
+              }}
+            />
+          </label>
+        )}
     </Reorder.Group>
   );
 }
