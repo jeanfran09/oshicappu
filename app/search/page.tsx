@@ -15,6 +15,7 @@ import PostGrid from "@/components/Profile/PostGrid";
 import { parsePostImages } from "@/utils/formatNumber";
 import PullToRefresh from "@/components/PullToRefresh";
 import PostGridSkeleton from "@/components/Skeleton/PostGridSkeleton";
+import UserListSkeleton from "@/components/Skeleton/UserListSkeleton";
 
 type SearchResult = {
   id: string;
@@ -208,11 +209,7 @@ export default function SearchPage() {
         /* --------------------------------
            Searching
            -------------------------------- */
-        <div className="mt-10 flex justify-center">
-          <p className="text-sm text-foreground/40">
-            Searching...
-          </p>
-        </div>
+        <UserListSkeleton showFollowButton={false} />
       ) : (
         <>
           {/* --------------------------------
@@ -263,18 +260,7 @@ export default function SearchPage() {
             </section>
           )}
 
-          {/* --------------------------------
-              No Users Found
-              -------------------------------- */}
-          {searched &&
-            results.length === 0 && (
-              <div className="mt-10 flex justify-center">
-                <p className="text-sm text-foreground/40">
-                  No users found for{" "}
-                  &ldquo;{query}&rdquo;.
-                </p>
-              </div>
-            )}
+          
         </>
       )}
 

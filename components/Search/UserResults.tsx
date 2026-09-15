@@ -8,6 +8,7 @@ import { User as UserIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
 import FollowButton from "@/components/FollowButton";
+import UserListSkeleton from "../Skeleton/UserListSkeleton";
 
 type UserResult = {
   id: string;
@@ -161,11 +162,7 @@ export default function UserResults({
 
   if (loading) {
     return (
-      <div className="flex h-40 items-center justify-center">
-        <p className="text-sm text-foreground/40">
-          Searching users...
-        </p>
-      </div>
+      <UserListSkeleton />
     );
   }
 
@@ -180,11 +177,11 @@ export default function UserResults({
   }
 
   return (
-    <div className="ml-2">
+    <div className="ml-2 mr-2">
       {users.map((user) => (
         <div
           key={user.id}
-          className="flex w-full items-center gap-3 rounded-lg px-2 py-2"
+          className="flex w-full items-center gap-3 rounded-lg px-2 pt-3"
         >
           {/* User information */}
           <button

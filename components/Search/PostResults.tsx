@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import PostGrid from "@/components/Profile/PostGrid";
 import { parsePostImages } from "@/utils/formatNumber";
+import PostGridSkeleton from "../Skeleton/PostGridSkeleton";
 
 type PostResult = {
   id: string;
@@ -224,11 +225,7 @@ export default function PostResults({
 
   if (loading) {
     return (
-      <div className="flex h-40 items-center justify-center">
-        <p className="text-sm text-foreground/40">
-          Searching posts...
-        </p>
-      </div>
+      <PostGridSkeleton />
     );
   }
 

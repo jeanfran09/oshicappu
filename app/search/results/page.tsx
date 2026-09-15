@@ -59,7 +59,7 @@ export default function SearchResultsPage() {
     <main className="md:hidden min-h-screen bg-background">
       {/* Search Header */}
       <header className="border-b border-foreground/10 bg-background">
-        <div className="flex items-center pr-3 py-3">
+        <div className="flex items-center pr-4 py-3 pt-4">
           {/* Back Button */}
           <button
             type="button"

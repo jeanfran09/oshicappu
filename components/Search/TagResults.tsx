@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+import HashtagSkeleton from "@/components/Skeleton/HashtagSkeleton"
 
 type HashtagResult = {
   id: string;
@@ -67,11 +68,7 @@ export default function TagResults({
 
   if (loading) {
     return (
-      <div className="flex h-40 items-center justify-center">
-        <p className="text-sm text-foreground/40">
-          Searching hashtags...
-        </p>
-      </div>
+      <HashtagSkeleton />
     );
   }
 
