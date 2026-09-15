@@ -13,6 +13,7 @@ import {
   formatTimeAgo,
   parsePostImages,
 } from "@/utils/formatNumber";
+import NotificationSkeleton from "@/components/Skeleton/NotificationSkeleton";
 
 type NotificationRow = {
   id: string;
@@ -273,9 +274,7 @@ export default function NotifsPage() {
       >
         <div className="min-h-[80vh] pb-16">
           {loading ? (
-            <p className="p-4 text-center text-sm text-foreground/40">
-              Loading...
-            </p>
+            <NotificationSkeleton />
           ) : notifications.length === 0 ? (
             <p className="p-4 text-center text-sm text-foreground/40">
               No notifications yet.

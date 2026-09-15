@@ -9,6 +9,7 @@ import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
 import FollowButton from "@/components/FollowButton";
+import UserListSkeleton from "./Skeleton/UserListSkeleton";
 
 type User = {
   id: string;
@@ -217,7 +218,7 @@ export default function UserList({
           <ChevronLeft size={22} />
         </button>
 
-        <p className="font-semibold">
+        <p className="font-semibold text-lg">
           {type === "followers"
             ? "Followers"
             : "Following"}
@@ -266,14 +267,10 @@ export default function UserList({
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
-        <main className="px-4 py-3">
+        <main className="px-3">
           {/* Loading */}
           {loading && (
-            <div className="flex justify-center py-8">
-              <p className="text-sm text-foreground/60">
-                Loading...
-              </p>
-            </div>
+            <UserListSkeleton />
           )}
 
           {/* Error */}

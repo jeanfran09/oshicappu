@@ -121,16 +121,16 @@ export default function BottomNav() {
         />
       </Link>
 
-      <Link href="/notifs" onClick={() => handleNav("/notifs")} className="relative">
+      <Link href="/notifications" onClick={() => handleNav("/notifications")} className="relative">
         <Bell
           size={24}
           fill={
-            pathname === "/notifs"
+            pathname === "/notifications"
               ? activeColor
               : "none"
           }
           className={
-            pathname === "/notifs"
+            pathname === "/notifications"
               ? "text-[var(--accent-secondary)]"
               : ""
           }
