@@ -14,6 +14,7 @@ import CreatePostButton from "@/components/CreatePostButton";
 import PostGrid from "@/components/Profile/PostGrid";
 import { parsePostImages } from "@/utils/formatNumber";
 import PullToRefresh from "@/components/PullToRefresh";
+import PostGridSkeleton from "@/components/Skeleton/PostGridSkeleton";
 
 type SearchResult = {
   id: string;
@@ -26,12 +27,6 @@ type PostResult = {
   id: string;
   image_url: string | null;
 };
-
-async function refreshFeed() {
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  // fetch posts here
-}
 
 export default function SearchPage() {
   const router = useRouter();
@@ -53,35 +48,38 @@ export default function SearchPage() {
 
   const [searched, setSearched] = useState(false);
 
+  const fetchDefaultPosts = async () => {
+    setLoadingPosts(true);
 
-  useEffect(() => {
-    async function fetchDefaultPosts() {
-      setLoadingPosts(true);
+    const { data, error } = await supabase
+      .from("posts")
+      .select("id, image_url")
+      .order("created_at", {
+        ascending: false,
+      })
+      .limit(30);
 
-      const { data, error } = await supabase
-        .from("posts")
-        .select("id, image_url")
-        .order("created_at", {
-          ascending: false,
-        })
-        .limit(30);
+    if (error) {
+      console.error(
+        "Error fetching posts:",
+        error
+      );
 
-      if (error) {
-        console.error(
-          "Error fetching posts:",
-          error
-        );
-
-        setDefaultPosts([]);
-      } else {
-        setDefaultPosts(data ?? []);
-      }
-
-      setLoadingPosts(false);
+      setDefaultPosts([]);
+    } else {
+      setDefaultPosts(data ?? []);
     }
 
+    setLoadingPosts(false);
+  };
+
+  useEffect(() => {
     fetchDefaultPosts();
   }, []);
+
+  const refreshFeed = async () => {
+    await fetchDefaultPosts();
+  };
 
   useEffect(() => {
     const term = query.trim();
@@ -97,15 +95,16 @@ export default function SearchPage() {
 
     const timeout = setTimeout(async () => {
       try {
-        const { data: users, error } = await supabase
-          .from("profiles")
-          .select(
-            "id, username, display_name, avatar_url"
-          )
-          .or(
-            `username.ilike.%${term}%,display_name.ilike.%${term}%`
-          )
-          .limit(20);
+        const { data: users, error } =
+          await supabase
+            .from("profiles")
+            .select(
+              "id, username, display_name, avatar_url"
+            )
+            .or(
+              `username.ilike.%${term}%,display_name.ilike.%${term}%`
+            )
+            .limit(20);
 
         if (error) {
           console.error(
@@ -196,11 +195,7 @@ export default function SearchPage() {
         <PullToRefresh onRefresh={refreshFeed}>
           <section className="min-h-[80vh] no-scrollbar">
             {loadingPosts ? (
-              <div className="flex h-40 items-center justify-center">
-                <p className="text-sm text-foreground/40">
-                  Loading posts...
-                </p>
-              </div>
+              <PostGridSkeleton />
             ) : (
               <PostGrid
                 posts={defaultGridPosts}
