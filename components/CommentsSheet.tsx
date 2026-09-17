@@ -246,7 +246,10 @@ export default function CommentsSheet({
         ])
       );
 
-    setComments(
+    /*
+     * Add author information to each comment.
+     */
+    const mappedComments: CommentWithAuthor[] =
       rows.map((r) => {
         let replyToUsername: string | null = null;
 
@@ -273,9 +276,42 @@ export default function CommentsSheet({
 
           replyToUsername,
         };
-      })
-    );
+      });
 
+    /*
+     * Keep top-level comments newest-first,
+     * but place their replies directly underneath them.
+     */
+    const topLevelComments =
+      mappedComments.filter(
+        (comment) =>
+          comment.parent_comment_id === null
+      );
+
+    const orderedComments: CommentWithAuthor[] = [];
+
+    for (const comment of topLevelComments) {
+      orderedComments.push(comment);
+
+      /*
+       * Replies are ordered oldest-first so that
+       * the newest reply appears at the bottom.
+       */
+      const replies = mappedComments
+        .filter(
+          (reply) =>
+            reply.parent_comment_id === comment.id
+        )
+        .sort(
+          (a, b) =>
+            new Date(a.created_at).getTime() -
+            new Date(b.created_at).getTime()
+        );
+
+      orderedComments.push(...replies);
+    }
+
+    setComments(orderedComments);
     setLoading(false);
   }
 
@@ -334,7 +370,10 @@ export default function CommentsSheet({
         textareaRef.current.style.height = "auto";
       }
 
-      if (notifyUserId && notifyUserId !== user.id) {
+      if (
+        notifyUserId &&
+        notifyUserId !== user.id
+      ) {
         void supabase
           .from("notifications")
           .insert({
