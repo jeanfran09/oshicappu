@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 
 import { formatCount } from "@/utils/formatNumber";
+import { supabase } from "@/lib/supabase";
+import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
 
 export type Event = {
   id: string;
@@ -21,6 +23,7 @@ export type Event = {
   going: number;
   image: string | null;
   yourEvent?: boolean;
+  rsvpStatus?: "interested" | "going" | null;
 };
 
 type EventCardProps = {
@@ -29,13 +32,35 @@ type EventCardProps = {
 
 type RSVPStatus = "interested" | "going" | null;
 
+async function saveRsvp(
+  eventId: string,
+  userId: string,
+  status: RSVPStatus
+) {
+  if (status === null) {
+    return supabase
+      .from("event_rsvps")
+      .delete()
+      .eq("event_id", eventId)
+      .eq("user_id", userId);
+  }
+
+  return supabase
+    .from("event_rsvps")
+    .upsert(
+      { event_id: eventId, user_id: userId, status },
+      { onConflict: "event_id,user_id" }
+    );
+}
+
 export default function EventCard({
   event,
 }: EventCardProps) {
   const router = useRouter();
+  const { user } = useSupabaseAuth();
 
   const [rsvpStatus, setRsvpStatus] =
-    useState<RSVPStatus>(null);
+    useState<RSVPStatus>(event.rsvpStatus ?? null);
 
   const [interestedCount, setInterestedCount] =
     useState(event.interested);
@@ -56,50 +81,63 @@ export default function EventCard({
     }
   };
 
-  const handleInterested = () => {
-    if (rsvpStatus === "interested") {
-      // Deselect Interested
-      setRsvpStatus(null);
-
-      setInterestedCount((prev) =>
-        Math.max(0, prev - 1)
-      );
-
+  const applyRsvp = async (nextStatus: RSVPStatus) => {
+    if (!user) {
+      router.push("/login");
       return;
     }
 
-    // If currently Going, remove Going first
-    if (rsvpStatus === "going") {
-      setGoingCount((prev) =>
-        Math.max(0, prev - 1)
-      );
+    const prevStatus = rsvpStatus;
+
+    // Optimistic UI update
+    setRsvpStatus(nextStatus);
+
+    if (prevStatus === "interested" && nextStatus !== "interested") {
+      setInterestedCount((prev) => Math.max(0, prev - 1));
+    }
+    if (prevStatus === "going" && nextStatus !== "going") {
+      setGoingCount((prev) => Math.max(0, prev - 1));
+    }
+    if (nextStatus === "interested" && prevStatus !== "interested") {
+      setInterestedCount((prev) => prev + 1);
+    }
+    if (nextStatus === "going" && prevStatus !== "going") {
+      setGoingCount((prev) => prev + 1);
     }
 
-    setInterestedCount((prev) => prev + 1);
-    setRsvpStatus("interested");
+    const { error } = await saveRsvp(
+      event.id,
+      user.id,
+      nextStatus
+    );
+
+    if (error) {
+      console.error("Failed to update RSVP:", error);
+
+      // Revert on failure
+      setRsvpStatus(prevStatus);
+
+      if (prevStatus === "interested" && nextStatus !== "interested") {
+        setInterestedCount((prev) => prev + 1);
+      }
+      if (prevStatus === "going" && nextStatus !== "going") {
+        setGoingCount((prev) => prev + 1);
+      }
+      if (nextStatus === "interested" && prevStatus !== "interested") {
+        setInterestedCount((prev) => Math.max(0, prev - 1));
+      }
+      if (nextStatus === "going" && prevStatus !== "going") {
+        setGoingCount((prev) => Math.max(0, prev - 1));
+      }
+    }
+  };
+
+  const handleInterested = () => {
+    applyRsvp(rsvpStatus === "interested" ? null : "interested");
   };
 
   const handleJoin = () => {
-    if (rsvpStatus === "going") {
-      // Deselect Going
-      setRsvpStatus(null);
-
-      setGoingCount((prev) =>
-        Math.max(0, prev - 1)
-      );
-
-      return;
-    }
-
-    // If currently Interested, remove Interested first
-    if (rsvpStatus === "interested") {
-      setInterestedCount((prev) =>
-        Math.max(0, prev - 1)
-      );
-    }
-
-    setGoingCount((prev) => prev + 1);
-    setRsvpStatus("going");
+    applyRsvp(rsvpStatus === "going" ? null : "going");
   };
 
   return (

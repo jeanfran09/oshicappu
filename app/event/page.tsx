@@ -1,61 +1,155 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Plus, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
+
+import { supabase } from "@/lib/supabase";
+import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
+import {
+  formatEventDate,
+  formatEventTime,
+} from "@/utils/formatEventDate";
 
 import EventList, {
   Event,
 } from "@/components/Event/EventList";
 
-const events: (Event & { yourEvent?: boolean })[] = [
-  {
-    id: "1",
-    title: "Idol Birthday Café",
-    date: "September 14, 2026",
-    time: "1:00 PM",
-    location: "Makati City",
-    interested: 1700,
-    going: 700,
-    image: "/posts/post1.png",
-    yourEvent: false,
-  },
-  {
-    id: "2",
-    title: "Oshikatsu Meetup",
-    date: "September 21, 2026",
-    time: "3:30 PM",
-    location: "Quezon City",
-    interested: 77000,
-    going: 7000,
-    image: null,
-    yourEvent: true,
-  },
-  {
-    id: "3",
-    title: "Anime Merch Trading Day",
-    date: "October 3, 2026",
-    time: "11:00 AM",
-    location: "Pasay City",
-    interested: 31,
-    going: 7,
-    image: "/posts/post2.jpg",
-    yourEvent: false,
-  },
-];
-
 type EventTab = "recommended" | "your";
+
+type EventRow = {
+  id: string;
+  organizer_id: string;
+  title: string;
+  event_date: string;
+  event_time: string | null;
+  location: string | null;
+  image_url: string | null;
+  interested_count: number;
+  going_count: number;
+};
+
+type LoadedEvent = Event & {
+  organizerId: string;
+  yourEvent?: boolean;
+};
 
 export default function EventPage() {
   const router = useRouter();
+  const { user } = useSupabaseAuth();
 
   const [activeTab, setActiveTab] =
     useState<EventTab>("recommended");
 
-  const filteredEvents =
-    activeTab === "recommended"
-      ? events.filter((event) => !event.yourEvent)
-      : events.filter((event) => event.yourEvent);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const [events, setEvents] = useState<LoadedEvent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadEvents() {
+      setIsLoading(true);
+      setError("");
+
+      const { data: eventRows, error: eventsError } =
+        await supabase
+          .from("events_with_counts")
+          .select(
+            "id, organizer_id, title, event_date, event_time, location, image_url, interested_count, going_count"
+          )
+          .order("event_date", { ascending: true });
+
+      if (eventsError) {
+        console.error(
+          "Error fetching events:",
+          eventsError
+        );
+
+        if (!isCancelled) {
+          setError("Couldn't load events. Try again later.");
+          setIsLoading(false);
+        }
+
+        return;
+      }
+
+      const rows = (eventRows ?? []) as EventRow[];
+
+      // Look up the current user's RSVP status for these events,
+      // so buttons render as already-selected where applicable.
+      let rsvpByEventId = new Map<string, "interested" | "going">();
+
+      if (user && rows.length > 0) {
+        const { data: rsvpRows, error: rsvpError } =
+          await supabase
+            .from("event_rsvps")
+            .select("event_id, status")
+            .eq("user_id", user.id)
+            .in(
+              "event_id",
+              rows.map((row) => row.id)
+            );
+
+        if (rsvpError) {
+          console.error(
+            "Error fetching RSVP status:",
+            rsvpError
+          );
+        } else {
+          rsvpByEventId = new Map(
+            (rsvpRows ?? []).map((row) => [
+              row.event_id,
+              row.status as "interested" | "going",
+            ])
+          );
+        }
+      }
+
+      const mapped: LoadedEvent[] = rows.map((row) => ({
+        id: row.id,
+        organizerId: row.organizer_id,
+        title: row.title,
+        date: formatEventDate(row.event_date),
+        time: formatEventTime(row.event_time),
+        location: row.location ?? "",
+        interested: row.interested_count,
+        going: row.going_count,
+        image: row.image_url,
+        rsvpStatus: rsvpByEventId.get(row.id) ?? null,
+        yourEvent: row.organizer_id === user?.id,
+      }));
+
+      if (!isCancelled) {
+        setEvents(mapped);
+        setIsLoading(false);
+      }
+    }
+
+    loadEvents();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [user]);
+
+  const filteredEvents = useMemo(() => {
+    const byTab = events.filter((event) =>
+      activeTab === "your"
+        ? event.organizerId === user?.id
+        : event.organizerId !== user?.id
+    );
+
+    const query = searchQuery.trim().toLowerCase();
+
+    if (!query) return byTab;
+
+    return byTab.filter((event) =>
+      event.title.toLowerCase().includes(query)
+    );
+  }, [events, activeTab, searchQuery, user?.id]);
 
   return (
     <main className="min-h-screen bg-background pb-20 md:hidden">
@@ -143,6 +237,10 @@ export default function EventPage() {
 
           <input
             type="text"
+            value={searchQuery}
+            onChange={(e) =>
+              setSearchQuery(e.target.value)
+            }
             placeholder="Search events..."
             className="
               w-full
@@ -158,7 +256,19 @@ export default function EventPage() {
       </section>
 
       {/* Event List */}
-      {filteredEvents.length > 0 ? (
+      {isLoading ? (
+        <div className="px-4 py-12 text-center">
+          <p className="text-sm text-foreground/40">
+            Loading events...
+          </p>
+        </div>
+      ) : error ? (
+        <div className="px-4 py-12 text-center">
+          <p className="text-sm text-foreground/40">
+            {error}
+          </p>
+        </div>
+      ) : filteredEvents.length > 0 ? (
         <EventList events={filteredEvents} />
       ) : (
         <div className="px-4 py-12 text-center">

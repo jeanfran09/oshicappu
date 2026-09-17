@@ -9,6 +9,7 @@ export type Event = {
   interested: number;
   going: number;
   image: string | null;
+  rsvpStatus?: "interested" | "going" | null;
 };
 
 type EventListProps = {
