@@ -10,6 +10,7 @@ import PullToRefresh from "@/components/PullToRefresh";
 import { supabase } from "@/lib/supabase";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
 import { formatTimeAgo } from "@/utils/formatNumber";
+import MessagesSkeleton from "@/components/Skeleton/MessagesSkeleton";
 
 type ConversationRow = {
   conversation_id: string;
@@ -79,13 +80,10 @@ export default function MessagesInboxPage() {
       <PullToRefresh onRefresh={fetchConversations}>
         <div className="min-h-[80vh] pb-16">
           {loading ? (
-            <p className="p-4 text-center text-sm text-foreground/40">
-              Loading...
-            </p>
+            <MessagesSkeleton/>
           ) : conversations.length === 0 ? (
             <p className="p-4 text-center text-sm text-foreground/40">
-              No messages yet. Visit a profile and tap
-              Message to start a conversation.
+              No messages yet.
             </p>
           ) : (
             conversations.map((conversation, index) => (
