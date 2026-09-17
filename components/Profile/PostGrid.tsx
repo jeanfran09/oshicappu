@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { ImageIcon } from "lucide-react";
+import PostGridSkeleton from "../Skeleton/PostGridSkeleton";
 
 type Post = {
   id: string;
@@ -20,9 +21,7 @@ export default function PostGrid({
 
   if (posts.length === 0) {
     return (
-      <div className="flex h-40 items-center justify-center text-sm text-foreground/50">
-        No posts yet
-      </div>
+      <PostGridSkeleton count={6}/>
     );
   }
 

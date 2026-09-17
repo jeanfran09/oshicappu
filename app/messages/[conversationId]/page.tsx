@@ -20,6 +20,7 @@ import {
 
 import { supabase } from "@/lib/supabase";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
+import ConversationSkeleton from "@/components/Skeleton/ConversationSkeleton";
 
 type OtherParticipant = {
   id: string;
@@ -42,6 +43,7 @@ const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10MB
 
 function formatMessageTime(dateString: string) {
   const date = new Date(dateString);
+
   return date.toLocaleTimeString([], {
     hour: "numeric",
     minute: "2-digit",
@@ -80,9 +82,11 @@ export default function ConversationPage() {
 
   const [attachedFile, setAttachedFile] =
     useState<File | null>(null);
+
   const [attachedPreview, setAttachedPreview] = useState<
     string | null
   >(null);
+
   const [attachError, setAttachError] = useState("");
 
   const [viewingImage, setViewingImage] = useState<
@@ -115,13 +119,16 @@ export default function ConversationPage() {
 
   const didLongPress = useRef(false);
 
+  // Direct reference to the messages scroll container.
+  const messagesContainerRef =
+    useRef<HTMLDivElement>(null);
+
   const bottomRef = useRef<HTMLDivElement>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Message textarea
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-resize message textarea
   function resizeTextarea() {
     const textarea = textareaRef.current;
 
@@ -134,8 +141,7 @@ export default function ConversationPage() {
     )}px`;
   }
 
-  // Load the other participant + message history, verify
-  // access, and mark the conversation as read.
+  // Load conversation.
   useEffect(() => {
     if (!user || !conversationId) return;
 
@@ -159,6 +165,7 @@ export default function ConversationPage() {
           "Error fetching conversation participants:",
           participantsError
         );
+
         setNotAllowed(true);
         setLoading(false);
         return;
@@ -218,7 +225,9 @@ export default function ConversationPage() {
 
       void supabase
         .from("conversation_participants")
-        .update({ last_read_at: new Date().toISOString() })
+        .update({
+          last_read_at: new Date().toISOString(),
+        })
         .eq("conversation_id", conversationId!)
         .eq("user_id", user!.id)
         .then(({ error }) => {
@@ -238,7 +247,7 @@ export default function ConversationPage() {
     };
   }, [user, conversationId]);
 
-  // Live updates for new messages in this conversation.
+  // Live updates for new messages.
   useEffect(() => {
     if (!conversationId || !user) return;
 
@@ -257,7 +266,7 @@ export default function ConversationPage() {
 
           setMessages((prev) => {
             if (
-              prev.some((m) => m.id === incoming.id)
+              prev.some((message) => message.id === incoming.id)
             ) {
               return prev;
             }
@@ -315,12 +324,20 @@ export default function ConversationPage() {
     };
   }, [conversationId, otherUser]);
 
-  // Keep the view scrolled to the latest message.
+  // Instantly position the conversation at the latest message
+  // after the initial messages finish loading.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({
-      behavior: "smooth",
+    if (loading || messages.length === 0) return;
+
+    const container = messagesContainerRef.current;
+
+    if (!container) return;
+
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior: "auto",
     });
-  }, [messages.length]);
+  }, [loading]);
 
   // Clean up attachment preview URL.
   useEffect(() => {
@@ -344,6 +361,7 @@ export default function ConversationPage() {
     e: ChangeEvent<HTMLInputElement>
   ) {
     const file = e.target.files?.[0];
+
     e.target.value = "";
 
     if (!file) return;
@@ -379,11 +397,11 @@ export default function ConversationPage() {
   }
 
   function scrollToMessage(id: string) {
-    const el = messageRefs.current[id];
+    const element = messageRefs.current[id];
 
-    if (!el) return;
+    if (!element) return;
 
-    el.scrollIntoView({
+    element.scrollIntoView({
       behavior: "smooth",
       block: "center",
     });
@@ -447,6 +465,7 @@ export default function ConversationPage() {
     convoId: string
   ): Promise<string> {
     const ext = file.name.split(".").pop() || "jpg";
+
     const path = `${userId}/${convoId}/${Date.now()}.${ext}`;
 
     const { error: uploadError } = await supabase.storage
@@ -488,7 +507,6 @@ export default function ConversationPage() {
 
     setDraft("");
 
-    // Reset textarea height after clearing the draft.
     requestAnimationFrame(() => {
       if (textareaRef.current) {
         textareaRef.current.style.height = "auto";
@@ -525,7 +543,7 @@ export default function ConversationPage() {
 
       if (data) {
         setMessages((prev) => {
-          if (prev.some((m) => m.id === data.id)) {
+          if (prev.some((message) => message.id === data.id)) {
             return prev;
           }
 
@@ -617,11 +635,12 @@ export default function ConversationPage() {
       </header>
 
       {/* Messages */}
-      <div className="flex-1 space-y-2 overflow-y-auto px-3 py-4 pb-24">
+      <div
+        ref={messagesContainerRef}
+        className="flex-1 space-y-2 overflow-y-auto px-3 py-4 pb-18"
+      >
         {loading ? (
-          <p className="p-4 text-center text-sm text-foreground/40">
-            Loading...
-          </p>
+          <ConversationSkeleton />
         ) : messages.length === 0 ? (
           <p className="p-4 text-center text-sm text-foreground/40">
             No messages yet. Say hi 👋
@@ -636,21 +655,24 @@ export default function ConversationPage() {
               ).getTime();
 
               for (let i = messages.length - 1; i >= 0; i--) {
-                const m = messages[i];
+                const message = messages[i];
 
                 if (
-                  m.sender_id === user?.id &&
-                  new Date(m.created_at).getTime() <=
+                  message.sender_id === user?.id &&
+                  new Date(message.created_at).getTime() <=
                     readAtTime
                 ) {
-                  lastSeenMessageId = m.id;
+                  lastSeenMessageId = message.id;
                   break;
                 }
               }
             }
 
             const messagesById = new Map(
-              messages.map((m) => [m.id, m])
+              messages.map((message) => [
+                message.id,
+                message,
+              ])
             );
 
             return messages.map((message) => {
@@ -692,8 +714,9 @@ export default function ConversationPage() {
               return (
                 <div
                   key={message.id}
-                  ref={(el) => {
-                    messageRefs.current[message.id] = el;
+                  ref={(element) => {
+                    messageRefs.current[message.id] =
+                      element;
                   }}
                 >
                   {repliedMessage && (
@@ -734,9 +757,7 @@ export default function ConversationPage() {
 
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
-                              src={
-                                repliedMessage.image_url
-                              }
+                              src={repliedMessage.image_url}
                               alt="Replied-to attachment"
                               className="h-16 w-16 rounded-lg object-cover"
                             />
@@ -791,7 +812,7 @@ export default function ConversationPage() {
                         e.preventDefault();
                         setMenuForMessageId(message.id);
                       }}
-                      className={`max-w-[75%] select-none rounded-2xl transition-colors duration-500 ${
+                      className={`max-w-[75%] select-none rounded-2xl ${
                         isImageOnly
                           ? ""
                           : `${
@@ -994,7 +1015,6 @@ export default function ConversationPage() {
             <ImagePlus size={20} />
           </button>
 
-          {/* Message Input */}
           <textarea
             ref={textareaRef}
             value={draft}
@@ -1002,7 +1022,9 @@ export default function ConversationPage() {
               setDraft(e.target.value);
               resizeTextarea();
             }}
-            placeholder={replyingTo ? "Reply..." : "Message..."}
+            placeholder={
+              replyingTo ? "Reply..." : "Message..."
+            }
             rows={1}
             className="
               min-h-[44px]
@@ -1042,7 +1064,7 @@ export default function ConversationPage() {
         </div>
       </div>
 
-      {/* Backdrop to dismiss the message action popup */}
+      {/* Backdrop */}
       {menuForMessageId && (
         <div
           className="fixed inset-0 z-[9000]"
@@ -1050,7 +1072,7 @@ export default function ConversationPage() {
         />
       )}
 
-      {/* Full-screen image viewer */}
+      {/* Image viewer */}
       {viewingImage && (
         <div
           className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/90"

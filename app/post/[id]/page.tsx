@@ -16,6 +16,7 @@ import {
   parsePostImages,
 } from "@/utils/formatNumber";
 import CommentsSheet from "@/components/CommentsSheet";
+import PostSkeleton from "@/components/Skeleton/PostSkeleton";
 
 type PostData = {
   id: string;
@@ -254,10 +255,25 @@ export default function PostPage() {
     loading
   ) {
     return (
-      <div className="md:hidden min-h-screen flex items-center justify-center">
-        <p className="text-sm text-foreground/50">
-          Loading...
-        </p>
+      <div>
+        <header className="sticky top-0 z-50 flex items-center border-b border-foreground/10 bg-background py-3">
+          <button
+            type="button"
+            onClick={() =>
+              router.back()
+            }
+            className="flex h-9 w-9 items-center justify-center rounded-full"
+          >
+            <ChevronLeft
+              size={22}
+            />
+          </button>
+
+          <h1 className="font-semibold text-xl">
+            Post
+          </h1>
+        </header>
+        <PostSkeleton/>
       </div>
     );
   }
