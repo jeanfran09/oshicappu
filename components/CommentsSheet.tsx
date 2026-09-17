@@ -16,6 +16,7 @@ import { supabase } from "@/lib/supabase";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
 import { formatCommentTime } from "@/utils/formatNumber";
 import Link from "next/link";
+import CommentsSkeleton from "./Skeleton/CommentsSkeleton";
 
 type CommentWithAuthor = {
   id: string;
@@ -341,59 +342,136 @@ export default function CommentsSheet({
 
     /*
      * Who to notify: the person being replied to for a reply,
-     * otherwise the post's owner for a top-level comment. Never
-     * notify yourself.
+     * otherwise the post's owner for a top-level comment.
+     * Never notify yourself.
      */
     const notifyUserId = replyingTo
       ? replyingTo.user_id
       : postOwnerId;
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("comments")
       .insert({
         post_id: postId,
         user_id: user.id,
         comment_text: commentText,
         parent_comment_id: parentCommentId,
-      });
+      })
+      .select(
+        "id, comment_text, created_at, updated_at, user_id, parent_comment_id"
+      )
+      .single();
 
     if (error) {
       console.error(
         "Error posting comment:",
         error
       );
-    } else {
-      setNewComment("");
-      setReplyingTo(null);
 
-      if (textareaRef.current) {
-        textareaRef.current.style.height = "auto";
+      setPosting(false);
+      return;
+    }
+
+    /*
+     * Build the new comment locally instead of
+     * fetching the entire comment list again.
+     */
+    const insertedComment: CommentWithAuthor = {
+      ...data,
+      username:
+        currentUserProfile?.username ??
+        "unknown",
+      avatar_url:
+        currentUserProfile?.avatar_url ??
+        null,
+      replyToUsername:
+        replyingTo?.username ?? null,
+    };
+
+    setComments((prev) => {
+      /*
+       * New reply:
+       * Insert directly after the existing replies
+       * belonging to the same parent.
+       */
+      if (insertedComment.parent_comment_id) {
+        const parentIndex = prev.findIndex(
+          (comment) =>
+            comment.id ===
+            insertedComment.parent_comment_id
+        );
+
+        /*
+         * If the parent isn't currently in the list,
+         * just append the reply.
+         */
+        if (parentIndex === -1) {
+          return [...prev, insertedComment];
+        }
+
+        const next = [...prev];
+
+        let insertIndex = parentIndex + 1;
+
+        /*
+         * Find the end of the parent's existing replies.
+         */
+        while (
+          insertIndex < next.length &&
+          next[insertIndex].parent_comment_id ===
+            insertedComment.parent_comment_id
+        ) {
+          insertIndex++;
+        }
+
+        next.splice(
+          insertIndex,
+          0,
+          insertedComment
+        );
+
+        return next;
       }
 
-      if (
-        notifyUserId &&
-        notifyUserId !== user.id
-      ) {
-        void supabase
-          .from("notifications")
-          .insert({
-            recipient_id: notifyUserId,
-            sender_id: user.id,
-            type: "comment",
-            entity_id: postId,
-            content: commentText.slice(0, 140),
-          })
-          .then(({ error: notificationError }) => {
-            if (notificationError) {
-              console.error(
-                "Error creating comment notification:",
-                notificationError
-              );
-            }
-          });
-      }
+      /*
+       * New top-level comments are newest-first,
+       * so place the new comment at the beginning.
+       */
+      return [insertedComment, ...prev];
+    });
 
-      await fetchComments();
+    setNewComment("");
+    setReplyingTo(null);
+
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
+
+    /*
+     * Create notification without waiting for it
+     * to update the comment UI.
+     */
+    if (
+      notifyUserId &&
+      notifyUserId !== user.id
+    ) {
+      void supabase
+        .from("notifications")
+        .insert({
+          recipient_id: notifyUserId,
+          sender_id: user.id,
+          type: "comment",
+          entity_id: postId,
+          content: commentText.slice(0, 140),
+        })
+        .then(({ error: notificationError }) => {
+          if (notificationError) {
+            console.error(
+              "Error creating comment notification:",
+              notificationError
+            );
+          }
+        });
     }
 
     setPosting(false);
@@ -444,11 +522,14 @@ export default function CommentsSheet({
 
     setPosting(true);
 
+    const updatedText = newComment.trim();
+    const updatedAt = new Date().toISOString();
+
     const { error } = await supabase
       .from("comments")
       .update({
-        comment_text: newComment.trim(),
-        updated_at: new Date().toISOString(),
+        comment_text: updatedText,
+        updated_at: updatedAt,
       })
       .eq("id", editingComment.id)
       .eq("user_id", user.id);
@@ -458,15 +539,32 @@ export default function CommentsSheet({
         "Error editing comment:",
         error
       );
-    } else {
-      setEditingComment(null);
-      setNewComment("");
 
-      if (textareaRef.current) {
-        textareaRef.current.style.height = "auto";
-      }
+      setPosting(false);
+      return;
+    }
 
-      await fetchComments();
+    /*
+     * Update the comment directly in local state.
+     * No need to fetch all comments again.
+     */
+    setComments((prev) =>
+      prev.map((comment) =>
+        comment.id === editingComment.id
+          ? {
+              ...comment,
+              comment_text: updatedText,
+              updated_at: updatedAt,
+            }
+          : comment
+      )
+    );
+
+    setEditingComment(null);
+    setNewComment("");
+
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
     }
 
     setPosting(false);
@@ -494,9 +592,19 @@ export default function CommentsSheet({
       return;
     }
 
-    setOpenMenuId(null);
+    /*
+     * Remove the comment and any replies belonging
+     * to it from local state.
+     */
+    setComments((prev) =>
+      prev.filter(
+        (comment) =>
+          comment.id !== commentId &&
+          comment.parent_comment_id !== commentId
+      )
+    );
 
-    await fetchComments();
+    setOpenMenuId(null);
   }
 
   /*
@@ -583,9 +691,7 @@ export default function CommentsSheet({
         {/* Comments */}
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
           {loading ? (
-            <p className="py-8 text-center text-sm text-foreground/50">
-              Loading comments...
-            </p>
+            <CommentsSkeleton count={15} />
           ) : comments.length === 0 ? (
             <p className="py-8 text-center text-sm text-foreground/50">
               No comments yet. Be the first!
@@ -638,7 +744,7 @@ export default function CommentsSheet({
                     <div className="min-w-0 flex-1">
                       {/* Username + Time + Edited + More options */}
                       <div className="flex items-center justify-between gap-2">
-                        <div className="flex min-w-0 text-base items-center gap-2">
+                        <div className="flex min-w-0 items-center gap-2 text-base">
                           {/* Username */}
                           <Link
                             href={`/profile/${c.username}`}
@@ -650,7 +756,7 @@ export default function CommentsSheet({
                           </Link>
 
                           {/* Time */}
-                          <p className="shrink-0 text-sm leading-none text-foreground/50 translate-y-[1px]">
+                          <p className="shrink-0 translate-y-[1px] text-sm leading-none text-foreground/50">
                             {formatCommentTime(
                               c.created_at
                             )}
@@ -658,7 +764,7 @@ export default function CommentsSheet({
 
                           {/* Edited */}
                           {isEdited && (
-                            <span className="shrink-0 text-sm leading-none text-foreground/50 translate-y-[1px]">
+                            <span className="shrink-0 translate-y-[1px] text-sm leading-none text-foreground/50">
                               Edited
                             </span>
                           )}
