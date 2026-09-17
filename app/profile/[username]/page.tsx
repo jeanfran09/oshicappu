@@ -22,6 +22,8 @@ import {
   formatTimeAgo,
   parsePostImages,
 } from "@/utils/formatNumber";
+import OshiListSkeleton from "@/components/Skeleton/OshiListSkeleton";
+import PublicProfileSkeleton from "@/components/Skeleton/PublicProfileSkeleton";
 
 type TargetProfile = {
   id: string;
@@ -346,13 +348,7 @@ export default function PublicProfilePage() {
   };
 
   if (loadingProfile) {
-    return (
-      <div className="md:hidden flex min-h-screen items-center justify-center">
-        <p className="text-foreground/50">
-          Loading...
-        </p>
-      </div>
-    );
+    return  <PublicProfileSkeleton />;
   }
 
   if (!profile) {
@@ -540,25 +536,27 @@ export default function PublicProfilePage() {
         </div>
 
         {/* Oshis */}
-        {!oshisLoading &&
+        {oshisLoading ? (
+          <OshiListSkeleton showAdd={false}/>
+        ) : (
           oshis.length > 0 && (
             <OshiList
               oshis={oshis}
               showAdd={false}
             />
-          )}
+          )
+        )}
       </div>
 
       {/* Post Divider */}
       <div className="mt-2 border-t border-foreground/10" />
 
       {/* Posts */}
-      {!loadingPosts && (
-        <PostGrid
-          posts={postGridItems}
-          onPostClick={setSelectedPostId}
-        />
-      )}
+      <PostGrid
+        posts={postGridItems}
+        onPostClick={setSelectedPostId}
+      />
+      
 
       {/* Post Modal */}
       {selectedPostId && (

@@ -26,6 +26,9 @@ import {
   formatTimeAgo,
   parsePostImages,
 } from "@/utils/formatNumber";
+import PostGridSkeleton from "@/components/Skeleton/PostGridSkeleton";
+import OshiListSkeleton from "@/components/Skeleton/OshiListSkeleton";
+import ProfileSkeleton from "@/components/Skeleton/ProfileSkeleton";
 
 interface Post {
   id: string;
@@ -712,13 +715,7 @@ export default function ProfilePage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="md:hidden min-h-screen flex items-center justify-center">
-        <p className="text-foreground">
-          Loading...
-        </p>
-      </div>
-    );
+    return <ProfileSkeleton />;
   }
 
   if (!isLoggedIn || !user) {
@@ -879,7 +876,9 @@ export default function ProfilePage() {
             Edit Profile
           </button>
 
-          {!oshisLoading && (
+          {oshisLoading ? (
+            <OshiListSkeleton />
+          ) : (
             <OshiList
               oshis={oshis}
               onAdd={() =>
@@ -904,11 +903,7 @@ export default function ProfilePage() {
         {activeTab === "saved" && (
           <>
             {!savedPostsLoaded ? (
-              <div className="flex min-h-40 items-center justify-center">
-                <p className="text-sm text-foreground/40">
-                  Loading saved posts...
-                </p>
-              </div>
+              <PostGridSkeleton count={6}/>
             ) : savedPosts.length === 0 ? (
               <div className="flex min-h-40 items-center justify-center">
                 <p className="text-sm text-foreground/40">
@@ -933,11 +928,7 @@ export default function ProfilePage() {
         {activeTab === "liked" && (
           <>
             {!likedPostsLoaded ? (
-              <div className="flex min-h-40 items-center justify-center">
-                <p className="text-sm text-foreground/40">
-                  Loading liked posts...
-                </p>
-              </div>
+              <PostGridSkeleton count={6}/>
             ) : likedPosts.length === 0 ? (
               <div className="flex min-h-40 items-center justify-center">
                 <p className="text-sm text-foreground/40">
