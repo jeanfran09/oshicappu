@@ -33,6 +33,7 @@ import {
   formatTimeAgo,
   parsePostImages,
 } from "@/utils/formatNumber";
+
 import PostGridSkeleton from "@/components/Skeleton/PostGridSkeleton";
 import OshiPageSkeleton from "@/components/Skeleton/OshiPageSkeleton";
 
@@ -55,8 +56,7 @@ export default function OshiPage() {
   const params = useParams();
   const router = useRouter();
 
-  const { user } =
-    useSupabaseAuth();
+  const { user } = useSupabaseAuth();
 
   const [oshi, setOshi] =
     useState<Oshi | null>(null);
@@ -65,9 +65,7 @@ export default function OshiPage() {
     useState(true);
 
   const [owner, setOwner] =
-    useState<OwnerProfile | null>(
-      null
-    );
+    useState<OwnerProfile | null>(null);
 
   const [posts, setPosts] =
     useState<ProfilePost[]>([]);
@@ -80,34 +78,22 @@ export default function OshiPage() {
   const [
     selectedPostId,
     setSelectedPostId,
-  ] = useState<string | null>(
-    null
-  );
+  ] = useState<string | null>(null);
 
-  /*
-   * Edit Oshi Bottom Sheet
-   */
   const [
     showEditSheet,
     setShowEditSheet,
   ] = useState(false);
 
-  /*
-   * Image Cropper
-   */
   const [
     cropImage,
     setCropImage,
-  ] = useState<string | null>(
-    null
-  );
+  ] = useState<string | null>(null);
 
   const [
     croppedImage,
     setCroppedImage,
-  ] = useState<File | null>(
-    null
-  );
+  ] = useState<File | null>(null);
 
   /*
    * Fetch Oshi
@@ -116,10 +102,7 @@ export default function OshiPage() {
     async function fetchOshi() {
       const id = params.id;
 
-      if (
-        !id ||
-        typeof id !== "string"
-      ) {
+      if (!id || typeof id !== "string") {
         setLoading(false);
         return;
       }
@@ -149,6 +132,35 @@ export default function OshiPage() {
   }, [params.id]);
 
   /*
+   * Fetch Oshi owner's profile
+   */
+  useEffect(() => {
+    async function fetchOwner() {
+      if (!oshi) return;
+
+      const {
+        data,
+        error,
+      } = await supabase
+        .from("profiles")
+        .select("username, avatar_url")
+        .eq("id", oshi.user_id)
+        .single();
+
+      if (error) {
+        console.error(
+          "Error fetching oshi owner:",
+          error
+        );
+      } else {
+        setOwner(data);
+      }
+    }
+
+    fetchOwner();
+  }, [oshi]);
+
+  /*
    * Fetch posts this Oshi
    * has been tagged in.
    */
@@ -156,10 +168,7 @@ export default function OshiPage() {
     async function fetchOshiPosts() {
       const id = params.id;
 
-      if (
-        !id ||
-        typeof id !== "string"
-      ) {
+      if (!id || typeof id !== "string") {
         setPostsLoading(false);
         return;
       }
@@ -204,6 +213,11 @@ export default function OshiPage() {
         .select(
           `
             *,
+            profiles(
+              id,
+              username,
+              avatar_url
+            ),
             likes(count),
             comments(count),
             post_oshis(
@@ -225,12 +239,9 @@ export default function OshiPage() {
           `
         )
         .in("id", postIds)
-        .order(
-          "created_at",
-          {
-            ascending: false,
-          }
-        );
+        .order("created_at", {
+          ascending: false,
+        });
 
       if (error) {
         console.error(
@@ -244,6 +255,17 @@ export default function OshiPage() {
           (data ?? []).map(
             (post: any) => ({
               id: post.id,
+
+              userId:
+                post.user_id,
+
+              username:
+                post.profiles?.username ??
+                "username",
+
+              avatar:
+                post.profiles?.avatar_url ??
+                null,
 
               images:
                 parsePostImages(
@@ -270,11 +292,6 @@ export default function OshiPage() {
                 post.comments?.[0]
                   ?.count ?? 0,
 
-              /*
-               * Do NOT use temp.jpg.
-               * Keep null when there
-               * is no Oshi image.
-               */
               oshis: (
                 post.post_oshis ??
                 []
@@ -340,41 +357,7 @@ export default function OshiPage() {
   }, [params.id]);
 
   /*
-   * Fetch Oshi owner's profile.
-   */
-  useEffect(() => {
-    async function fetchOwner() {
-      if (!oshi) return;
-
-      const {
-        data,
-        error,
-      } = await supabase
-        .from("profiles")
-        .select(
-          "username, avatar_url"
-        )
-        .eq(
-          "id",
-          oshi.user_id
-        )
-        .single();
-
-      if (error) {
-        console.error(
-          "Error fetching oshi owner:",
-          error
-        );
-      } else {
-        setOwner(data);
-      }
-    }
-
-    fetchOwner();
-  }, [oshi]);
-
-  /*
-   * Post grid items.
+   * Post grid items
    */
   const postGridItems =
     posts.map((post) => ({
@@ -384,8 +367,7 @@ export default function OshiPage() {
     }));
 
   /*
-   * Close the Edit Oshi sheet
-   * and reset cropper state.
+   * Close Edit Oshi sheet
    */
   function closeEditSheet() {
     setShowEditSheet(false);
@@ -397,11 +379,7 @@ export default function OshiPage() {
    * Loading
    */
   if (loading) {
-    return (
-      <main className="min-h-screen bg-background">
-        <OshiPageSkeleton/>
-      </main>
-    );
+    return <OshiPageSkeleton />;
   }
 
   /*
@@ -417,9 +395,7 @@ export default function OshiPage() {
 
           <button
             type="button"
-            onClick={() =>
-              router.back()
-            }
+            onClick={() => router.back()}
             className="text-sm font-medium"
           >
             Go back
@@ -430,47 +406,20 @@ export default function OshiPage() {
   }
 
   const isOwner =
-    user?.id ===
-    oshi.user_id;
+    user?.id === oshi.user_id;
 
   return (
     <main className="min-h-dvh bg-background">
-
       {/* Header */}
-      <header
-        className="
-          sticky
-          top-0
-          z-50
-          flex
-          h-14
-          items-center
-          justify-between
-          border-b
-          border-foreground/10
-          bg-background
-        "
-      >
-
+      <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-foreground/10 bg-background">
         {/* Back */}
         <button
           type="button"
-          onClick={() =>
-            router.back()
-          }
-          className="
-            flex
-            h-9
-            w-9
-            items-center
-            justify-center
-            rounded-full
-          "
+          onClick={() => router.back()}
+          className="flex h-9 w-9 items-center justify-center rounded-full"
           aria-label="Go back"
         >
-          <ChevronLeft
-            size={22}
-          />
+          <ChevronLeft size={22} />
         </button>
 
         {/* Title */}
@@ -484,91 +433,40 @@ export default function OshiPage() {
             <button
               type="button"
               onClick={() => {
-                setCroppedImage(
-                  null
-                );
-
-                setCropImage(
-                  null
-                );
-
-                setShowEditSheet(
-                  true
-                );
+                setCroppedImage(null);
+                setCropImage(null);
+                setShowEditSheet(true);
               }}
-              className="
-                flex
-                h-9
-                w-9
-                items-center
-                justify-center
-                rounded-full
-              "
+              className="flex h-9 w-9 items-center justify-center rounded-full"
               aria-label="Edit Oshi"
             >
-              <Pencil
-                size={20}
-              />
+              <Pencil size={20} />
             </button>
           )}
         </div>
-
       </header>
 
       {/* Profile */}
-      <section
-        className="
-          flex
-          flex-col
-          items-center
-          px-4
-          pt-4
-          text-center
-        "
-      >
-
+      <section className="flex flex-col items-center px-4 pt-4 text-center">
         {/* Oshi Image */}
-        <div
-          className="
-            flex
-            h-40
-            w-40
-            shrink-0
-            items-center
-            justify-center
-            overflow-hidden
-            rounded-full
-            bg-accent/20
-          "
-        >
+        <div className="flex h-40 w-40 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent/20">
           {oshi.image_url ? (
             <Image
-              src={
-                oshi.image_url
-              }
-              alt={
-                oshi.name
-              }
+              src={oshi.image_url}
+              alt={oshi.name}
               width={160}
               height={160}
-              className="
-                h-full
-                w-full
-                object-cover
-              "
+              className="h-full w-full object-cover"
             />
           ) : (
             <UserIcon
               size={40}
-              className="
-                text-foreground/30
-              "
+              className="text-foreground/30"
             />
           )}
         </div>
 
         <div className="flex-1 pt-2">
-
           <h2 className="text-2xl font-bold">
             {oshi.name}
           </h2>
@@ -581,108 +479,65 @@ export default function OshiPage() {
               ).toLocaleDateString()}
             </p>
           )}
-
         </div>
 
         {/* Notes */}
         {oshi.notes && (
           <div className="mt-1">
-            <p
-              className="
-                whitespace-pre-wrap
-                break-words
-                text-base
-                leading-relaxed
-              "
-            >
+            <p className="whitespace-pre-wrap break-words text-base leading-relaxed">
               {oshi.notes}
             </p>
           </div>
         )}
-
       </section>
 
       {/* Posts */}
       <section className="mt-3">
-
-        <div
-          className="
-            border-b
-            border-foreground/10
-            px-4
-            pb-3
-          "
-        >
+        <div className="border-b border-foreground/10 px-4 pb-3">
           <h2 className="font-semibold">
             Album
           </h2>
         </div>
 
         {postsLoading ? (
-          <PostGridSkeleton/>
+          <PostGridSkeleton />
         ) : posts.length > 0 ? (
           <PostGrid
-            posts={
-              postGridItems
-            }
-            onPostClick={
-              setSelectedPostId
-            }
+            posts={postGridItems}
+            onPostClick={setSelectedPostId}
           />
         ) : (
-          <div
-            className="
-              flex
-              min-h-40
-              items-center
-              justify-center
-            "
-          >
+          <div className="flex min-h-40 items-center justify-center">
             <p className="text-sm text-foreground/40">
               No posts yet.
             </p>
           </div>
         )}
-
       </section>
 
       {/* Post Modal */}
       {selectedPostId && (
         <PostModal
           posts={posts}
-          initialPostId={
-            selectedPostId
-          }
+          initialPostId={selectedPostId}
           username={
-            owner?.username ??
-            "username"
+            owner?.username ?? "username"
           }
           avatar={
-            owner?.avatar_url ||
-            ""
+            owner?.avatar_url ?? null
           }
-          ownerId={
-            oshi.user_id
-          }
+          ownerId={oshi.user_id}
           onClose={() =>
-            setSelectedPostId(
-              null
-            )
+            setSelectedPostId(null)
           }
-          onPostDeleted={(
-            postId
-          ) => {
+          onPostDeleted={(postId) => {
             setPosts((prev) =>
               prev.filter(
-                (p) =>
-                  p.id !==
-                  postId
+                (p) => p.id !== postId
               )
             );
 
-            setSelectedPostId(
-              null
-            );
+            setSelectedPostId(null);
           }}
         />
       )}
@@ -691,40 +546,21 @@ export default function OshiPage() {
       {showEditSheet && (
         <BottomSheet
           title="Edit Oshi"
-          onClose={
-            closeEditSheet
-          }
+          onClose={closeEditSheet}
         >
           <EditOshiForm
             oshi={oshi}
-
-            onUpdated={(
-              updatedOshi
-            ) => {
-              setOshi(
-                updatedOshi
-              );
+            onUpdated={(updatedOshi) => {
+              setOshi(updatedOshi);
             }}
-
             onDeleted={() => {
               router.back();
             }}
-
-            onClose={
-              closeEditSheet
-            }
-
-            onOpenCropper={(
-              image
-            ) => {
-              setCropImage(
-                image
-              );
+            onClose={closeEditSheet}
+            onOpenCropper={(image) => {
+              setCropImage(image);
             }}
-
-            croppedImage={
-              croppedImage
-            }
+            croppedImage={croppedImage}
           />
         </BottomSheet>
       )}
@@ -737,25 +573,15 @@ export default function OshiPage() {
           isFirstImage={true}
           onCropChange={() => {}}
           onRatioChange={() => {}}
-          onComplete={(
-            file
-          ) => {
-            setCroppedImage(
-              file
-            );
-
-            setCropImage(
-              null
-            );
+          onComplete={(file) => {
+            setCroppedImage(file);
+            setCropImage(null);
           }}
           onCancel={() => {
-            setCropImage(
-              null
-            );
+            setCropImage(null);
           }}
         />
       )}
-
     </main>
   );
 }
