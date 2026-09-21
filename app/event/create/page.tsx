@@ -544,7 +544,7 @@ export default function CreateEventPage() {
             items-center
             justify-center
             rounded-full
-            bg-[#b8d8be]/90
+            bg-accent-secondary
             font-semibold
             text-foreground
             transition
