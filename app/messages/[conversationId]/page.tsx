@@ -39,7 +39,7 @@ type Message = {
   created_at: string;
 };
 
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10MB
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
 function formatMessageTime(dateString: string) {
   const date = new Date(dateString);
@@ -76,6 +76,10 @@ export default function ConversationPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [notAllowed, setNotAllowed] = useState(false);
+
+  const [newMessageId, setNewMessageId] = useState<
+    string | null
+  >(null);
 
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -119,7 +123,6 @@ export default function ConversationPage() {
 
   const didLongPress = useRef(false);
 
-  // Direct reference to the messages scroll container.
   const messagesContainerRef =
     useRef<HTMLDivElement>(null);
 
@@ -271,6 +274,8 @@ export default function ConversationPage() {
               return prev;
             }
 
+            setNewMessageId(incoming.id);
+
             return [...prev, incoming];
           });
 
@@ -338,6 +343,28 @@ export default function ConversationPage() {
       behavior: "auto",
     });
   }, [loading]);
+
+  // Scroll smoothly only when a new message is actually added.
+  useEffect(() => {
+    if (!newMessageId) return;
+
+    const container = messagesContainerRef.current;
+
+    if (container) {
+      requestAnimationFrame(() => {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: "smooth",
+        });
+      });
+    }
+
+    const timeout = setTimeout(() => {
+      setNewMessageId(null);
+    }, 250);
+
+    return () => clearTimeout(timeout);
+  }, [newMessageId]);
 
   // Clean up attachment preview URL.
   useEffect(() => {
@@ -547,6 +574,8 @@ export default function ConversationPage() {
             return prev;
           }
 
+          setNewMessageId(data.id);
+
           return [...prev, data as Message];
         });
       }
@@ -718,6 +747,11 @@ export default function ConversationPage() {
                     messageRefs.current[message.id] =
                       element;
                   }}
+                  className={
+                    newMessageId === message.id
+                      ? "animate-message-slide-up"
+                      : ""
+                  }
                 >
                   {repliedMessage && (
                     <div
