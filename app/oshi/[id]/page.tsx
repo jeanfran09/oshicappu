@@ -33,6 +33,8 @@ import {
   formatTimeAgo,
   parsePostImages,
 } from "@/utils/formatNumber";
+import PostGridSkeleton from "@/components/Skeleton/PostGridSkeleton";
+import OshiPageSkeleton from "@/components/Skeleton/OshiPageSkeleton";
 
 type Oshi = {
   id: string;
@@ -397,11 +399,7 @@ export default function OshiPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-background">
-        <div className="flex min-h-screen items-center justify-center">
-          <p className="text-foreground/50">
-            Loading...
-          </p>
-        </div>
+        <OshiPageSkeleton/>
       </main>
     );
   }
@@ -451,7 +449,6 @@ export default function OshiPage() {
           border-b
           border-foreground/10
           bg-background
-          px-4
         "
       >
 
@@ -622,18 +619,7 @@ export default function OshiPage() {
         </div>
 
         {postsLoading ? (
-          <div
-            className="
-              flex
-              min-h-40
-              items-center
-              justify-center
-            "
-          >
-            <p className="text-sm text-foreground/40">
-              Loading posts...
-            </p>
-          </div>
+          <PostGridSkeleton/>
         ) : posts.length > 0 ? (
           <PostGrid
             posts={
