@@ -139,8 +139,7 @@ export default function CreatePostPage() {
   }
 
   const canPost =
-    (caption.trim().length > 0 ||
-      images.length > 0) &&
+    (images.length > 0) &&
     !loading;
 
   /*
