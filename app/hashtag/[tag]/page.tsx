@@ -7,6 +7,7 @@ import { ChevronLeft } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import PostGrid from "@/components/Profile/PostGrid";
 import { parsePostImages } from "@/utils/formatNumber";
+import HashtagPageSkeleton from "@/components/Skeleton/HashtagPageSkeleton";
 
 type Post = {
   id: string;
@@ -137,27 +138,7 @@ export default function HashtagPage() {
    */
   if (loading) {
     return (
-      <div className="md:hidden min-h-screen bg-background">
-        <header className="sticky top-0 z-50 flex items-center border-b border-foreground/10 bg-background py-3">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="flex h-9 w-9 items-center justify-center rounded-full"
-          >
-            <ChevronLeft size={22} />
-          </button>
-
-          <h1 className="absolute left-1/2 -translate-x-1/2 text-lg font-semibold">
-            Hashtag
-          </h1>
-        </header>
-
-        <div className="flex h-40 items-center justify-center">
-          <p className="text-sm text-foreground/40">
-            Loading...
-          </p>
-        </div>
-      </div>
+      <HashtagPageSkeleton/>
     );
   }
 
@@ -203,7 +184,7 @@ export default function HashtagPage() {
         </button>
 
         <h1 className="absolute left-1/2 -translate-x-1/2 text-lg font-semibold">
-          Hashtag
+          #{hashtag.tag}
         </h1>
       </header>
 
