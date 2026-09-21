@@ -14,6 +14,7 @@ import ThumbnailStrip from "@/components/CreatePost/ThumbnailStrip";
 import OshiPicker, {
   type Oshi,
 } from "@/components/CreatePost/OshiPicker";
+import EditPostSkeleton from "@/components/Skeleton/EditPostSkeleton";
 
 type PostData = {
   id: string;
@@ -398,9 +399,7 @@ export default function EditPostPage() {
    */
   if (pageLoading) {
     return (
-      <div className="md:hidden flex min-h-screen items-center justify-center">
-        Loading post...
-      </div>
+      <EditPostSkeleton/>
     );
   }
 
