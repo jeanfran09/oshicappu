@@ -21,8 +21,6 @@ export default function OshiListSkeleton({
             className="flex flex-shrink-0 flex-col items-center gap-2"
           >
             <div className="h-16 w-16 rounded-full bg-foreground/10" />
-
-            <div className="h-3 w-12 rounded bg-foreground/10" />
           </div>
         ))}
 
