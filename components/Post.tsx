@@ -625,6 +625,7 @@ export default function Post({
         )}
 
         {/* Fandoms */}
+        {/** 
         {fandoms.length > 0 && (
           <div className="px-3 pt-2">
             <div className="flex flex-wrap gap-2">
@@ -649,7 +650,7 @@ export default function Post({
               ))}
             </div>
           </div>
-        )}
+        )}*/}
 
         {/* Hashtags */}
         {hashtags.length > 0 && (
