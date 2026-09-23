@@ -8,7 +8,8 @@ import { supabase } from "@/lib/supabase";
 import {
   Home,
   Search,
-  Calendar,
+  MapPin,
+  MapPinned,
   Bell,
   User
 } from "lucide-react";
@@ -103,23 +104,39 @@ export default function BottomNav() {
       </Link>
 
       <Link
-        href="/event"
-        onClick={() => handleNav("/event")}
+        href="/landmarks"
+        onClick={() => handleNav("/landmarks")}
       >
-        <Calendar
+        <MapPin
           size={24}
           strokeWidth={
-            pathname === "/event" || pathname.startsWith("/event/")
+            pathname === "/landmarks" || pathname.startsWith("/event/")
               ? "3"
               : "2"
           }
           className={
-            pathname === "/event" || pathname.startsWith("/event/")
+            pathname === "/landmarks" || pathname.startsWith("/event/")
               ? "text-[var(--accent-secondary)]"
               : ""
           }
         />
       </Link>
+      {/*** 
+      <Link href="/map" onClick={() => handleNav("/map")}>
+        <MapPinned
+          size={24}
+          strokeWidth={
+            pathname === "/map" || pathname.startsWith("/map/")
+              ? "3"
+              : "2"
+          }
+          className={
+            pathname === "/map" || pathname.startsWith("/map/")
+              ? "text-[var(--accent-secondary)]"
+              : ""
+          }
+        />
+      </Link>*/}
 
       <Link href="/notifications" onClick={() => handleNav("/notifications")} className="relative">
         <Bell

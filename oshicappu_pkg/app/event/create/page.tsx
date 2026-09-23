@@ -5,6 +5,7 @@ import {
   CalendarDays,
   ImagePlus,
   MapPin,
+  MapPinned,
   X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -12,6 +13,8 @@ import { useState, useEffect, useRef } from "react";
 
 import { supabase } from "@/lib/supabase";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
+import { findOrCreateFandom } from "@/utils/findOrCreateFandom";
+import { getCurrentPosition } from "@/utils/geo";
 
 export default function CreateEventPage() {
   const router = useRouter();
@@ -29,7 +32,14 @@ export default function CreateEventPage() {
   const [time, setTime] = useState("");
   const [capacity, setCapacity] = useState("");
   const [location, setLocation] = useState("");
+  const [fandom, setFandom] = useState("");
+  const [fandomOptions, setFandomOptions] = useState<string[]>([]);
   const [hashtags, setHashtags] = useState<string[]>([]);
+
+  const [coords, setCoords] =
+    useState<{ lat: number; lng: number } | null>(null);
+  const [locatingPin, setLocatingPin] = useState(false);
+  const [pinError, setPinError] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -50,6 +60,40 @@ export default function CreateEventPage() {
       router.push("/login");
     }
   }, [authLoading, isLoggedIn, router]);
+
+  useEffect(() => {
+    async function loadFandoms() {
+      const { data, error: fandomError } = await supabase
+        .from("fandoms")
+        .select("name")
+        .order("name", { ascending: true });
+
+      if (!fandomError) {
+        setFandomOptions((data ?? []).map((f) => f.name));
+      }
+    }
+
+    loadFandoms();
+  }, []);
+
+  async function handlePinLocation() {
+    setLocatingPin(true);
+    setPinError("");
+
+    try {
+      const pos = await getCurrentPosition();
+
+      setCoords({
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+      });
+    } catch (err) {
+      console.error("Error getting location:", err);
+      setPinError("Couldn't get your location. Check permissions.");
+    } finally {
+      setLocatingPin(false);
+    }
+  }
 
   async function uploadEventImage(
     userId: string
@@ -141,11 +185,17 @@ export default function CreateEventPage() {
       return;
     }
 
+    if (!fandom.trim()) {
+      setError("Please add a fandom for this event.");
+      return;
+    }
+
     setSubmitting(true);
     setError("");
 
     try {
       const imageUrl = await uploadEventImage(user.id);
+      const fandomId = await findOrCreateFandom(fandom);
 
       const { data: created, error: insertError } =
         await supabase
@@ -157,6 +207,9 @@ export default function CreateEventPage() {
             event_date: date,
             event_time: time || null,
             location: location.trim() || null,
+            fandom_id: fandomId,
+            latitude: coords?.lat ?? null,
+            longitude: coords?.lng ?? null,
             capacity: capacity ? parseInt(capacity, 10) : null,
             image_url: imageUrl,
           })
@@ -516,6 +569,75 @@ export default function CreateEventPage() {
           </div>
         </div>
 
+        {/* Pin exact location on the Fandom Map */}
+        <div className="flex items-center justify-between rounded-xl bg-foreground/5 px-4 py-3">
+          <div>
+            <p className="text-sm font-medium">
+              {coords ? "Pinned for the map" : "Add to Fandom Map"}
+            </p>
+            <p className="text-xs text-foreground/50">
+              {coords
+                ? "This event will show up on the Fandom Map."
+                : "Optional — pins this event so others can find it nearby."}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handlePinLocation}
+            disabled={locatingPin}
+            className="flex shrink-0 items-center gap-1.5 rounded-full bg-accent px-3 py-2 text-xs font-semibold disabled:opacity-60"
+          >
+            <MapPinned size={14} />
+            {locatingPin
+              ? "Locating..."
+              : coords
+              ? "Update pin"
+              : "Use my location"}
+          </button>
+        </div>
+
+        {pinError && (
+          <p className="text-xs text-red-500">{pinError}</p>
+        )}
+
+        {/* Fandom */}
+        <div className="space-y-2">
+          <label
+            htmlFor="fandom"
+            className="text-sm font-semibold"
+          >
+            Fandom
+          </label>
+
+          <input
+            id="fandom"
+            type="text"
+            list="fandom-options"
+            value={fandom}
+            onChange={(e) => setFandom(e.target.value)}
+            placeholder="e.g. BTS, Hatsune Miku, Sanrio..."
+            className="
+              w-full
+              rounded-xl
+              border
+              border-foreground/25
+              bg-transparent
+              px-4
+              py-3
+              text-base
+              outline-none
+              focus:border-accent
+            "
+          />
+
+          <datalist id="fandom-options">
+            {fandomOptions.map((name) => (
+              <option key={name} value={name} />
+            ))}
+          </datalist>
+        </div>
+
         {/* Hashtags */}
         <TagInput
           label="Hashtags"
@@ -544,7 +666,7 @@ export default function CreateEventPage() {
             items-center
             justify-center
             rounded-full
-            bg-accent-secondary
+            bg-[#b8d8be]/90
             font-semibold
             text-foreground
             transition

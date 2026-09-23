@@ -27,6 +27,8 @@ type EventRow = {
   image_url: string | null;
   interested_count: number;
   going_count: number;
+  fandom_id: string | null;
+  fandom_name: string | null;
 };
 
 type LoadedEvent = Event & {
@@ -58,7 +60,7 @@ export default function EventPage() {
         await supabase
           .from("events_with_counts")
           .select(
-            "id, organizer_id, title, event_date, event_time, location, image_url, interested_count, going_count"
+            "id, organizer_id, title, event_date, event_time, location, image_url, interested_count, going_count, fandom_id, fandom_name"
           )
           .order("event_date", { ascending: true });
 
@@ -120,6 +122,8 @@ export default function EventPage() {
         image: row.image_url,
         rsvpStatus: rsvpByEventId.get(row.id) ?? null,
         yourEvent: row.organizer_id === user?.id,
+        fandomId: row.fandom_id,
+        fandomName: row.fandom_name,
       }));
 
       if (!isCancelled) {

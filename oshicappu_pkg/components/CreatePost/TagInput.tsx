@@ -1,0 +1,164 @@
+"use client";
+
+import { useState } from "react";
+import { X, Plus } from "lucide-react";
+
+type TagInputProps = {
+  label: string;
+  placeholder: string;
+  items: string[];
+  setItems: React.Dispatch<React.SetStateAction<string[]>>;
+  maxItems?: number;
+  maxLength?: number;
+  prefix?: string;
+};
+
+export default function TagInput({
+  label,
+  placeholder,
+  items,
+  setItems,
+  maxItems = 10,
+  maxLength = 30,
+  prefix = "",
+}: TagInputProps) {
+  const [value, setValue] = useState("");
+  const [error, setError] = useState("");
+
+  function addItem() {
+    let text = value.trim();
+
+    if (!text) return;
+
+    if (prefix === "#") {
+        text = text.replace(/^#/, "").replace(/\s+/g, "");
+    }
+
+
+    // Max limit check
+    if (items.length >= maxItems) {
+        setError(
+        `Maximum of ${maxItems} ${label.toLowerCase()} allowed.`
+        );
+        return;
+    }
+
+
+    // Duplicate check
+    if (
+        items.some(
+        (item) =>
+            item.toLowerCase() === text.toLowerCase()
+        )
+    ) {
+        setValue("");
+        setError(
+        `${text} is already added.`
+        );
+        return;
+    }
+
+
+    setItems((prev) => [
+        ...prev,
+        text,
+    ]);
+
+    setValue("");
+    setError("");
+    }
+
+  function removeItem(item: string) {
+    setItems((prev) =>
+      prev.filter((i) => i !== item)
+    );
+
+    setError("");
+  }
+
+  return (
+    <div>
+      <label className="text-sm font-semibold">
+        {label}
+      </label>
+
+      <div className="flex gap-2 pb-2">
+        <div className="flex w-full items-center rounded-xl border border-foreground/25">
+          {label === "Hashtags" && (
+            <span className="pl-5 text-base text-foreground/40">#</span>
+          )}
+          <input
+            type="text"
+            value={value}
+            maxLength={maxLength}
+            placeholder={placeholder}
+            onChange={(e) => {
+              setValue(e.target.value);
+              setError("");
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addItem();
+              }
+            }}
+            className="
+              px-4
+              py-3
+              text-base
+              outline-none
+              focus:border-accent
+            "
+          />
+        </div>
+        
+        <button
+          type="button"
+          onClick={addItem}
+          className="
+            rounded-xl
+            bg-accent
+            px-5
+            font-medium
+            transition
+            hover:bg-accent/80
+            active:scale-95
+          "
+        >
+          <Plus size={20} />
+        </button>
+      </div>
+
+      <div className="flex flex-wrap">
+        {items.map((item) => (
+          <div
+            key={item}
+            className="
+              flex
+              items-center
+              mb-1 mr-1
+              rounded-full
+              bg-accent
+              px-3
+              py-1.5
+              text-base
+            "
+          >
+            <span>
+              {prefix}
+              {item}
+            </span>
+
+            <button
+              type="button"
+              onClick={() => removeItem(item)}
+              className="ml-2 flex translate-y-[2px] items-center justify-center "
+            >
+              <X size={14} />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

@@ -34,6 +34,18 @@ type EventDetail = {
   organizerUsername: string | null;
   organizerDisplayName: string | null;
   organizerAvatarUrl: string | null;
+  fandomId: string | null;
+  fandomName: string | null;
+  latitude: number | null;
+  longitude: number | null;
+};
+
+type Attendee = {
+  user_id: string;
+  status: "interested" | "going";
+  username: string;
+  display_name: string;
+  avatar_url: string | null;
 };
 
 async function saveRsvp(
@@ -66,6 +78,7 @@ export default function EventPage() {
 
   const [event, setEvent] = useState<EventDetail | null>(null);
   const [hashtags, setHashtags] = useState<string[]>([]);
+  const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -88,7 +101,7 @@ export default function EventPage() {
       const { data: row, error: eventError } = await supabase
         .from("events_with_counts")
         .select(
-          "id, title, description, event_date, event_time, location, image_url, interested_count, going_count, organizer_id, organizer_username, organizer_display_name, organizer_avatar_url"
+          "id, title, description, event_date, event_time, location, image_url, interested_count, going_count, organizer_id, organizer_username, organizer_display_name, organizer_avatar_url, fandom_id, fandom_name, latitude, longitude"
         )
         .eq("id", eventId)
         .maybeSingle();
@@ -109,6 +122,11 @@ export default function EventPage() {
       const { data: hashtagRows } = await supabase
         .from("event_hashtags")
         .select("hashtags(tag)")
+        .eq("event_id", eventId);
+
+      const { data: attendeeRows } = await supabase
+        .from("event_attendees")
+        .select("user_id, status, username, display_name, avatar_url")
         .eq("event_id", eventId);
 
       const { data: rsvpRow } = user
@@ -134,10 +152,15 @@ export default function EventPage() {
         organizerUsername: row.organizer_username,
         organizerDisplayName: row.organizer_display_name,
         organizerAvatarUrl: row.organizer_avatar_url,
+        fandomId: row.fandom_id,
+        fandomName: row.fandom_name,
+        latitude: row.latitude,
+        longitude: row.longitude,
       });
 
       setInterestedCount(row.interested_count);
       setGoingCount(row.going_count);
+      setAttendees((attendeeRows ?? []) as Attendee[]);
 
       const hashtagJoins = (hashtagRows ?? []) as unknown as {
         hashtags: { tag: string } | { tag: string }[] | null;
@@ -337,7 +360,7 @@ export default function EventPage() {
 
         <button
           type="button"
-          onClick={() => router.push("/event")}
+          onClick={() => router.push("/landmarks")}
           className="rounded-full bg-accent px-4 py-2 text-sm font-medium"
         >
           Back to Events
@@ -365,7 +388,7 @@ export default function EventPage() {
       >
         <button
           type="button"
-          onClick={() => router.push("/event")}
+          onClick={() => router.push("/landmarks")}
           className="
             flex
             h-9
@@ -505,6 +528,30 @@ export default function EventPage() {
         <h2 className="text-2xl font-bold">
           {event.title}
         </h2>
+
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          {event.fandomName && (
+            <button
+              type="button"
+              onClick={() =>
+                event.fandomId && router.push(`/fandom/${event.fandomId}`)
+              }
+              className="rounded-full bg-accent-secondary/70 px-3 py-1 text-xs font-semibold"
+            >
+              {event.fandomName}
+            </button>
+          )}
+
+          {event.latitude != null && event.longitude != null && (
+            <button
+              type="button"
+              onClick={() => router.push(`/map?event=${event.id}`)}
+              className="flex items-center gap-1 rounded-full bg-foreground/5 px-3 py-1 text-xs font-medium"
+            >
+              <MapPin size={12} /> View on map
+            </button>
+          )}
+        </div>
 
         {/* Event Details */}
         <div className="mt-5 space-y-4">
@@ -665,6 +712,53 @@ export default function EventPage() {
             </button>
 
           </div>
+        )}
+
+        {/* Who's going (event participation discovery) */}
+        {attendees.length > 0 && (
+          <section className="mt-8">
+            <h3 className="text-lg font-semibold">
+              Who&apos;s interested & going
+            </h3>
+
+            <ul className="mt-3 flex flex-wrap gap-3">
+              {attendees.map((a) => (
+                <li key={a.user_id}>
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/profile/${a.username}`)}
+                    className="flex flex-col items-center gap-1"
+                  >
+                    <div className="relative">
+                      {a.avatar_url ? (
+                        <img
+                          src={a.avatar_url}
+                          alt={a.display_name}
+                          className="h-12 w-12 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="h-12 w-12 rounded-full bg-accent" />
+                      )}
+
+                      <span
+                        className={`absolute -bottom-1 -right-1 rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${
+                          a.status === "going"
+                            ? "bg-accent-secondary"
+                            : "bg-foreground/10"
+                        }`}
+                      >
+                        {a.status === "going" ? "Going" : "Interested"}
+                      </span>
+                    </div>
+
+                    <span className="max-w-[60px] truncate text-[11px]">
+                      {a.display_name}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
 
         {/* Description */}
