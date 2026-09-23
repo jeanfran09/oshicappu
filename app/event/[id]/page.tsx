@@ -360,7 +360,7 @@ export default function EventPage() {
 
         <button
           type="button"
-          onClick={() => router.push("/event")}
+          onClick={() => router.push("/landmarks")}
           className="rounded-full bg-accent px-4 py-2 text-sm font-medium"
         >
           Back to Events
@@ -388,7 +388,7 @@ export default function EventPage() {
       >
         <button
           type="button"
-          onClick={() => router.push("/event")}
+          onClick={() => router.push("/landmarks")}
           className="
             flex
             h-9

@@ -603,7 +603,7 @@ export default function MapPage() {
           list="fandom-options"
           value={fandomQuery}
           onChange={(e) => setFandomQuery(e.target.value)}
-          placeholder="Filter by fandom (e.g. BTS, Sanrio...)"
+          placeholder="Filter by fandom"
           className="w-full rounded-xl border border-foreground/20 bg-foreground/5 px-4 py-2.5 text-sm outline-none focus:border-accent"
         />
 

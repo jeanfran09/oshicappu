@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Search } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Search } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
+
 import {
   formatEventDate,
   formatEventTime,
@@ -36,8 +36,7 @@ type LoadedEvent = Event & {
   yourEvent?: boolean;
 };
 
-export default function EventPage() {
-  const router = useRouter();
+export default function EventsSection() {
   const { user } = useSupabaseAuth();
 
   const [activeTab, setActiveTab] =
@@ -45,8 +44,12 @@ export default function EventPage() {
 
   const [searchQuery, setSearchQuery] = useState("");
 
-  const [events, setEvents] = useState<LoadedEvent[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [events, setEvents] =
+    useState<LoadedEvent[]>([]);
+
+  const [isLoading, setIsLoading] =
+    useState(true);
+
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -56,13 +59,17 @@ export default function EventPage() {
       setIsLoading(true);
       setError("");
 
-      const { data: eventRows, error: eventsError } =
-        await supabase
-          .from("events_with_counts")
-          .select(
-            "id, organizer_id, title, event_date, event_time, location, image_url, interested_count, going_count, fandom_id, fandom_name"
-          )
-          .order("event_date", { ascending: true });
+      const {
+        data: eventRows,
+        error: eventsError,
+      } = await supabase
+        .from("events_with_counts")
+        .select(
+          "id, organizer_id, title, event_date, event_time, location, image_url, interested_count, going_count, fandom_id, fandom_name"
+        )
+        .order("event_date", {
+          ascending: true,
+        });
 
       if (eventsError) {
         console.error(
@@ -71,29 +78,35 @@ export default function EventPage() {
         );
 
         if (!isCancelled) {
-          setError("Couldn't load events. Try again later.");
+          setError(
+            "Couldn't load events. Try again later."
+          );
           setIsLoading(false);
         }
 
         return;
       }
 
-      const rows = (eventRows ?? []) as EventRow[];
+      const rows =
+        (eventRows ?? []) as EventRow[];
 
-      // Look up the current user's RSVP status for these events,
-      // so buttons render as already-selected where applicable.
-      let rsvpByEventId = new Map<string, "interested" | "going">();
+      let rsvpByEventId = new Map<
+        string,
+        "interested" | "going"
+      >();
 
       if (user && rows.length > 0) {
-        const { data: rsvpRows, error: rsvpError } =
-          await supabase
-            .from("event_rsvps")
-            .select("event_id, status")
-            .eq("user_id", user.id)
-            .in(
-              "event_id",
-              rows.map((row) => row.id)
-            );
+        const {
+          data: rsvpRows,
+          error: rsvpError,
+        } = await supabase
+          .from("event_rsvps")
+          .select("event_id, status")
+          .eq("user_id", user.id)
+          .in(
+            "event_id",
+            rows.map((row) => row.id)
+          );
 
         if (rsvpError) {
           console.error(
@@ -104,27 +117,36 @@ export default function EventPage() {
           rsvpByEventId = new Map(
             (rsvpRows ?? []).map((row) => [
               row.event_id,
-              row.status as "interested" | "going",
+              row.status as
+                | "interested"
+                | "going",
             ])
           );
         }
       }
 
-      const mapped: LoadedEvent[] = rows.map((row) => ({
-        id: row.id,
-        organizerId: row.organizer_id,
-        title: row.title,
-        date: formatEventDate(row.event_date),
-        time: formatEventTime(row.event_time),
-        location: row.location ?? "",
-        interested: row.interested_count,
-        going: row.going_count,
-        image: row.image_url,
-        rsvpStatus: rsvpByEventId.get(row.id) ?? null,
-        yourEvent: row.organizer_id === user?.id,
-        fandomId: row.fandom_id,
-        fandomName: row.fandom_name,
-      }));
+      const mapped: LoadedEvent[] =
+        rows.map((row) => ({
+          id: row.id,
+          organizerId: row.organizer_id,
+          title: row.title,
+          date: formatEventDate(
+            row.event_date
+          ),
+          time: formatEventTime(
+            row.event_time
+          ),
+          location: row.location ?? "",
+          interested: row.interested_count,
+          going: row.going_count,
+          image: row.image_url,
+          rsvpStatus:
+            rsvpByEventId.get(row.id) ?? null,
+          yourEvent:
+            row.organizer_id === user?.id,
+          fandomId: row.fandom_id,
+          fandomName: row.fandom_name,
+        }));
 
       if (!isCancelled) {
         setEvents(mapped);
@@ -146,45 +168,26 @@ export default function EventPage() {
         : event.organizerId !== user?.id
     );
 
-    const query = searchQuery.trim().toLowerCase();
+    const query =
+      searchQuery.trim().toLowerCase();
 
     if (!query) return byTab;
 
     return byTab.filter((event) =>
-      event.title.toLowerCase().includes(query)
+      event.title
+        .toLowerCase()
+        .includes(query)
     );
-  }, [events, activeTab, searchQuery, user?.id]);
+  }, [
+    events,
+    activeTab,
+    searchQuery,
+    user?.id,
+  ]);
 
   return (
-    <main className="min-h-screen bg-background pb-20 md:hidden">
-      {/* Header */}
-      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-foreground/10 bg-background px-3 pt-4 pb-3">
-        <h1 className="text-xl font-bold">
-          Events
-        </h1>
-
-        {/* Create Event */}
-        <button
-          type="button"
-          onClick={() => {
-            router.push("/event/create");
-          }}
-          className="
-            flex
-            h-9
-            w-9
-            items-center
-            justify-center
-            rounded-full
-            bg-accent
-          "
-          aria-label="Create event"
-        >
-          <Plus size={20} />
-        </button>
-      </header>
-
-      {/* Capsule Filters */}
+    <section>
+      {/* Event Tabs */}
       <section className="px-4 pt-4">
         <div className="flex gap-2">
           <button
@@ -192,19 +195,11 @@ export default function EventPage() {
             onClick={() =>
               setActiveTab("recommended")
             }
-            className={`
-              rounded-full
-              px-4
-              py-2
-              text-sm
-              font-medium
-              transition-colors
-              ${
-                activeTab === "recommended"
-                  ? "bg-accent text-foreground"
-                  : "bg-foreground/5 text-foreground/50"
-              }
-            `}
+            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === "recommended"
+                ? "bg-accent text-foreground"
+                : "bg-foreground/5 text-foreground/50"
+            }`}
           >
             Recommended
           </button>
@@ -212,19 +207,11 @@ export default function EventPage() {
           <button
             type="button"
             onClick={() => setActiveTab("your")}
-            className={`
-              rounded-full
-              px-4
-              py-2
-              text-sm
-              font-medium
-              transition-colors
-              ${
-                activeTab === "your"
-                  ? "bg-accent text-foreground"
-                  : "bg-foreground/5 text-foreground/50"
-              }
-            `}
+            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === "your"
+                ? "bg-accent text-foreground"
+                : "bg-foreground/5 text-foreground/50"
+            }`}
           >
             Your Events
           </button>
@@ -246,15 +233,7 @@ export default function EventPage() {
               setSearchQuery(e.target.value)
             }
             placeholder="Search events..."
-            className="
-              w-full
-              bg-transparent
-              px-3
-              py-3
-              text-sm
-              outline-none
-              placeholder:text-foreground/40
-            "
+            className="w-full bg-transparent px-3 py-3 text-sm outline-none placeholder:text-foreground/40"
           />
         </div>
       </section>
@@ -283,6 +262,6 @@ export default function EventPage() {
           </p>
         </div>
       )}
-    </main>
+    </section>
   );
 }

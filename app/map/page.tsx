@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import {
   Camera,
+  ChevronLeft,
   MapPin,
   Plus,
   Stamp,
@@ -582,7 +583,18 @@ export default function MapPage() {
   return (
     <main className="flex min-h-screen flex-col bg-background pb-20 md:hidden">
       {/* Header */}
-      <header className="sticky top-0 z-[1100] flex items-center justify-between border-b border-foreground/10 bg-background px-4 pt-4 pb-3">
+      <header className="sticky top-0 z-[1100] flex items-center border-b border-foreground/10 bg-background py-3">
+        <button
+          type="button"
+          onClick={() =>
+            router.back()
+          }
+          className="flex h-9 w-9 items-center justify-center rounded-full"
+        >
+          <ChevronLeft
+            size={22}
+          />
+        </button>
         <h1 className="text-xl font-bold">Fandom Map</h1>
       </header>
 
@@ -617,7 +629,7 @@ export default function MapPage() {
           list="fandom-options"
           value={fandomQuery}
           onChange={(e) => setFandomQuery(e.target.value)}
-          placeholder="Filter by fandom (e.g. BTS, Sanrio...)"
+          placeholder="Filter by fandom"
           className="w-full rounded-xl border border-foreground/20 bg-foreground/5 px-4 py-2.5 text-sm outline-none focus:border-accent"
         />
 
@@ -708,7 +720,7 @@ export default function MapPage() {
                   </button>
                 </div>
               )}
-
+              {/** 
               <button
                 type="button"
                 onClick={() => setAddMenuOpen((v) => !v)}
@@ -716,7 +728,7 @@ export default function MapPage() {
                 aria-label="Add a spot"
               >
                 {addMenuOpen ? <X size={20} /> : <Plus size={20} />}
-              </button>
+              </button>*/}
             </div>
           </div>
 
