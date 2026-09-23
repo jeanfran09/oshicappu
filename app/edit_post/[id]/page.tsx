@@ -14,6 +14,7 @@ import ThumbnailStrip from "@/components/CreatePost/ThumbnailStrip";
 import OshiPicker, {
   type Oshi,
 } from "@/components/CreatePost/OshiPicker";
+import EditPostSkeleton from "@/components/Skeleton/EditPostSkeleton";
 
 type PostData = {
   id: string;
@@ -51,6 +52,19 @@ export default function EditPostPage() {
   );
 
   const [images, setImages] = useState<File[]>([]);
+
+  /*
+   * ThumbnailStrip requires these states.
+   *
+   * The edit page does not currently use cropping,
+   * but they are passed to ThumbnailStrip so its
+   * props remain satisfied.
+   */
+  const [originalImages, setOriginalImages] =
+    useState<File[]>([]);
+
+  const [cropData, setCropData] =
+    useState<any[]>([]);
 
   const [currentIndex, setCurrentIndex] =
     useState(0);
@@ -203,6 +217,12 @@ export default function EditPostPage() {
         }
 
         setImages(imageFiles);
+
+        /*
+         * Keep originalImages synchronized with the
+         * initially loaded images.
+         */
+        setOriginalImages(imageFiles);
 
         /*
          * Existing hashtags
@@ -379,9 +399,7 @@ export default function EditPostPage() {
    */
   if (pageLoading) {
     return (
-      <div className="md:hidden flex min-h-screen items-center justify-center">
-        Loading post...
-      </div>
+      <EditPostSkeleton/>
     );
   }
 
@@ -642,6 +660,20 @@ export default function EditPostPage() {
       );
 
       /*
+       * Keep originalImages synchronized.
+       */
+      setOriginalImages((previousImages) => {
+        if (
+          previousImages.length ===
+          updatedImages.length
+        ) {
+          return previousImages;
+        }
+
+        return updatedImages;
+      });
+
+      /*
        * Prevent currentIndex from pointing
        * to an image that no longer exists.
        */
@@ -741,6 +773,10 @@ export default function EditPostPage() {
                   setCurrentIndex
                 }
                 setImages={handleSetImages}
+                setOriginalImages={
+                  setOriginalImages
+                }
+                setCropData={setCropData}
                 onSelectImages={
                   handleSelectImages
                 }
@@ -839,7 +875,7 @@ export default function EditPostPage() {
             items-center
             justify-center
             rounded-full
-            bg-[#b8d8be]/90
+            bg-accent-secondary
             font-semibold
             text-foreground
             transition
