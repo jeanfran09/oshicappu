@@ -14,6 +14,7 @@ import {
 import EventList, {
   Event,
 } from "@/components/Event/EventList";
+import EventListSkeleton from "../Skeleton/EventListSkeleton";
 
 type EventTab = "recommended" | "your";
 
@@ -240,11 +241,7 @@ export default function EventsSection() {
 
       {/* Event List */}
       {isLoading ? (
-        <div className="px-4 py-12 text-center">
-          <p className="text-sm text-foreground/40">
-            Loading events...
-          </p>
-        </div>
+        <EventListSkeleton />
       ) : error ? (
         <div className="px-4 py-12 text-center">
           <p className="text-sm text-foreground/40">

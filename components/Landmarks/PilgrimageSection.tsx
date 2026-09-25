@@ -13,6 +13,7 @@ import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
 import PilgrimageList, {
   Pilgrimage,
 } from "@/components/Pilgrimage/PilgrimageList";
+import PilgrimageListSkeleton from "../Skeleton/PilgrimageListSkeleton";
 
 type PilgrimageTab =
   | "recommended"
@@ -261,12 +262,7 @@ export default function PilgrimageSection() {
 
       {/* Pilgrimage List */}
       {isLoading ? (
-        <div className="px-4 py-12 text-center">
-          <p className="text-sm text-foreground/40">
-            Loading pilgrimage
-            locations...
-          </p>
-        </div>
+        <PilgrimageListSkeleton />
       ) : error ? (
         <div className="px-4 py-12 text-center">
           <p className="text-sm text-foreground/40">

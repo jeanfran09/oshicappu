@@ -9,6 +9,7 @@ import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
 import PhotoSpotList, {
   PhotoSpot,
 } from "@/components/PhotoSpot/PhotoSpotList";
+import PhotoSpotListSkeleton from "../Skeleton/PhotoSpotListSkeleton";
 
 type PhotoSpotTab = "recommended" | "your";
 
@@ -208,11 +209,7 @@ export default function PhotoSpotsSection() {
 
       {/* Photo Spot List */}
       {isLoading ? (
-        <div className="px-4 py-12 text-center">
-          <p className="text-sm text-foreground/40">
-            Loading photo spots...
-          </p>
-        </div>
+        <PhotoSpotListSkeleton />
       ) : error ? (
         <div className="px-4 py-12 text-center">
           <p className="text-sm text-foreground/40">
