@@ -18,7 +18,7 @@ export default function OshiListSkeleton({
         {Array.from({ length: 3 }).map((_, index) => (
           <div
             key={index}
-            className="flex flex-shrink-0 flex-col items-center gap-2"
+            className="flex flex-shrink-0 flex-col items-center gap-2 pb-2"
           >
             <div className="h-16 w-16 rounded-full bg-foreground/10" />
           </div>

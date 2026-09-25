@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import { ChevronLeft, User as UserIcon } from "lucide-react";
+import {
+  ChevronLeft,
+  User as UserIcon,
+} from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 
 import { supabase } from "@/lib/supabase";
@@ -22,8 +25,10 @@ import {
   formatTimeAgo,
   parsePostImages,
 } from "@/utils/formatNumber";
+
 import OshiListSkeleton from "@/components/Skeleton/OshiListSkeleton";
 import PublicProfileSkeleton from "@/components/Skeleton/PublicProfileSkeleton";
+import PostGridSkeleton from "@/components/Skeleton/PostGridSkeleton";
 
 type TargetProfile = {
   id: string;
@@ -56,11 +61,15 @@ export default function PublicProfilePage() {
   const [loadingProfile, setLoadingProfile] =
     useState(true);
 
-  const [posts, setPosts] = useState<ProfilePost[]>([]);
+  const [posts, setPosts] =
+    useState<ProfilePost[]>([]);
+
   const [loadingPosts, setLoadingPosts] =
     useState(true);
 
-  const [oshis, setOshis] = useState<Oshi[]>([]);
+  const [oshis, setOshis] =
+    useState<Oshi[]>([]);
+
   const [oshisLoading, setOshisLoading] =
     useState(true);
 
@@ -73,9 +82,10 @@ export default function PublicProfilePage() {
   const [selectedPostId, setSelectedPostId] =
     useState<string | null>(null);
 
-  const [userListType, setUserListType] = useState<
-    "followers" | "following" | null
-  >(null);
+  const [userListType, setUserListType] =
+    useState<
+      "followers" | "following" | null
+    >(null);
 
   /*
    * Fetch the target profile by username.
@@ -307,11 +317,6 @@ export default function PublicProfilePage() {
 
   /*
    * Update the like count in the parent posts state.
-   *
-   * This is important because PostModal is unmounted
-   * when it closes. Updating this state makes sure the
-   * new like count is still available when the modal
-   * is opened again.
    */
   const handleLikeChange = (
     postId: string,
@@ -330,12 +335,8 @@ export default function PublicProfilePage() {
   };
 
   /*
-   * Called immediately by FollowButton when
-   * the user clicks Follow/Following.
-   *
-   * This means the follower count changes
-   * immediately without waiting for another
-   * database fetch.
+   * Update follower count immediately
+   * when FollowButton changes.
    */
   const handleFollowChange = (
     isFollowing: boolean
@@ -348,7 +349,7 @@ export default function PublicProfilePage() {
   };
 
   if (loadingProfile) {
-    return  <PublicProfileSkeleton />;
+    return <PublicProfileSkeleton />;
   }
 
   if (!profile) {
@@ -401,30 +402,19 @@ export default function PublicProfilePage() {
       {/* Profile Content */}
       <div className="px-4">
         <div
-          className={`
-            flex items-center gap-6
-            ${
-              profile.banner_url
-                ? "relative z-10 -mt-12"
-                : "mt-5"
-            }
-          `}
+          className={`flex items-center gap-6 ${
+            profile.banner_url
+              ? "relative z-10 -mt-12"
+              : "mt-5"
+          }`}
         >
           {/* Avatar */}
           <div
-            className={`
-              h-24
-              w-24
-              shrink-0
-              overflow-hidden
-              rounded-full
-              bg-accent
-              ${
-                profile.banner_url
-                  ? "border-4 border-background"
-                  : ""
-              }
-            `}
+            className={`h-24 w-24 shrink-0 overflow-hidden rounded-full bg-accent ${
+              profile.banner_url
+                ? "border-4 border-background"
+                : ""
+            }`}
           >
             {profile.avatar_url ? (
               <Image
@@ -446,14 +436,11 @@ export default function PublicProfilePage() {
 
           {/* Stats */}
           <div
-            className={`
-              flex-1
-              ${
-                profile.banner_url
-                  ? "translate-y-8"
-                  : ""
-              }
-            `}
+            className={`flex-1 ${
+              profile.banner_url
+                ? "translate-y-8"
+                : ""
+            }`}
           >
             <div className="flex justify-around">
               {/* Posts */}
@@ -537,7 +524,7 @@ export default function PublicProfilePage() {
 
         {/* Oshis */}
         {oshisLoading ? (
-          <OshiListSkeleton showAdd={false}/>
+          <OshiListSkeleton showAdd={false} />
         ) : (
           oshis.length > 0 && (
             <OshiList
@@ -552,11 +539,20 @@ export default function PublicProfilePage() {
       <div className="mt-2 border-t border-foreground/10" />
 
       {/* Posts */}
-      <PostGrid
-        posts={postGridItems}
-        onPostClick={setSelectedPostId}
-      />
-      
+      {loadingPosts ? (
+        <PostGridSkeleton />
+      ) : postGridItems.length > 0 ? (
+        <PostGrid
+          posts={postGridItems}
+          onPostClick={setSelectedPostId}
+        />
+      ) : (
+        <div className="flex flex-1 items-center justify-center py-16">
+          <p className="text-sm text-foreground/40">
+            No posts yet.
+          </p>
+        </div>
+      )}
 
       {/* Post Modal */}
       {selectedPostId && (

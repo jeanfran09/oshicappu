@@ -110,12 +110,12 @@ export default function BottomNav() {
         <MapPin
           size={24}
           strokeWidth={
-            pathname === "/landmarks" || pathname.startsWith("/event/")
+            pathname === "/landmarks" || pathname.startsWith("/event/") || pathname.startsWith("/map")
               ? "3"
               : "2"
           }
           className={
-            pathname === "/landmarks" || pathname.startsWith("/event/")
+            pathname === "/landmarks" || pathname.startsWith("/event/") || pathname.startsWith("/map")
               ? "text-[var(--accent-secondary)]"
               : ""
           }

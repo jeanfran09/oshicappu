@@ -14,7 +14,7 @@ export default function PilgrimageListSkeleton() {
             <div className="space-y-3 p-4">
               <div className="h-5 w-3/4 animate-pulse rounded bg-foreground/10" />
 
-              <div className="h-8 w-full animate-pulse rounded bg-foreground/10" />
+              <div className="h-4 w-full animate-pulse rounded bg-foreground/10" />
 
               <div className="h-4 w-2/3 animate-pulse rounded bg-foreground/10" />
             </div>

@@ -15,7 +15,7 @@ export default function CommentsSkeleton({
         return (
           <div
             key={index}
-            className={`flex gap-3 px-4 py-3 ${
+            className={`flex gap-3 py-3 ${
               isReply ? "ml-10" : ""
             }`}
           >
