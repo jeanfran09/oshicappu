@@ -9,17 +9,22 @@ import {
   Home,
   Search,
   MapPin,
-  MapPinned,
   Bell,
-  User
+  User,
 } from "lucide-react";
 
 export default function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
-  const { isLoggedIn, user } = useSupabaseAuth();
 
-  const [unreadCount, setUnreadCount] = useState(0);
+  const {
+    isLoggedIn,
+    user,
+    profile,
+  } = useSupabaseAuth();
+
+  const [unreadCount, setUnreadCount] =
+    useState(0);
 
   useEffect(() => {
     if (!user) {
@@ -56,18 +61,39 @@ export default function BottomNav() {
     return () => {
       cancelled = true;
     };
-    // Re-check whenever the person navigates (e.g. after
-    // visiting /notifs, which marks everything read).
   }, [user, pathname]);
 
   const handleNav = (href: string) => {
     if (!isLoggedIn) {
       router.push("/login");
     }
-    // Otherwise let the Link handle navigation naturally
   };
 
-  const activeColor = "var(--accent-secondary)";
+  const activeColor =
+    "var(--accent-secondary)";
+
+  /*
+   * Logged-in user's profile URL.
+   *
+   * Falls back to /login while the profile
+   * is unavailable.
+   */
+  const profileHref =
+    isLoggedIn && profile?.username
+      ? `/${profile.username}`
+      : "/login";
+
+  const isProfileActive =
+    !!profile?.username &&
+    pathname === `/${profile.username}`;
+
+  const isLandmarksActive =
+    pathname === "/landmarks" ||
+    pathname.startsWith("/landmarks/") ||
+    pathname.startsWith("/event/") ||
+    pathname.startsWith("/photo-spot/") ||
+    pathname.startsWith("/pilgrimage/") ||
+    pathname.startsWith("/map");
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 h-16 bg-background border-t-1 border-foreground/25 flex justify-around items-center">
@@ -92,8 +118,8 @@ export default function BottomNav() {
           size={24}
           strokeWidth={
             pathname === "/search" || pathname.startsWith("/search/")
-              ? "4"
-              : "2"
+              ? 4
+              : 2
           }
           className={
             pathname === "/search" || pathname.startsWith("/search/")
@@ -103,40 +129,21 @@ export default function BottomNav() {
         />
       </Link>
 
-      <Link
-        href="/landmarks"
-        onClick={() => handleNav("/landmarks")}
-      >
+      <Link href="/landmarks" onClick={() => handleNav("/landmarks")}>
         <MapPin
           size={24}
           strokeWidth={
-            pathname === "/landmarks" || pathname.startsWith("/event/") || pathname.startsWith("/map")
-              ? "3"
-              : "2"
+            isLandmarksActive
+              ? 3
+              : 2
           }
           className={
-            pathname === "/landmarks" || pathname.startsWith("/event/") || pathname.startsWith("/map")
+            isLandmarksActive
               ? "text-[var(--accent-secondary)]"
               : ""
           }
         />
       </Link>
-      {/*** 
-      <Link href="/map" onClick={() => handleNav("/map")}>
-        <MapPinned
-          size={24}
-          strokeWidth={
-            pathname === "/map" || pathname.startsWith("/map/")
-              ? "3"
-              : "2"
-          }
-          className={
-            pathname === "/map" || pathname.startsWith("/map/")
-              ? "text-[var(--accent-secondary)]"
-              : ""
-          }
-        />
-      </Link>*/}
 
       <Link href="/notifications" onClick={() => handleNav("/notifications")} className="relative">
         <Bell
@@ -160,16 +167,16 @@ export default function BottomNav() {
         )}
       </Link>
 
-      <Link href="/profile" onClick={() => handleNav("/profile")}>
+      <Link href={profileHref} onClick={() => handleNav(profileHref)} >
         <User
           size={24}
           fill={
-            pathname === "/profile"
+            isProfileActive
               ? activeColor
               : "none"
           }
           className={
-            pathname === "/profile"
+            isProfileActive
               ? "text-[var(--accent-secondary)]"
               : ""
           }

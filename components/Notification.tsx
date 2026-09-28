@@ -77,7 +77,7 @@ export default function Notification({
     >
       {/* User Avatar */}
       <Link
-        href={`/profile/${username}`}
+        href={`/${username}`}
         data-profile-link
         className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-accent"
       >
@@ -104,7 +104,7 @@ export default function Notification({
       <div className="min-w-0 flex-1">
         <p className="text-base leading-tight line-clamp-3">
           <Link
-            href={`/profile/${username}`}
+            href={`/${username}`}
             data-profile-link
             className="font-semibold hover:underline"
           >

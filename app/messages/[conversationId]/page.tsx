@@ -633,7 +633,7 @@ export default function ConversationPage() {
 
         {otherUser && (
           <Link
-            href={`/profile/${otherUser.username}`}
+            href={`/${otherUser.username}`}
             className="flex min-w-0 flex-1 items-center gap-2"
           >
             <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full bg-accent">

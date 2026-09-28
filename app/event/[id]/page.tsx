@@ -726,7 +726,7 @@ export default function EventPage() {
                 <li key={a.user_id}>
                   <button
                     type="button"
-                    onClick={() => router.push(`/profile/${a.username}`)}
+                    onClick={() => router.push(`/${a.username}`)}
                     className="flex flex-col items-center gap-1"
                   >
                     <div className="relative">
@@ -804,7 +804,7 @@ export default function EventPage() {
             type="button"
             onClick={() =>
               event.organizerUsername &&
-              router.push(`/profile/${event.organizerUsername}`)
+              router.push(`/${event.organizerUsername}`)
             }
             className="mt-3 flex items-center gap-3 text-left"
           >

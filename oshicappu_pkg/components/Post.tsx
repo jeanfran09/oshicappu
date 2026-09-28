@@ -361,7 +361,7 @@ export default function Post({
         {/* Header */}
         <div className="flex items-center justify-between p-3">
           <Link
-            href={`/profile/${username}`}
+            href={`/${username}`}
             className="flex items-center gap-3"
           >
             <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-accent">
@@ -571,7 +571,7 @@ export default function Post({
         {/* Caption */}
         {caption && (
           <div className="px-3 whitespace-pre-line break-words leading-tight">
-            <Link href={`/profile/${username}`} className="mr-1">
+            <Link href={`/${username}`} className="mr-1">
               <span className="font-semibold"> {username} </span>
             </Link>
 

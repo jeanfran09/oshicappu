@@ -722,7 +722,7 @@ export default function CommentsSheet({
                   >
                     {/* Avatar */}
                     <Link
-                      href={`/profile/${c.username}`}
+                      href={`/${c.username}`}
                       className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent"
                     >
                       {c.avatar_url ? (
@@ -747,7 +747,7 @@ export default function CommentsSheet({
                         <div className="flex min-w-0 items-center gap-2 text-base">
                           {/* Username */}
                           <Link
-                            href={`/profile/${c.username}`}
+                            href={`/${c.username}`}
                             className="shrink-0"
                           >
                             <span className="font-semibold">
@@ -865,7 +865,7 @@ export default function CommentsSheet({
                       <div className="break-words whitespace-pre-line text-base leading-tight">
                         {c.replyToUsername && (
                           <Link
-                            href={`/profile/${c.replyToUsername}`}
+                            href={`/${c.replyToUsername}`}
                             className="mr-1 text-accent-secondary"
                           >
                             @{c.replyToUsername}
@@ -928,7 +928,7 @@ export default function CommentsSheet({
                 <span className="text-foreground/60">
                   Replying to{" "}
                   <Link
-                    href={`/profile/${replyingTo.username}`}
+                    href={`/${replyingTo.username}`}
                     className="font-semibold text-foreground"
                   >
                     @{replyingTo.username}

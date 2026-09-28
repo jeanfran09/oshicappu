@@ -221,7 +221,7 @@ export default function SearchPage() {
                 {results.map((result) => (
                   <Link
                     key={result.id}
-                    href={`/profile/${result.username}`}
+                    href={`/${result.username}`}
                     className="flex w-full items-center gap-3 rounded-lg px-2 py-2"
                   >
                     {/* Avatar */}

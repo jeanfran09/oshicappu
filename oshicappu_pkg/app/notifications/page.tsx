@@ -253,7 +253,7 @@ export default function NotifsPage() {
       notification.senderUsername
     ) {
       router.push(
-        `/profile/${notification.senderUsername}`
+        `/${notification.senderUsername}`
       );
     }
   }

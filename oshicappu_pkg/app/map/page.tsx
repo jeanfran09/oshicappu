@@ -837,7 +837,7 @@ export default function MapPage() {
                   <li key={fan.id}>
                     <button
                       type="button"
-                      onClick={() => router.push(`/profile/${fan.username}`)}
+                      onClick={() => router.push(`/${fan.username}`)}
                       className="flex w-full items-center gap-3 rounded-xl p-2 text-left hover:bg-foreground/5"
                     >
                       {fan.avatar_url ? (

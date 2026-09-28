@@ -140,7 +140,7 @@ export default function UserResults({
   const handleUserClick = (
     username: string
   ) => {
-    router.push(`/profile/${username}`);
+    router.push(`/${username}`);
   };
 
   const handleFollowChange = (

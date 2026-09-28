@@ -161,7 +161,7 @@ export default function UserList({
   }, [userId, type, currentUser]);
 
   const handleUserClick = (username: string) => {
-    router.push(`/profile/${username}`);
+    router.push(`/${username}`);
   };
 
   const handleFollowChange = (

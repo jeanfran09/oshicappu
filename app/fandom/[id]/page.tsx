@@ -341,7 +341,7 @@ export default function FandomHubPage() {
                 <li key={m.id}>
                   <button
                     type="button"
-                    onClick={() => router.push(`/profile/${m.username}`)}
+                    onClick={() => router.push(`/${m.username}`)}
                     className="flex flex-col items-center gap-1"
                   >
                     {m.avatar_url ? (
