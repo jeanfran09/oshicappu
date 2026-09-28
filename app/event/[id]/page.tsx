@@ -19,6 +19,7 @@ import {
   formatEventDate,
   formatEventTime,
 } from "@/utils/formatEventDate";
+import EventPageSkeleton from "@/components/Skeleton/EventPageSkeleton";
 
 type RSVPStatus = "interested" | "going" | null;
 
@@ -343,11 +344,7 @@ export default function EventPage() {
 
   if (isLoading) {
     return (
-      <div className="md:hidden flex min-h-screen items-center justify-center bg-background">
-        <p className="text-sm text-foreground/40">
-          Loading event...
-        </p>
-      </div>
+      <EventPageSkeleton/>
     );
   }
 
