@@ -55,9 +55,7 @@ async function saveRsvp(
     );
 }
 
-export default function EventCard({
-  event,
-}: EventCardProps) {
+export default function EventCard({ event }: EventCardProps) {
   const router = useRouter();
   const { user } = useSupabaseAuth();
 
@@ -97,12 +95,15 @@ export default function EventCard({
     if (prevStatus === "interested" && nextStatus !== "interested") {
       setInterestedCount((prev) => Math.max(0, prev - 1));
     }
+
     if (prevStatus === "going" && nextStatus !== "going") {
       setGoingCount((prev) => Math.max(0, prev - 1));
     }
+
     if (nextStatus === "interested" && prevStatus !== "interested") {
       setInterestedCount((prev) => prev + 1);
     }
+
     if (nextStatus === "going" && prevStatus !== "going") {
       setGoingCount((prev) => prev + 1);
     }
@@ -122,12 +123,15 @@ export default function EventCard({
       if (prevStatus === "interested" && nextStatus !== "interested") {
         setInterestedCount((prev) => prev + 1);
       }
+
       if (prevStatus === "going" && nextStatus !== "going") {
         setGoingCount((prev) => prev + 1);
       }
+
       if (nextStatus === "interested" && prevStatus !== "interested") {
         setInterestedCount((prev) => Math.max(0, prev - 1));
       }
+
       if (nextStatus === "going" && prevStatus !== "going") {
         setGoingCount((prev) => Math.max(0, prev - 1));
       }
@@ -135,30 +139,26 @@ export default function EventCard({
   };
 
   const handleInterested = () => {
-    applyRsvp(rsvpStatus === "interested" ? null : "interested");
+    applyRsvp(
+      rsvpStatus === "interested" ? null : "interested"
+    );
   };
 
   const handleJoin = () => {
-    applyRsvp(rsvpStatus === "going" ? null : "going");
+    applyRsvp(
+      rsvpStatus === "going" ? null : "going"
+    );
   };
 
+  const hasAttendees =
+    interestedCount > 0 || goingCount > 0;
+
   return (
-    <div
-      className="
-        w-full
-        overflow-hidden
-        rounded-2xl
-        border
-        border-foreground/10
-        bg-accent/10
-      "
-    >
+    <div className="w-full overflow-hidden rounded-2xl border border-foreground/10 bg-accent/10">
       {/* Clickable Event Content */}
       <button
         type="button"
-        onClick={() =>
-          router.push(`/event/${event.id}`)
-        }
+        onClick={() => router.push(`/event/${event.id}`)}
         className="w-full text-left"
       >
         {/* Event Photo */}
@@ -214,43 +214,43 @@ export default function EventCard({
             </span>
           </div>
 
-          <div className="mt-1.5 flex items-center gap-1.5 text-sm text-foreground/60">
-            <Users size={15} />
+          {/* Attendee Counts */}
+          {hasAttendees && (
+            <div className="mt-1.5 flex items-center gap-1.5 text-sm text-foreground/60">
+              <Users size={15} />
 
-            <span>
-              {formatCount(interestedCount)} interested
-            </span>
+              {interestedCount > 0 && (
+                <span>
+                  {formatCount(interestedCount)} interested
+                </span>
+              )}
 
-            <span>•</span>
+              {interestedCount > 0 && goingCount > 0 && (
+                <span>•</span>
+              )}
 
-            <span>
-              {formatCount(goingCount)} going
-            </span>
-          </div>
+              {goingCount > 0 && (
+                <span>
+                  {formatCount(goingCount)} going
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </button>
 
       {/* Action Buttons */}
       {!event.yourEvent && (
         <div className="flex items-center gap-2 px-4 pb-4">
-
           {/* Interested */}
           <button
             type="button"
             onClick={handleInterested}
-            className={`
-              flex-1
-              rounded-full
-              py-2.5
-              text-sm
-              font-medium
-              transition-colors
-              ${
-                rsvpStatus === "interested"
-                  ? "bg-accent-secondary"
-                  : "bg-foreground/5"
-              }
-            `}
+            className={`flex-1 rounded-full py-2.5 text-sm font-medium transition-colors ${
+              rsvpStatus === "interested"
+                ? "bg-accent-secondary"
+                : "bg-foreground/5"
+            }`}
           >
             {rsvpStatus === "interested"
               ? "Interested ✓"
@@ -261,19 +261,11 @@ export default function EventCard({
           <button
             type="button"
             onClick={handleJoin}
-            className={`
-              flex-1
-              rounded-full
-              py-2.5
-              text-sm
-              font-medium
-              transition-colors
-              ${
-                rsvpStatus === "going"
-                  ? "bg-accent-secondary"
-                  : "bg-accent"
-              }
-            `}
+            className={`flex-1 rounded-full py-2.5 text-sm font-medium transition-colors ${
+              rsvpStatus === "going"
+                ? "bg-accent-secondary"
+                : "bg-accent"
+            }`}
           >
             {rsvpStatus === "going"
               ? "Going ✓"
@@ -284,21 +276,11 @@ export default function EventCard({
           <button
             type="button"
             onClick={handleShare}
-            className="
-              flex
-              h-10
-              w-10
-              shrink-0
-              items-center
-              justify-center
-              rounded-full
-              bg-foreground/5
-            "
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-foreground/5"
             aria-label="Share event"
           >
             <Share2 size={18} />
           </button>
-
         </div>
       )}
     </div>

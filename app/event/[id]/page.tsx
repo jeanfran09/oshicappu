@@ -20,8 +20,10 @@ import {
   formatEventTime,
 } from "@/utils/formatEventDate";
 import EventPageSkeleton from "@/components/Skeleton/EventPageSkeleton";
+import BottomSheet from "@/components/BottomSheet";
 
 type RSVPStatus = "interested" | "going" | null;
+type AttendeeListType = "interested" | "going" | null;
 
 type EventDetail = {
   id: string;
@@ -88,6 +90,9 @@ export default function EventPage() {
   const [interestedCount, setInterestedCount] = useState(0);
   const [goingCount, setGoingCount] = useState(0);
 
+  const [attendeeListType, setAttendeeListType] =
+    useState<AttendeeListType>(null);
+
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState("");
   const photoInputRef = useRef<HTMLInputElement>(null);
@@ -127,7 +132,9 @@ export default function EventPage() {
 
       const { data: attendeeRows } = await supabase
         .from("event_attendees")
-        .select("user_id, status, username, display_name, avatar_url")
+        .select(
+          "user_id, status, username, display_name, avatar_url"
+        )
         .eq("event_id", eventId);
 
       const { data: rsvpRow } = user
@@ -229,57 +236,127 @@ export default function EventPage() {
     }
 
     const prevStatus = rsvpStatus;
+    const prevAttendees = attendees;
+    const prevInterestedCount = interestedCount;
+    const prevGoingCount = goingCount;
 
+    // Get the user's profile information for the attendee list
+    let currentUserProfile: {
+      username: string;
+      display_name: string;
+      avatar_url: string | null;
+    } | null = null;
+
+    if (nextStatus !== null) {
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("username, display_name, avatar_url")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      currentUserProfile = profileData;
+    }
+
+    // Optimistically update RSVP status
     setRsvpStatus(nextStatus);
 
-    if (prevStatus === "interested" && nextStatus !== "interested") {
-      setInterestedCount((prev) => Math.max(0, prev - 1));
+    // Optimistically update attendee list
+    setAttendees((prev) => {
+      // Remove the user from their previous RSVP
+      const withoutUser = prev.filter(
+        (attendee) => attendee.user_id !== user.id
+      );
+
+      // User removed their RSVP
+      if (nextStatus === null) {
+        return withoutUser;
+      }
+
+      // Add user with their new RSVP
+      return [
+        ...withoutUser,
+        {
+          user_id: user.id,
+          status: nextStatus,
+          username: currentUserProfile?.username ?? "",
+          display_name:
+            currentUserProfile?.display_name ?? "",
+          avatar_url:
+            currentUserProfile?.avatar_url ?? null,
+        },
+      ];
+    });
+
+    // Optimistically update counts
+    if (
+      prevStatus === "interested" &&
+      nextStatus !== "interested"
+    ) {
+      setInterestedCount((prev) =>
+        Math.max(0, prev - 1)
+      );
     }
-    if (prevStatus === "going" && nextStatus !== "going") {
-      setGoingCount((prev) => Math.max(0, prev - 1));
+
+    if (
+      prevStatus === "going" &&
+      nextStatus !== "going"
+    ) {
+      setGoingCount((prev) =>
+        Math.max(0, prev - 1)
+      );
     }
-    if (nextStatus === "interested" && prevStatus !== "interested") {
+
+    if (
+      nextStatus === "interested" &&
+      prevStatus !== "interested"
+    ) {
       setInterestedCount((prev) => prev + 1);
     }
-    if (nextStatus === "going" && prevStatus !== "going") {
+
+    if (
+      nextStatus === "going" &&
+      prevStatus !== "going"
+    ) {
       setGoingCount((prev) => prev + 1);
     }
 
-    const { error } = await saveRsvp(eventId, user.id, nextStatus);
+    const { error } = await saveRsvp(
+      eventId,
+      user.id,
+      nextStatus
+    );
 
     if (error) {
       console.error("Failed to update RSVP:", error);
 
+      // Restore previous state
       setRsvpStatus(prevStatus);
-
-      if (prevStatus === "interested" && nextStatus !== "interested") {
-        setInterestedCount((prev) => prev + 1);
-      }
-      if (prevStatus === "going" && nextStatus !== "going") {
-        setGoingCount((prev) => prev + 1);
-      }
-      if (nextStatus === "interested" && prevStatus !== "interested") {
-        setInterestedCount((prev) => Math.max(0, prev - 1));
-      }
-      if (nextStatus === "going" && prevStatus !== "going") {
-        setGoingCount((prev) => Math.max(0, prev - 1));
-      }
+      setAttendees(prevAttendees);
+      setInterestedCount(prevInterestedCount);
+      setGoingCount(prevGoingCount);
     }
   }
 
   function handleInterested() {
-    applyRsvp(rsvpStatus === "interested" ? null : "interested");
+    applyRsvp(
+      rsvpStatus === "interested" ? null : "interested"
+    );
   }
 
   function handleJoinEvent() {
-    applyRsvp(rsvpStatus === "going" ? null : "going");
+    applyRsvp(
+      rsvpStatus === "going" ? null : "going"
+    );
   }
 
   async function handleShare() {
     const url = `${window.location.origin}/event/${eventId}`;
 
     if (navigator.share) {
-      await navigator.share({ title: event?.title, url });
+      await navigator.share({
+        title: event?.title,
+        url,
+      });
     } else {
       await navigator.clipboard.writeText(url);
     }
@@ -296,10 +373,13 @@ export default function EventPage() {
     setPhotoError("");
     setIsUploadingPhoto(true);
 
-    // Show the new photo immediately while it uploads
     const previewUrl = URL.createObjectURL(file);
     const prevImageUrl = event.image_url;
-    setEvent({ ...event, image_url: previewUrl });
+
+    setEvent({
+      ...event,
+      image_url: previewUrl,
+    });
 
     try {
       const ext = file.name.split(".").pop() || "jpg";
@@ -313,28 +393,41 @@ export default function EventPage() {
           contentType: file.type || `image/${ext}`,
         });
 
-      if (uploadError) throw new Error(uploadError.message);
+      if (uploadError) {
+        throw new Error(uploadError.message);
+      }
 
       const {
         data: { publicUrl },
-      } = supabase.storage.from("events").getPublicUrl(path);
+      } = supabase.storage
+        .from("events")
+        .getPublicUrl(path);
 
       const { error: updateError } = await supabase
         .from("events")
         .update({ image_url: publicUrl })
         .eq("id", eventId);
 
-      if (updateError) throw new Error(updateError.message);
+      if (updateError) {
+        throw new Error(updateError.message);
+      }
 
       setEvent((current) =>
-        current ? { ...current, image_url: publicUrl } : current
+        current
+          ? { ...current, image_url: publicUrl }
+          : current
       );
     } catch (err) {
       console.error("Error updating event photo:", err);
 
-      setPhotoError("Couldn't update the photo. Try again.");
+      setPhotoError(
+        "Couldn't update the photo. Try again."
+      );
+
       setEvent((current) =>
-        current ? { ...current, image_url: prevImageUrl } : current
+        current
+          ? { ...current, image_url: prevImageUrl }
+          : current
       );
     } finally {
       URL.revokeObjectURL(previewUrl);
@@ -343,9 +436,7 @@ export default function EventPage() {
   }
 
   if (isLoading) {
-    return (
-      <EventPageSkeleton/>
-    );
+    return <EventPageSkeleton />;
   }
 
   if (notFound || !event) {
@@ -366,64 +457,43 @@ export default function EventPage() {
     );
   }
 
+  const hasEventInterest =
+    interestedCount > 0 || goingCount > 0;
+
+  const selectedAttendees =
+    attendeeListType
+      ? attendees.filter(
+          (attendee) =>
+            attendee.status === attendeeListType
+        )
+      : [];
+
+  const attendeeListTitle =
+    attendeeListType === "interested"
+      ? "Interested"
+      : "Going";
+
   return (
     <div className="md:hidden min-h-screen bg-background">
-
       {/* Header */}
-      <header
-        className="
-          sticky
-          top-0
-          z-50
-          flex
-          items-center
-          border-b
-          border-foreground/10
-          bg-background
-          py-3
-        "
-      >
+      <header className="sticky top-0 z-50 flex items-center border-b border-foreground/10 bg-background py-3">
         <button
           type="button"
           onClick={() => router.push("/landmarks")}
-          className="
-            flex
-            h-9
-            w-9
-            items-center
-            justify-center
-            rounded-full
-          "
+          className="flex h-9 w-9 items-center justify-center rounded-full"
           aria-label="Go back"
         >
           <ChevronLeft size={22} />
         </button>
 
-        <h1
-          className="
-            absolute
-            left-1/2
-            -translate-x-1/2
-            text-lg
-            font-semibold
-          "
-        >
+        <h1 className="absolute left-1/2 -translate-x-1/2 text-lg font-semibold">
           Event
         </h1>
 
         <button
           type="button"
           onClick={handleShare}
-          className="
-            ml-auto
-            mr-3
-            flex
-            h-9
-            w-9
-            items-center
-            justify-center
-            rounded-full
-          "
+          className="ml-auto mr-3 flex h-9 w-9 items-center justify-center rounded-full"
           aria-label="Share event"
         >
           <Share2 size={20} />
@@ -431,15 +501,7 @@ export default function EventPage() {
       </header>
 
       {/* Event Image */}
-      <div
-        className="
-          relative
-          aspect-[16/9]
-          w-full
-          overflow-hidden
-          bg-accent
-        "
-      >
+      <div className="relative aspect-[16/9] w-full overflow-hidden bg-accent">
         {event.image_url ? (
           <Image
             src={event.image_url}
@@ -469,16 +531,7 @@ export default function EventPage() {
             />
 
             {isUploadingPhoto && (
-              <div
-                className="
-                  absolute
-                  inset-0
-                  flex
-                  items-center
-                  justify-center
-                  bg-background/40
-                "
-              >
+              <div className="absolute inset-0 flex items-center justify-center bg-background/40">
                 <p className="rounded-full bg-background/80 px-3 py-1.5 text-xs font-medium">
                   Uploading photo...
                 </p>
@@ -490,22 +543,11 @@ export default function EventPage() {
               onClick={() => photoInputRef.current?.click()}
               disabled={isUploadingPhoto}
               aria-label={
-                event.image_url ? "Change event photo" : "Add event photo"
+                event.image_url
+                  ? "Change event photo"
+                  : "Add event photo"
               }
-              className="
-                absolute
-                bottom-3
-                right-3
-                flex
-                h-10
-                w-10
-                items-center
-                justify-center
-                rounded-full
-                bg-background/80
-                backdrop-blur
-                disabled:opacity-60
-              "
+              className="absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full bg-background/80 backdrop-blur disabled:opacity-60"
             >
               <Camera size={18} />
             </button>
@@ -521,7 +563,6 @@ export default function EventPage() {
 
       {/* Event Information */}
       <main className="px-4 pb-24 pt-5">
-
         <h2 className="text-2xl font-bold">
           {event.title}
         </h2>
@@ -531,7 +572,8 @@ export default function EventPage() {
             <button
               type="button"
               onClick={() =>
-                event.fandomId && router.push(`/fandom/${event.fandomId}`)
+                event.fandomId &&
+                router.push(`/fandom/${event.fandomId}`)
               }
               className="rounded-full bg-accent-secondary/70 px-3 py-1 text-xs font-semibold"
             >
@@ -539,34 +581,26 @@ export default function EventPage() {
             </button>
           )}
 
-          {event.latitude != null && event.longitude != null && (
-            <button
-              type="button"
-              onClick={() => router.push(`/map?event=${event.id}`)}
-              className="flex items-center gap-1 rounded-full bg-foreground/5 px-3 py-1 text-xs font-medium"
-            >
-              <MapPin size={12} /> View on map
-            </button>
-          )}
+          {event.latitude != null &&
+            event.longitude != null && (
+              <button
+                type="button"
+                onClick={() =>
+                  router.push(`/map?event=${event.id}`)
+                }
+                className="flex items-center gap-1 rounded-full bg-foreground/5 px-3 py-1 text-xs font-medium"
+              >
+                <MapPin size={12} />
+                View on map
+              </button>
+            )}
         </div>
 
         {/* Event Details */}
         <div className="mt-5 space-y-4">
-
           {/* Date & Time */}
           <div className="flex items-center gap-3">
-            <div
-              className="
-                flex
-                h-10
-                w-10
-                shrink-0
-                items-center
-                justify-center
-                rounded-full
-                bg-accent
-              "
-            >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent">
               <CalendarDays size={19} />
             </div>
 
@@ -584,18 +618,7 @@ export default function EventPage() {
 
           {/* Location */}
           <div className="flex items-center gap-3">
-            <div
-              className="
-                flex
-                h-10
-                w-10
-                shrink-0
-                items-center
-                justify-center
-                rounded-full
-                bg-accent
-              "
-            >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent">
               <MapPin size={19} />
             </div>
 
@@ -611,44 +634,57 @@ export default function EventPage() {
           </div>
 
           {/* Event Interest */}
-          <div className="flex items-center gap-3">
-            <div
-              className="
-                flex
-                h-10
-                w-10
-                shrink-0
-                items-center
-                justify-center
-                rounded-full
-                bg-accent
-              "
-            >
-              <Users size={19} />
+          {hasEventInterest && (
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent">
+                <Users size={19} />
+              </div>
+
+              <div>
+                <p className="text-sm text-foreground/50">
+                  Event Interest
+                </p>
+
+                <div className="flex items-center gap-1.5 text-sm font-medium">
+                  {interestedCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setAttendeeListType("interested")
+                      }
+                      className="underline-offset-2 hover:underline"
+                    >
+                      {interestedCount} interested
+                    </button>
+                  )}
+
+                  {interestedCount > 0 &&
+                    goingCount > 0 && (
+                      <span className="text-foreground/40">
+                        •
+                      </span>
+                    )}
+
+                  {goingCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setAttendeeListType("going")
+                      }
+                      className="underline-offset-2 hover:underline"
+                    >
+                      {goingCount} going
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
-
-            <div>
-              <p className="text-sm text-foreground/50">
-                Event Interest
-              </p>
-
-              <p className="text-sm font-medium">
-                {interestedCount} interested
-
-                <span className="mx-1.5 text-foreground/40">
-                  •
-                </span>
-
-                {goingCount} going
-              </p>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Event RSVP */}
         {event.organizerId !== user?.id && (
           <div className="mt-6 flex gap-3">
-
             {/* Interested */}
             <button
               type="button"
@@ -705,58 +741,13 @@ export default function EventPage() {
                 <Check size={17} />
               )}
 
-              {rsvpStatus === "going" ? "Going" : "Join Event"}
+              {rsvpStatus === "going"
+                ? "Going"
+                : "Join Event"}
             </button>
-
           </div>
         )}
 
-        {/* Who's going (event participation discovery) */}
-        {attendees.length > 0 && (
-          <section className="mt-8">
-            <h3 className="text-lg font-semibold">
-              Who&apos;s interested & going
-            </h3>
-
-            <ul className="mt-3 flex flex-wrap gap-3">
-              {attendees.map((a) => (
-                <li key={a.user_id}>
-                  <button
-                    type="button"
-                    onClick={() => router.push(`/${a.username}`)}
-                    className="flex flex-col items-center gap-1"
-                  >
-                    <div className="relative">
-                      {a.avatar_url ? (
-                        <img
-                          src={a.avatar_url}
-                          alt={a.display_name}
-                          className="h-12 w-12 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="h-12 w-12 rounded-full bg-accent" />
-                      )}
-
-                      <span
-                        className={`absolute -bottom-1 -right-1 rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${
-                          a.status === "going"
-                            ? "bg-accent-secondary"
-                            : "bg-foreground/10"
-                        }`}
-                      >
-                        {a.status === "going" ? "Going" : "Interested"}
-                      </span>
-                    </div>
-
-                    <span className="max-w-[60px] truncate text-[11px]">
-                      {a.display_name}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
 
         {/* Description */}
         {event.description && (
@@ -808,7 +799,9 @@ export default function EventPage() {
             {event.organizerAvatarUrl ? (
               <img
                 src={event.organizerAvatarUrl}
-                alt={event.organizerDisplayName ?? "Organizer"}
+                alt={
+                  event.organizerDisplayName ?? "Organizer"
+                }
                 className="h-10 w-10 rounded-full object-cover"
               />
             ) : (
@@ -817,7 +810,8 @@ export default function EventPage() {
 
             <div>
               <p className="text-sm font-semibold">
-                {event.organizerDisplayName ?? "Event Organizer"}
+                {event.organizerDisplayName ??
+                  "Event Organizer"}
               </p>
 
               <p className="text-xs text-foreground/50">
@@ -826,8 +820,62 @@ export default function EventPage() {
             </div>
           </button>
         </section>
-
       </main>
+
+      {/* Attendee List Bottom Sheet */}
+      {attendeeListType && (
+        <BottomSheet
+          title={
+            attendeeListType === "interested"
+              ? "Interested"
+              : "Going"
+          }
+          onClose={() => setAttendeeListType(null)}
+          size="large"
+        >
+          <div className="space-y-1">
+            {selectedAttendees.length > 0 ? (
+              selectedAttendees.map((attendee) => (
+                <button
+                  key={attendee.user_id}
+                  type="button"
+                  onClick={() => {
+                    setAttendeeListType(null);
+                    router.push(`/${attendee.username}`);
+                  }}
+                  className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-foreground/5"
+                >
+                  {attendee.avatar_url ? (
+                    <img
+                      src={attendee.avatar_url}
+                      alt={attendee.display_name}
+                      className="h-11 w-11 shrink-0 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-11 w-11 shrink-0 rounded-full bg-accent" />
+                  )}
+
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-foreground">
+                      {attendee.display_name}
+                    </p>
+
+                    <p className="truncate text-xs text-foreground/50">
+                      @{attendee.username}
+                    </p>
+                  </div>
+                </button>
+              ))
+            ) : (
+              <div className="flex justify-center py-8">
+                <p className="text-sm text-foreground/40">
+                  No users yet.
+                </p>
+              </div>
+            )}
+          </div>
+        </BottomSheet>
+      )}
     </div>
   );
 }

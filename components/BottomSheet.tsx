@@ -85,7 +85,7 @@ export default function BottomSheet({
         {/* Header */}
         {size === "large" && (
           <div className="flex items-center justify-between border-b border-foreground/30 px-3 pb-3">
-            <h2 className="text-xl font-semibold">
+            <h2 className="text-lg font-semibold">
               {title ?? ""}
             </h2>
 
