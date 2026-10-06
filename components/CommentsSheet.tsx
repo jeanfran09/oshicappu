@@ -1,10 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  Sheet,
-  useScrollPosition,
-} from "react-modal-sheet";
+import { Sheet, useScrollPosition } from "react-modal-sheet";
 import {
   X,
   Send,
@@ -68,16 +65,14 @@ export default function CommentsSheet({
   const [currentUserProfile, setCurrentUserProfile] =
     useState<UserProfile | null>(null);
 
-  /*
-   * Attach the scroll container ref.
-   *
-   * Dragging inside the comments area never moves the sheet
-   * (see `disableDrag` on Sheet.Content below), so we only
-   * need the ref and not the scroll position.
-   */
+  const [isScrollable, setIsScrollable] = useState(false);
+
   const { scrollRef, scrollPosition } = useScrollPosition({
     isEnabled: true,
   });
+
+  const commentsContainerRef =
+    useRef<HTMLDivElement | null>(null);
 
   const menuRef = useRef<HTMLDivElement | null>(null);
   const textareaRef =
@@ -88,6 +83,34 @@ export default function CommentsSheet({
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postId]);
+
+  /*
+   * Check whether the comments container actually
+   * has enough content to scroll.
+   */
+  useEffect(() => {
+    const element = commentsContainerRef.current;
+
+    if (!element) return;
+
+    const checkScrollable = () => {
+      setIsScrollable(
+        element.scrollHeight > element.clientHeight
+      );
+    };
+
+    checkScrollable();
+
+    const resizeObserver = new ResizeObserver(
+      checkScrollable
+    );
+
+    resizeObserver.observe(element);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [comments, loading]);
 
   /*
    * Fetch current user's profile for the PFP
@@ -636,11 +659,6 @@ export default function CommentsSheet({
       onClose={onClose}
       avoidKeyboard
     >
-      {/*
-       * Fixed height instead of snap points, so the sheet
-       * never resizes while interacting with it. Dragging
-       * from the header only drags it down to close.
-       */}
       <Sheet.Container
         style={{ height: "90dvh" }}
         className="!flex !flex-col !rounded-t-3xl !bg-background"
@@ -666,19 +684,19 @@ export default function CommentsSheet({
           </div>
         </Sheet.Header>
 
-        {/*
-         * Comments
-         *
-         * disableDrag: dragging inside this area only scrolls
-         * the list. The sheet can still be dragged by the header.
-         */}
+        {/* Comments */}
         <Sheet.Content
           disableScroll
-          disableDrag={scrollPosition !== "top"}
+          disableDrag={
+            isScrollable && scrollPosition !== "top"
+          }
           className="!min-h-0 !flex-1 !text-foreground/60"
         >
           <div
-            ref={scrollRef}
+            ref={(element) => {
+              commentsContainerRef.current = element;
+              scrollRef(element);
+            }}
             className="h-full min-h-0 overflow-y-auto overscroll-contain px-4 py-3"
             style={{
               touchAction: "pan-y",
