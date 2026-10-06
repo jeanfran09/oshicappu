@@ -6,7 +6,7 @@ import { Plus } from "lucide-react";
 export default function FloatingCreateButton() {
   return (
     <Link
-      href="/create_post"
+      href="/create-post"
       className="
         fixed
         bottom-19

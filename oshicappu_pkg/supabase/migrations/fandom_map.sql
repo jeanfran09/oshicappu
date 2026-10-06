@@ -8,7 +8,7 @@
 -- Run this whole file in the Supabase SQL editor, after events.sql.
 --
 -- Reuses the existing `fandoms` / `post_fandoms` tables (the same
--- ones create_post.tsx already writes to) so an event, photo spot,
+-- ones create-post.tsx already writes to) so an event, photo spot,
 -- or post tagged "BTS" all point at the same fandom. The `if not
 -- exists` guards below are just so this file is safe to run even if
 -- those tables were created by hand rather than a tracked migration.
