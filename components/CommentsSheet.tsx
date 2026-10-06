@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { motion } from "framer-motion";
+import {
+  Sheet,
+  useScrollPosition,
+} from "react-modal-sheet";
 import {
   X,
   Send,
@@ -39,19 +41,14 @@ type Props = {
   postId: string;
   postOwnerId?: string;
   onClose: () => void;
-  size?: "small" | "large";
 };
 
 export default function CommentsSheet({
   postId,
   postOwnerId,
   onClose,
-  size = "large",
 }: Props) {
   const { user } = useSupabaseAuth();
-
-  const [mounted, setMounted] = useState(false);
-  const [closing, setClosing] = useState(false);
 
   const [comments, setComments] = useState<CommentWithAuthor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,12 +68,20 @@ export default function CommentsSheet({
   const [currentUserProfile, setCurrentUserProfile] =
     useState<UserProfile | null>(null);
 
-  const menuRef = useRef<HTMLDivElement | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  /*
+   * Attach the scroll container ref.
+   *
+   * Dragging inside the comments area never moves the sheet
+   * (see `disableDrag` on Sheet.Content below), so we only
+   * need the ref and not the scroll position.
+   */
+  const { scrollRef, scrollPosition } = useScrollPosition({
+    isEnabled: true,
+  });
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const textareaRef =
+    useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     fetchComments();
@@ -124,7 +129,9 @@ export default function CommentsSheet({
     ) {
       if (
         menuRef.current &&
-        !menuRef.current.contains(event.target as Node)
+        !menuRef.current.contains(
+          event.target as Node
+        )
       ) {
         setOpenMenuId(null);
       }
@@ -239,13 +246,15 @@ export default function CommentsSheet({
      * Map comment ID -> author ID.
      * Used to determine who a reply is directed to.
      */
-    const commentAuthorById: Record<string, string> =
-      Object.fromEntries(
-        rows.map((row) => [
-          row.id,
-          row.user_id,
-        ])
-      );
+    const commentAuthorById: Record<
+      string,
+      string
+    > = Object.fromEntries(
+      rows.map((row) => [
+        row.id,
+        row.user_id,
+      ])
+    );
 
     /*
      * Add author information to each comment.
@@ -621,290 +630,283 @@ export default function CommentsSheet({
     setOpenMenuId(null);
   }
 
-  /*
-   * Close the entire sheet.
-   */
-  function closeSheet() {
-    if (closing) return;
-
-    setClosing(true);
-
-    setTimeout(() => {
-      onClose();
-    }, 150);
-  }
-
-  if (!mounted) return null;
-
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[1000] flex items-end bg-black/60"
-      onClick={closeSheet}
+  return (
+    <Sheet
+      isOpen={true}
+      onClose={onClose}
+      avoidKeyboard
     >
-      <motion.div
-        initial={{ y: "100%" }}
-        animate={{
-          y: closing ? "100%" : 0,
-        }}
-        transition={{
-          duration: 0.15,
-          ease: "easeOut",
-        }}
-        drag="y"
-        dragConstraints={{
-          top: 0,
-          bottom: 300,
-        }}
-        dragElastic={0.1}
-        onDragEnd={(_, info) => {
-          if (info.offset.y > 120) {
-            closeSheet();
-          }
-        }}
-        className={`relative flex w-full flex-col overflow-hidden rounded-t-3xl bg-background ${
-          size === "small"
-            ? "h-[67vh]"
-            : "h-[90vh]"
-        }`}
-        onClick={(e) => e.stopPropagation()}
+      {/*
+       * Fixed height instead of snap points, so the sheet
+       * never resizes while interacting with it. Dragging
+       * from the header only drags it down to close.
+       */}
+      <Sheet.Container
+        style={{ height: "90dvh" }}
+        className="!flex !flex-col !rounded-t-3xl !bg-background"
       >
-        {/* Drag handle */}
-        <div className="flex cursor-grab justify-center pb-1 pt-3 active:cursor-grabbing">
-          <div className="h-1.5 w-12 rounded-full bg-foreground/30" />
-        </div>
-
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-foreground/10 px-4 pb-3">
-          <h2 className="text-base font-semibold">
-            Comments
-          </h2>
+        <Sheet.Header className="!shrink-0 !p-0">
+          <div className="flex justify-center pb-1 pt-3">
+            <div className="h-1.5 w-12 rounded-full bg-foreground/30" />
+          </div>
 
-          <button
-            type="button"
-            onClick={closeSheet}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-accent"
+          <div className="flex items-center justify-between border-b border-foreground/10 px-4 pb-3">
+            <h2 className="text-base font-semibold text-foreground">
+              Comments
+            </h2>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-accent"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </Sheet.Header>
+
+        {/*
+         * Comments
+         *
+         * disableDrag: dragging inside this area only scrolls
+         * the list. The sheet can still be dragged by the header.
+         */}
+        <Sheet.Content
+          disableScroll
+          disableDrag={scrollPosition !== "top"}
+          className="!min-h-0 !flex-1 !text-foreground/60"
+        >
+          <div
+            ref={scrollRef}
+            className="h-full min-h-0 overflow-y-auto overscroll-contain px-4 py-3"
+            style={{
+              touchAction: "pan-y",
+              WebkitOverflowScrolling: "touch",
+            }}
           >
-            <X size={16} />
-          </button>
-        </div>
+            {loading ? (
+              <CommentsSkeleton count={15} />
+            ) : comments.length === 0 ? (
+              <p className="py-8 text-center text-sm text-foreground/50">
+                No comments yet. Be the first!
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {comments.map((c) => {
+                  const isReply =
+                    c.parent_comment_id !== null;
 
-        {/* Comments */}
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
-          {loading ? (
-            <CommentsSkeleton count={15} />
-          ) : comments.length === 0 ? (
-            <p className="py-8 text-center text-sm text-foreground/50">
-              No comments yet. Be the first!
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {comments.map((c) => {
-                const isReply =
-                  c.parent_comment_id !== null;
+                  const isOwnComment =
+                    user?.id === c.user_id;
 
-                const isOwnComment =
-                  user?.id === c.user_id;
+                  /*
+                   * A comment is edited if updated_at
+                   * is different from created_at.
+                   */
+                  const isEdited =
+                    new Date(
+                      c.updated_at
+                    ).getTime() !==
+                    new Date(
+                      c.created_at
+                    ).getTime();
 
-                /*
-                 * A comment is edited if updated_at
-                 * is different from created_at.
-                 */
-                const isEdited =
-                  new Date(c.updated_at).getTime() !==
-                  new Date(c.created_at).getTime();
-
-                return (
-                  <div
-                    key={c.id}
-                    className={`flex gap-3 ${
-                      isReply ? "ml-10" : ""
-                    }`}
-                  >
-                    {/* Avatar */}
-                    <Link
-                      href={`/${c.username}`}
-                      className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent"
+                  return (
+                    <div
+                      key={c.id}
+                      className={`flex gap-3 ${
+                        isReply ? "ml-10" : ""
+                      }`}
                     >
-                      {c.avatar_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={c.avatar_url}
-                          alt={c.username}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <UserIcon
-                          size={16}
-                          className="text-foreground/30"
-                        />
-                      )}
-                    </Link>
+                      {/* Avatar */}
+                      <Link
+                        href={`/${c.username}`}
+                        className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent"
+                      >
+                        {c.avatar_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={c.avatar_url}
+                            alt={c.username}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <UserIcon
+                            size={16}
+                            className="text-foreground/30"
+                          />
+                        )}
+                      </Link>
 
-                    {/* Comment content */}
-                    <div className="min-w-0 flex-1">
-                      {/* Username + Time + Edited + More options */}
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex min-w-0 items-center gap-2 text-base">
-                          {/* Username */}
-                          <Link
-                            href={`/${c.username}`}
-                            className="shrink-0"
-                          >
-                            <span className="font-semibold">
-                              {c.username}
-                            </span>
-                          </Link>
+                      {/* Comment content */}
+                      <div className="min-w-0 flex-1">
+                        {/* Username + Time + Edited + More options */}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex min-w-0 items-center gap-2 text-foreground">
+                            {/* Username */}
+                            <Link
+                              href={`/${c.username}`}
+                              className="shrink-0"
+                            >
+                              <span className="font-semibold">
+                                {c.username}
+                              </span>
+                            </Link>
 
-                          {/* Time */}
-                          <p className="shrink-0 translate-y-[1px] text-sm leading-none text-foreground/50">
-                            {formatCommentTime(
-                              c.created_at
+                            {/* Time */}
+                            <p className="shrink-0 translate-y-[1px] text-sm leading-none text-foreground/50">
+                              {formatCommentTime(
+                                c.created_at
+                              )}
+                            </p>
+
+                            {/* Edited */}
+                            {isEdited && (
+                              <span className="shrink-0 translate-y-[1px] text-sm leading-none text-foreground/50">
+                                Edited
+                              </span>
                             )}
-                          </p>
+                          </div>
 
-                          {/* Edited */}
-                          {isEdited && (
-                            <span className="shrink-0 translate-y-[1px] text-sm leading-none text-foreground/50">
-                              Edited
-                            </span>
-                          )}
-                        </div>
-
-                        {/* More options */}
-                        <div
-                          ref={
-                            openMenuId === c.id
-                              ? menuRef
-                              : null
-                          }
-                          className="relative shrink-0"
-                        >
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setOpenMenuId(
-                                openMenuId === c.id
-                                  ? null
-                                  : c.id
-                              )
+                          {/* More options */}
+                          <div
+                            ref={
+                              openMenuId === c.id
+                                ? menuRef
+                                : null
                             }
-                            className="flex h-7 w-7 items-center justify-center rounded-full text-foreground/50 hover:bg-accent"
-                            aria-label="More options"
+                            className="relative shrink-0"
                           >
-                            <MoreHorizontal
-                              size={18}
-                            />
-                          </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setOpenMenuId(
+                                  openMenuId === c.id
+                                    ? null
+                                    : c.id
+                                )
+                              }
+                              className="flex h-7 w-7 items-center justify-center rounded-full text-foreground/50 hover:bg-accent"
+                              aria-label="More options"
+                            >
+                              <MoreHorizontal
+                                size={18}
+                              />
+                            </button>
 
-                          {openMenuId === c.id && (
-                            <div className="absolute right-0 top-8 z-20 w-max min-w-[150px] overflow-hidden rounded-xl border border-foreground/10 bg-background shadow-lg">
-                              {isOwnComment ? (
-                                <>
-                                  {/* Edit */}
+                            {openMenuId === c.id && (
+                              <div className="absolute right-0 top-8 z-20 w-max min-w-[150px] overflow-hidden rounded-xl border border-foreground/10 bg-background shadow-lg">
+                                {isOwnComment ? (
+                                  <>
+                                    {/* Edit */}
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleStartEdit(c)
+                                      }
+                                      className="flex w-full items-center px-3 py-2 text-left text-sm hover:bg-accent"
+                                    >
+                                      <Pencil
+                                        size={15}
+                                      />
+
+                                      <span className="px-2">
+                                        Edit Comment
+                                      </span>
+                                    </button>
+
+                                    {/* Delete */}
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleDeleteComment(
+                                          c.id
+                                        )
+                                      }
+                                      className="flex w-full items-center px-3 py-2 text-left text-sm text-red-500 hover:bg-accent"
+                                    >
+                                      <Trash2
+                                        size={15}
+                                      />
+
+                                      <span className="px-2">
+                                        Delete Comment
+                                      </span>
+                                    </button>
+                                  </>
+                                ) : (
+                                  /* Report */
                                   <button
                                     type="button"
                                     onClick={() =>
-                                      handleStartEdit(c)
-                                    }
-                                    className="flex w-full items-center px-3 py-2 text-left text-sm hover:bg-accent"
-                                  >
-                                    <Pencil
-                                      size={15}
-                                    />
-
-                                    <span className="px-2">
-                                      Edit Comment
-                                    </span>
-                                  </button>
-
-                                  {/* Delete */}
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleDeleteComment(
+                                      handleReportComment(
                                         c.id
                                       )
                                     }
-                                    className="flex w-full items-center px-3 py-2 text-left text-sm text-red-500 hover:bg-accent"
+                                    className="flex w-full items-center px-3 py-2 text-left text-sm hover:bg-accent"
                                   >
-                                    <Trash2
+                                    <Flag
                                       size={15}
                                     />
 
                                     <span className="px-2">
-                                      Delete Comment
+                                      Report Comment
                                     </span>
                                   </button>
-                                </>
-                              ) : (
-                                /* Report */
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    handleReportComment(
-                                      c.id
-                                    )
-                                  }
-                                  className="flex w-full items-center px-3 py-2 text-left text-sm hover:bg-accent"
-                                >
-                                  <Flag
-                                    size={15}
-                                  />
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
 
-                                  <span className="px-2">
-                                    Report Comment
-                                  </span>
-                                </button>
-                              )}
-                            </div>
+                        {/* Tag + Comment */}
+                        <div className="break-words whitespace-pre-line text-base leading-tight text-foreground">
+                          {c.replyToUsername && (
+                            <Link
+                              href={`/${c.replyToUsername}`}
+                              className="mr-1 text-accent-secondary"
+                            >
+                              @{c.replyToUsername}
+                            </Link>
                           )}
+
+                          {c.comment_text}
+                        </div>
+
+                        {/* Reply */}
+                        <div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingComment(null);
+                              setNewComment("");
+                              setReplyingTo(c);
+
+                              if (
+                                textareaRef.current
+                              ) {
+                                textareaRef.current.style.height =
+                                  "auto";
+                              }
+                            }}
+                            className="text-sm font-semibold text-foreground/50"
+                          >
+                            Reply
+                          </button>
                         </div>
                       </div>
-
-                      {/* Tag + Comment */}
-                      <div className="break-words whitespace-pre-line text-base leading-tight">
-                        {c.replyToUsername && (
-                          <Link
-                            href={`/${c.replyToUsername}`}
-                            className="mr-1 text-accent-secondary"
-                          >
-                            @{c.replyToUsername}
-                          </Link>
-                        )}
-
-                        {c.comment_text}
-                      </div>
-
-                      {/* Reply */}
-                      <div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingComment(null);
-                            setNewComment("");
-                            setReplyingTo(c);
-
-                            if (textareaRef.current) {
-                              textareaRef.current.style.height =
-                                "auto";
-                            }
-                          }}
-                          className="text-sm font-semibold text-foreground/50"
-                        >
-                          Reply
-                        </button>
-                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </Sheet.Content>
 
         {/* Comment Input */}
         {user && (
-          <div className="shrink-0 border-t border-foreground/10 px-4 py-3">
+          <div className="!shrink-0 border-t border-foreground/10 bg-background px-4 py-3">
             {/* Editing indicator */}
             {editingComment && (
               <div className="mb-2 flex items-center justify-between rounded-lg bg-accent/30 px-3 py-2 text-xs">
@@ -923,29 +925,30 @@ export default function CommentsSheet({
             )}
 
             {/* Replying indicator */}
-            {!editingComment && replyingTo && (
-              <div className="mb-2 flex items-center justify-between rounded-lg bg-accent/30 px-3 py-2 text-xs">
-                <span className="text-foreground/60">
-                  Replying to{" "}
-                  <Link
-                    href={`/${replyingTo.username}`}
-                    className="font-semibold text-foreground"
-                  >
-                    @{replyingTo.username}
-                  </Link>
-                </span>
+            {!editingComment &&
+              replyingTo && (
+                <div className="mb-2 flex items-center justify-between rounded-lg bg-accent/30 px-3 py-2 text-xs">
+                  <span className="text-foreground/60">
+                    Replying to{" "}
+                    <Link
+                      href={`/${replyingTo.username}`}
+                      className="font-semibold text-foreground"
+                    >
+                      @{replyingTo.username}
+                    </Link>
+                  </span>
 
-                <button
-                  type="button"
-                  onClick={() =>
-                    setReplyingTo(null)
-                  }
-                  className="font-semibold text-foreground/50"
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setReplyingTo(null)
+                    }
+                    className="font-semibold text-foreground/50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
 
             <div className="flex items-end gap-2">
               {/* Current user's PFP */}
@@ -953,7 +956,9 @@ export default function CommentsSheet({
                 {currentUserProfile?.avatar_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={currentUserProfile.avatar_url}
+                    src={
+                      currentUserProfile.avatar_url
+                    }
                     alt={
                       currentUserProfile.username
                     }
@@ -1014,8 +1019,12 @@ export default function CommentsSheet({
             </div>
           </div>
         )}
-      </motion.div>
-    </div>,
-    document.body
+      </Sheet.Container>
+
+      <Sheet.Backdrop
+        onTap={onClose}
+        className="!bg-black/60"
+      />
+    </Sheet>
   );
 }
