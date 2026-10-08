@@ -19,14 +19,7 @@ import OshiPicker, {
 } from "@/components/CreatePost/OshiPicker";
 import AddOshiForm from "@/components/AddOshiForm";
 import BottomSheet from "@/components/BottomSheet";
-
-type CropData = {
-  crop: {
-    x: number;
-    y: number;
-  };
-  zoom: number;
-};
+import type { CropData } from "@/types/crop";
 
 export default function CreatePostPage() {
   const MAX_IMAGES = 4;
@@ -83,6 +76,7 @@ export default function CreatePostPage() {
 
   const {
     user,
+    profile,
     isLoggedIn,
     isLoading,
   } = useSupabaseAuth();
@@ -139,7 +133,7 @@ export default function CreatePostPage() {
   }
 
   const canPost =
-    (images.length > 0) &&
+    images.length > 0 &&
     !loading;
 
   /*
@@ -709,7 +703,13 @@ export default function CreatePostPage() {
       setSelectedOshis([]);
       setCurrentIndex(0);
 
-      router.push("/profile");
+      if (profile?.username) {
+        router.push(
+          `/${profile.username}`
+        );
+      } else {
+        router.push("/");
+      }
     } catch (err) {
       console.error(
         "Post creation failed:",

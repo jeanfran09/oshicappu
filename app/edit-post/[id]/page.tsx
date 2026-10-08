@@ -15,6 +15,7 @@ import OshiPicker, {
   type Oshi,
 } from "@/components/CreatePost/OshiPicker";
 import EditPostSkeleton from "@/components/Skeleton/EditPostSkeleton";
+import type { CropData } from "@/types/crop";
 
 type PostData = {
   id: string;
@@ -47,24 +48,26 @@ export default function EditPostPage() {
   const [selectedOshis, setSelectedOshis] =
     useState<string[]>([]);
 
-  const [imageUrls, setImageUrls] = useState<string[]>(
-    []
-  );
-
+  /*
+   * The File[] is the source of truth for image order.
+   *
+   * imageUrlMap associates each File with the URL
+   * belonging to that image.
+   */
   const [images, setImages] = useState<File[]>([]);
+  const [imageUrlMap, setImageUrlMap] =
+    useState<Map<File, string>>(
+      new Map()
+    );
 
   /*
    * ThumbnailStrip requires these states.
-   *
-   * The edit page does not currently use cropping,
-   * but they are passed to ThumbnailStrip so its
-   * props remain satisfied.
    */
   const [originalImages, setOriginalImages] =
     useState<File[]>([]);
 
   const [cropData, setCropData] =
-    useState<any[]>([]);
+    useState<CropData[]>([]);
 
   const [currentIndex, setCurrentIndex] =
     useState(0);
@@ -92,11 +95,6 @@ export default function EditPostPage() {
       return;
     }
 
-    /*
-     * Store the authenticated user in a local constant.
-     * This lets TypeScript know that user is not null
-     * inside the async function below.
-     */
     const currentUser = user;
 
     async function loadPost() {
@@ -171,13 +169,14 @@ export default function EditPostPage() {
           }
         }
 
-        setImageUrls(parsedImages);
-
         /*
-         * Convert existing image URLs to Files
-         * so ThumbnailStrip can display them.
+         * Convert existing image URLs to Files.
+         *
+         * Each File is immediately associated with
+         * its original URL.
          */
         const imageFiles: File[] = [];
+        const urlMap = new Map<File, string>();
 
         for (
           let i = 0;
@@ -208,6 +207,10 @@ export default function EditPostPage() {
             );
 
             imageFiles.push(file);
+            urlMap.set(
+              file,
+              parsedImages[i]
+            );
           } catch (imageError) {
             console.error(
               "Error loading post image:",
@@ -217,11 +220,7 @@ export default function EditPostPage() {
         }
 
         setImages(imageFiles);
-
-        /*
-         * Keep originalImages synchronized with the
-         * initially loaded images.
-         */
+        setImageUrlMap(urlMap);
         setOriginalImages(imageFiles);
 
         /*
@@ -398,28 +397,31 @@ export default function EditPostPage() {
    * Post loading
    */
   if (pageLoading) {
-    return (
-      <EditPostSkeleton/>
-    );
+    return <EditPostSkeleton />;
   }
 
   /*
-   * Insert hashtags (find-or-create + link)
+   * Insert hashtags
    */
-  async function insertHashtags(postId: string) {
+  async function insertHashtags(
+    postId: string
+  ) {
     for (const rawTag of hashtags) {
-      const tag = rawTag.trim().toLowerCase();
+      const tag =
+        rawTag.trim().toLowerCase();
 
       if (!tag) continue;
 
       let hashtagId: string;
 
-      const { data: existing, error: lookupError } =
-        await supabase
-          .from("hashtags")
-          .select("id")
-          .eq("tag", tag)
-          .maybeSingle();
+      const {
+        data: existing,
+        error: lookupError,
+      } = await supabase
+        .from("hashtags")
+        .select("id")
+        .eq("tag", tag)
+        .maybeSingle();
 
       if (lookupError) {
         console.error(
@@ -432,14 +434,19 @@ export default function EditPostPage() {
       if (existing) {
         hashtagId = existing.id;
       } else {
-        const { data: created, error: createError } =
-          await supabase
-            .from("hashtags")
-            .insert({ tag })
-            .select("id")
-            .single();
+        const {
+          data: created,
+          error: createError,
+        } = await supabase
+          .from("hashtags")
+          .insert({ tag })
+          .select("id")
+          .single();
 
-        if (createError || !created) {
+        if (
+          createError ||
+          !created
+        ) {
           console.error(
             "Error creating hashtag:",
             createError
@@ -450,7 +457,9 @@ export default function EditPostPage() {
         hashtagId = created.id;
       }
 
-      const { error: linkError } = await supabase
+      const {
+        error: linkError,
+      } = await supabase
         .from("post_hashtags")
         .insert({
           post_id: postId,
@@ -467,22 +476,27 @@ export default function EditPostPage() {
   }
 
   /*
-   * Insert fandoms (find-or-create + link)
+   * Insert fandoms
    */
-  async function insertFandoms(postId: string) {
+  async function insertFandoms(
+    postId: string
+  ) {
     for (const rawFandom of fandoms) {
-      const name = rawFandom.trim();
+      const name =
+        rawFandom.trim();
 
       if (!name) continue;
 
       let fandomId: string;
 
-      const { data: existing, error: lookupError } =
-        await supabase
-          .from("fandoms")
-          .select("id")
-          .ilike("name", name)
-          .maybeSingle();
+      const {
+        data: existing,
+        error: lookupError,
+      } = await supabase
+        .from("fandoms")
+        .select("id")
+        .ilike("name", name)
+        .maybeSingle();
 
       if (lookupError) {
         console.error(
@@ -495,14 +509,19 @@ export default function EditPostPage() {
       if (existing) {
         fandomId = existing.id;
       } else {
-        const { data: created, error: createError } =
-          await supabase
-            .from("fandoms")
-            .insert({ name })
-            .select("id")
-            .single();
+        const {
+          data: created,
+          error: createError,
+        } = await supabase
+          .from("fandoms")
+          .insert({ name })
+          .select("id")
+          .single();
 
-        if (createError || !created) {
+        if (
+          createError ||
+          !created
+        ) {
           console.error(
             "Error creating fandom:",
             createError
@@ -513,7 +532,9 @@ export default function EditPostPage() {
         fandomId = created.id;
       }
 
-      const { error: linkError } = await supabase
+      const {
+        error: linkError,
+      } = await supabase
         .from("post_fandoms")
         .insert({
           post_id: postId,
@@ -532,15 +553,26 @@ export default function EditPostPage() {
   /*
    * Insert Oshi tags
    */
-  async function insertOshiTags(postId: string) {
-    if (selectedOshis.length === 0) return;
+  async function insertOshiTags(
+    postId: string
+  ) {
+    if (
+      selectedOshis.length === 0
+    ) {
+      return;
+    }
 
-    const rows = selectedOshis.map((oshiId) => ({
-      post_id: postId,
-      oshi_id: oshiId,
-    }));
+    const rows =
+      selectedOshis.map(
+        (oshiId) => ({
+          post_id: postId,
+          oshi_id: oshiId,
+        })
+      );
 
-    const { error: oshiLinkError } = await supabase
+    const {
+      error: oshiLinkError,
+    } = await supabase
       .from("post_oshis")
       .insert(rows);
 
@@ -556,59 +588,93 @@ export default function EditPostPage() {
    * Save changes to the post.
    */
   async function handleSave() {
-    if (!user || loading) return;
+    if (!user || loading) {
+      return;
+    }
 
     setLoading(true);
     setError("");
 
     try {
       /*
-       * Update the post row itself.
+       * Build the URL array from the CURRENT
+       * File order.
+       *
+       * This is what makes the saved order match
+       * the thumbnail order.
        */
-      const { error: updateError } = await supabase
+      const orderedImageUrls =
+        images
+          .map((file) =>
+            imageUrlMap.get(file)
+          )
+          .filter(
+            (url): url is string =>
+              Boolean(url)
+          );
+
+      /*
+       * Update the post.
+       */
+      const {
+        error: updateError,
+      } = await supabase
         .from("posts")
         .update({
           content: caption.trim(),
-          location: location.trim() || null,
+          location:
+            location.trim() || null,
           image_url:
-            imageUrls.length > 0
-              ? JSON.stringify(imageUrls)
+            orderedImageUrls.length > 0
+              ? JSON.stringify(
+                  orderedImageUrls
+                )
               : null,
         })
         .eq("id", postId)
         .eq("user_id", user.id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        throw updateError;
+      }
 
       /*
-       * Clear existing tag links, then re-insert
-       * from the current form state. Simplest way
-       * to keep everything in sync without diffing.
+       * Clear existing tag links.
        */
       await Promise.all([
         supabase
           .from("post_hashtags")
           .delete()
           .eq("post_id", postId),
+
         supabase
           .from("post_fandoms")
           .delete()
           .eq("post_id", postId),
+
         supabase
           .from("post_oshis")
           .delete()
           .eq("post_id", postId),
       ]);
 
+      /*
+       * Reinsert current tag links.
+       */
       await Promise.all([
         insertHashtags(postId),
         insertFandoms(postId),
         insertOshiTags(postId),
       ]);
 
-      router.replace(`/post/${postId}`);
+      router.replace(
+        `/post/${postId}`
+      );
     } catch (err) {
-      console.error("Error saving post:", err);
+      console.error(
+        "Error saving post:",
+        err
+      );
 
       setError(
         err instanceof Error
@@ -621,10 +687,8 @@ export default function EditPostPage() {
   }
 
   /*
-   * Handle adding images.
-   *
-   * Currently disabled because this edit page only
-   * works with the existing images.
+   * Adding images is currently disabled
+   * on the edit page.
    */
   function handleSelectImages(
     e: React.ChangeEvent<HTMLInputElement>
@@ -633,11 +697,11 @@ export default function EditPostPage() {
   }
 
   /*
-   * Keep imageUrls synchronized if a thumbnail
-   * is removed.
+   * Handle thumbnail deletion/reordering.
    *
-   * ThumbnailStrip changes the File[] state,
-   * so we use the same indexes to update URLs.
+   * The File itself is used as the identity,
+   * so its URL stays attached to it regardless
+   * of where it moves in the array.
    */
   function handleSetImages(
     newImages: React.SetStateAction<File[]>
@@ -649,42 +713,17 @@ export default function EditPostPage() {
           : newImages;
 
       /*
-       * If images were removed, keep only the
-       * corresponding existing URLs.
+       * Keep the selected index valid.
        */
-      setImageUrls((previousUrls) =>
-        previousUrls.slice(
-          0,
-          updatedImages.length
-        )
-      );
-
-      /*
-       * Keep originalImages synchronized.
-       */
-      setOriginalImages((previousImages) => {
-        if (
-          previousImages.length ===
-          updatedImages.length
-        ) {
-          return previousImages;
-        }
-
-        return updatedImages;
-      });
-
-      /*
-       * Prevent currentIndex from pointing
-       * to an image that no longer exists.
-       */
-      setCurrentIndex((previousIndex) =>
-        Math.min(
-          previousIndex,
-          Math.max(
-            updatedImages.length - 1,
-            0
+      setCurrentIndex(
+        (previousIndex) =>
+          Math.min(
+            previousIndex,
+            Math.max(
+              updatedImages.length - 1,
+              0
+            )
           )
-        )
       );
 
       return updatedImages;
@@ -748,7 +787,9 @@ export default function EditPostPage() {
               >
                 <img
                   src={
-                    imageUrls[currentIndex]
+                    imageUrlMap.get(
+                      images[currentIndex]
+                    ) ?? ""
                   }
                   alt={`Post image ${
                     currentIndex + 1
@@ -772,15 +813,20 @@ export default function EditPostPage() {
                 setCurrentIndex={
                   setCurrentIndex
                 }
-                setImages={handleSetImages}
+                setImages={
+                  handleSetImages
+                }
                 setOriginalImages={
                   setOriginalImages
                 }
-                setCropData={setCropData}
+                setCropData={
+                  setCropData
+                }
                 onSelectImages={
                   handleSelectImages
                 }
                 showAddButton={false}
+                lockFirstImage={true}
               />
             </div>
           )}
@@ -820,7 +866,9 @@ export default function EditPostPage() {
           {oshis.length > 0 && (
             <OshiPicker
               oshis={oshis}
-              selected={selectedOshis}
+              selected={
+                selectedOshis
+              }
               setSelected={
                 setSelectedOshis
               }

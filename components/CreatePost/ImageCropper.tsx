@@ -1,28 +1,25 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import Cropper, { Area } from "react-easy-crop";
+
+import type { CropData } from "@/types/crop";
 
 type Props = {
   image: string;
   aspectRatio?: number;
-  initialCrop?: {
-    crop: {
-      x: number;
-      y: number;
-    };
-    zoom: number;
-  };
+  initialCrop?: CropData;
   isFirstImage?: boolean;
-  /** Let the user cycle between these ratios. Omit (or pass one) to disable the switcher. */
-  aspectRatioOptions?: { label: string; value: number }[];
-  onCropChange?: (data: {
-    crop: {
-      x: number;
-      y: number;
-    };
-    zoom: number;
-  }) => void;
+  aspectRatioOptions?: {
+    label: string;
+    value: number;
+  }[];
+  onCropChange?: (data: CropData) => void;
   onRatioChange?: (ratio: number) => void;
   onComplete: (file: File) => void;
   onCancel: () => void;
@@ -54,16 +51,24 @@ export default function ImageCropper({
   );
 
   const [croppedAreaPixels, setCroppedAreaPixels] =
-    useState<Area | null>(null);
+    useState<Area | null>(
+      initialCrop?.croppedAreaPixels ?? null
+    );
 
   const [ratio, setRatio] = useState(aspectRatio);
   const [showGrid, setShowGrid] = useState(false);
-  const [isInteracting, setIsInteracting] = useState(false);
+  const [isInteracting, setIsInteracting] =
+    useState(false);
 
   const gridTimeoutRef =
-    useRef<ReturnType<typeof setTimeout> | null>(null);
+    useRef<ReturnType<typeof setTimeout> | null>(
+      null
+    );
 
-  // Reveal the grid on interaction, then hide it after a pause.
+  /*
+   * Reveal the grid when the user interacts
+   * with the cropper.
+   */
   const pingGrid = useCallback(() => {
     setShowGrid(true);
 
@@ -76,6 +81,9 @@ export default function ImageCropper({
     }, GRID_IDLE_TIMEOUT);
   }, []);
 
+  /*
+   * Clean up the grid timeout.
+   */
   useEffect(() => {
     return () => {
       if (gridTimeoutRef.current) {
@@ -85,10 +93,8 @@ export default function ImageCropper({
   }, []);
 
   /*
-   * Reset the cropper whenever the image changes.
-   *
-   * This prevents the crop/zoom/cropped area from the
-   * previous image from being reused for the new image.
+   * Reset the cropper whenever the image or
+   * initial crop changes.
    */
   useEffect(() => {
     setCrop(
@@ -99,11 +105,28 @@ export default function ImageCropper({
     );
 
     setZoom(initialCrop?.zoom ?? 1);
-    setCroppedAreaPixels(null);
+
+    setCroppedAreaPixels(
+      initialCrop?.croppedAreaPixels ?? null
+    );
+
     setRatio(aspectRatio);
     setShowGrid(false);
-  }, [image]);
+  }, [
+    image,
+    aspectRatio,
+    initialCrop?.crop?.x,
+    initialCrop?.crop?.y,
+    initialCrop?.zoom,
+    initialCrop?.croppedAreaPixels?.x,
+    initialCrop?.croppedAreaPixels?.y,
+    initialCrop?.croppedAreaPixels?.width,
+    initialCrop?.croppedAreaPixels?.height,
+  ]);
 
+  /*
+   * Update crop position.
+   */
   function handleCropChange(
     newCrop: {
       x: number;
@@ -113,29 +136,56 @@ export default function ImageCropper({
     setCrop(newCrop);
     pingGrid();
 
+    if (!croppedAreaPixels) {
+      return;
+    }
+
     onCropChange?.({
       crop: newCrop,
       zoom,
+      croppedAreaPixels,
     });
   }
 
-  function handleZoomChange(newZoom: number) {
+  /*
+   * Update zoom.
+   */
+  function handleZoomChange(
+    newZoom: number
+  ) {
     setZoom(newZoom);
     pingGrid();
+
+    if (!croppedAreaPixels) {
+      return;
+    }
 
     onCropChange?.({
       crop,
       zoom: newZoom,
+      croppedAreaPixels,
     });
   }
 
-  function onCropComplete(
+  /*
+   * Save the calculated crop area.
+   */
+  function handleCropComplete(
     _: Area,
     pixels: Area
   ) {
     setCroppedAreaPixels(pixels);
+
+    onCropChange?.({
+      crop,
+      zoom,
+      croppedAreaPixels: pixels,
+    });
   }
 
+  /*
+   * Cycle through available aspect ratios.
+   */
   function cycleRatio() {
     if (aspectRatioOptions.length < 2) {
       return;
@@ -143,7 +193,7 @@ export default function ImageCropper({
 
     const currentIndex =
       aspectRatioOptions.findIndex(
-        (r) => r.value === ratio
+        (item) => item.value === ratio
       );
 
     const next =
@@ -153,10 +203,21 @@ export default function ImageCropper({
       ];
 
     setRatio(next.value);
+
+    /*
+     * The crop area will be recalculated by
+     * react-easy-crop after the ratio changes.
+     */
+    setCroppedAreaPixels(null);
+
     pingGrid();
+
     onRatioChange?.(next.value);
   }
 
+  /*
+   * Create the final cropped image.
+   */
   async function createCroppedImage() {
     if (!croppedAreaPixels) {
       return;
@@ -168,16 +229,21 @@ export default function ImageCropper({
     const imageElement =
       document.createElement("img");
 
+    imageElement.crossOrigin = "anonymous";
     imageElement.src = image;
 
-    await new Promise<void>((resolve, reject) => {
-      imageElement.onload = () => resolve();
+    await new Promise<void>(
+      (resolve, reject) => {
+        imageElement.onload = () => resolve();
 
-      imageElement.onerror = () =>
-        reject(
-          new Error("Failed to load image")
-        );
-    });
+        imageElement.onerror = () =>
+          reject(
+            new Error(
+              "Failed to load image"
+            )
+          );
+      }
+    );
 
     const {
       width,
@@ -223,42 +289,49 @@ export default function ImageCropper({
 
         onComplete(file);
       },
-      "image/jpeg"
+      "image/jpeg",
+      0.95
     );
+  }
+
+  function handlePointerDown(
+    e: React.PointerEvent<HTMLDivElement>
+  ) {
+    e.stopPropagation();
+    setIsInteracting(true);
+    pingGrid();
+  }
+
+  function handlePointerMove(
+    e: React.PointerEvent<HTMLDivElement>
+  ) {
+    e.stopPropagation();
+  }
+
+  function handlePointerUp(
+    e: React.PointerEvent<HTMLDivElement>
+  ) {
+    e.stopPropagation();
+    setIsInteracting(false);
   }
 
   return (
     <div
       data-cropper
       className="
-        fixed inset-0 z-[10000]
+        fixed
+        inset-0
+        z-[10000]
         bg-black
         select-none
       "
       style={{
         touchAction: "none",
       }}
-      onPointerDown={(e) => {
-        e.stopPropagation();
-        setIsInteracting(true);
-        pingGrid();
-      }}
-      onPointerMove={(e) =>
-        e.stopPropagation()
-      }
-      onPointerUp={(e) => {
-        e.stopPropagation();
-        setIsInteracting(false);
-      }}
-      onTouchStart={(e) => {
-        e.stopPropagation();
-        setIsInteracting(true);
-        pingGrid();
-      }}
-      onTouchMove={(e) =>
-        e.stopPropagation()
-      }
-      onTouchEnd={(e) => {
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={(e) => {
         e.stopPropagation();
         setIsInteracting(false);
       }}
@@ -266,19 +339,27 @@ export default function ImageCropper({
       {/* Top bar */}
       <div
         className="
-          absolute top-0 left-0 right-0 z-10
-          flex items-center justify-between
-          px-4 py-3
+          absolute
+          left-0
+          right-0
+          top-0
+          z-10
+          flex
+          items-center
+          justify-between
           bg-gradient-to-b
           from-black/70
           to-transparent
+          px-4
+          py-3
         "
       >
         <button
           type="button"
           onClick={onCancel}
           className="
-            px-2 py-1
+            px-2
+            py-1
             text-[15px]
             font-medium
             text-white
@@ -287,13 +368,16 @@ export default function ImageCropper({
           Cancel
         </button>
 
-        {aspectRatioOptions.length > 1 && (
+        {aspectRatioOptions.length > 1 ? (
           <button
             type="button"
             onClick={cycleRatio}
             className="
-              flex h-9 w-9
-              items-center justify-center
+              flex
+              h-9
+              w-9
+              items-center
+              justify-center
               rounded-full
               bg-white/15
               text-xs
@@ -303,19 +387,25 @@ export default function ImageCropper({
             aria-label="Change aspect ratio"
           >
             {aspectRatioOptions.find(
-              (r) => r.value === ratio
+              (item) =>
+                item.value === ratio
             )?.label ?? "◻"}
           </button>
+        ) : (
+          <div className="w-9" />
         )}
 
         <button
           type="button"
           onClick={createCroppedImage}
+          disabled={!croppedAreaPixels}
           className="
-            px-2 py-1
+            px-2
+            py-1
             text-[15px]
             font-semibold
             text-white
+            disabled:opacity-50
           "
         >
           Next
@@ -335,7 +425,7 @@ export default function ImageCropper({
         restrictPosition={true}
         onCropChange={handleCropChange}
         onZoomChange={handleZoomChange}
-        onCropComplete={onCropComplete}
+        onCropComplete={handleCropComplete}
         style={{
           cropAreaStyle: {
             transition: isInteracting
