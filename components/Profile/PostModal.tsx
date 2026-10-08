@@ -80,69 +80,41 @@ export default function PostModal({
     onLikeChange?.(postId, likes);
   }
 
-  // Jump straight to the selected post
+  // Jump straight to the selected post once the posts are rendered
   useEffect(() => {
-    const el = document.getElementById(
-      `profile-post-${initialPostId}`
+    if (!initialPostId || modalPosts.length === 0) return;
+
+    const targetPost = modalPosts.find(
+      (post) => post.id === initialPostId
     );
 
-    el?.scrollIntoView({
-      block: "start",
-    });
+    if (!targetPost) return;
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    requestAnimationFrame(() => {
+      const el = document.getElementById(
+        `profile-post-${initialPostId}`
+      );
+
+      el?.scrollIntoView({
+        block: "start",
+      });
+    });
+  }, [initialPostId, modalPosts]);
 
   return (
     <>
-      <div
-        className="
-          fixed
-          inset-0
-          z-[999]
-          flex
-          flex-col
-          bg-background
-        "
-      >
+      <div className="fixed inset-0 z-[999] flex flex-col bg-background">
         {/* Header */}
-        <div
-          className="
-            sticky
-            top-0
-            z-10
-            flex
-            items-center
-            border-b
-            border-foreground/10
-            bg-background
-            py-3
-          "
-        >
+        <div className="sticky top-0 z-10 flex items-center border-b border-foreground/10 bg-background py-3">
           <button
             type="button"
             onClick={onClose}
-            className="
-              flex
-              h-9
-              w-9
-              items-center
-              justify-center
-              rounded-full
-            "
+            className="flex h-9 w-9 items-center justify-center rounded-full"
           >
             <ChevronLeft size={22} />
           </button>
 
-          <p
-            className="
-              absolute
-              left-1/2
-              -translate-x-1/2
-              text-lg
-              font-semibold
-            "
-          >
+          <p className="absolute left-1/2 -translate-x-1/2 text-lg font-semibold">
             {username ?? "username"}
           </p>
         </div>

@@ -33,6 +33,7 @@ export default function EditPostPage() {
 
   const {
     user,
+    profile,
     isLoggedIn,
     isLoading: authLoading,
   } = useSupabaseAuth();
@@ -45,20 +46,17 @@ export default function EditPostPage() {
 
   const [hashtags, setHashtags] = useState<string[]>([]);
   const [fandoms, setFandoms] = useState<string[]>([]);
-  const [selectedOshis, setSelectedOshis] =
-    useState<string[]>([]);
+  const [selectedOshis, setSelectedOshis] = useState<string[]>([]);
 
   /*
-   * The File[] is the source of truth for image order.
+   * File[] is the source of truth for image order.
    *
-   * imageUrlMap associates each File with the URL
-   * belonging to that image.
+   * imageUrlMap keeps each File associated with
+   * the URL belonging to that image.
    */
   const [images, setImages] = useState<File[]>([]);
   const [imageUrlMap, setImageUrlMap] =
-    useState<Map<File, string>>(
-      new Map()
-    );
+    useState<Map<File, string>>(new Map());
 
   /*
    * ThumbnailStrip requires these states.
@@ -69,8 +67,7 @@ export default function EditPostPage() {
   const [cropData, setCropData] =
     useState<CropData[]>([]);
 
-  const [currentIndex, setCurrentIndex] =
-    useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   const [oshis, setOshis] = useState<Oshi[]>([]);
 
@@ -170,7 +167,7 @@ export default function EditPostPage() {
         }
 
         /*
-         * Convert existing image URLs to Files.
+         * Convert image URLs into Files.
          *
          * Each File is immediately associated with
          * its original URL.
@@ -207,6 +204,7 @@ export default function EditPostPage() {
             );
 
             imageFiles.push(file);
+
             urlMap.set(
               file,
               parsedImages[i]
@@ -599,9 +597,6 @@ export default function EditPostPage() {
       /*
        * Build the URL array from the CURRENT
        * File order.
-       *
-       * This is what makes the saved order match
-       * the thumbnail order.
        */
       const orderedImageUrls =
         images
@@ -667,9 +662,18 @@ export default function EditPostPage() {
         insertOshiTags(postId),
       ]);
 
-      router.replace(
-        `/post/${postId}`
-      );
+      /*
+       * Go to the new unified profile route.
+       */
+      if (profile?.username) {
+        router.replace(
+            `/${profile.username}?post=${postId}`
+        );
+        } else {
+        router.replace(
+            `/post/${postId}`
+        );
+        }
     } catch (err) {
       console.error(
         "Error saving post:",
@@ -713,18 +717,29 @@ export default function EditPostPage() {
           : newImages;
 
       /*
-       * Keep the selected index valid.
+       * Remove URL mappings for deleted files.
+       *
+       * Reordered files remain in the map.
        */
-      setCurrentIndex(
-        (previousIndex) =>
-          Math.min(
-            previousIndex,
-            Math.max(
-              updatedImages.length - 1,
-              0
-            )
-          )
-      );
+      const currentFiles =
+        new Set(updatedImages);
+
+      setImageUrlMap((previousMap) => {
+        const updatedMap =
+          new Map(previousMap);
+
+        updatedMap.forEach(
+          (_, file) => {
+            if (
+              !currentFiles.has(file)
+            ) {
+              updatedMap.delete(file);
+            }
+          }
+        );
+
+        return updatedMap;
+      });
 
       return updatedImages;
     });

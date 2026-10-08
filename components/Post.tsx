@@ -754,7 +754,7 @@ export default function Post({
                   onClick={() => {
                     setShowMore(false);
                     router.push(
-                      `/edit-post/${id}`
+                      `post/${id}/edit`
                     );
                   }}
                 >
