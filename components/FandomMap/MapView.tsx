@@ -102,26 +102,33 @@ function ClickHandler({
   return null;
 }
 
+function MapCenterUpdater({
+  center,
+}: {
+  center: [number, number];
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.panTo(center, { animate: true });
+  }, [map, center]);
+
+  return null;
+}
+
 /**
- * Leaflet measures its container's size once on init. If that
- * happens before the surrounding layout has settled (a common race
- * with dynamically-imported, conditionally-rendered containers), it
- * locks in a wrong size and every subsequent zoom/pan looks broken
- * (e.g. a huge, nonsensical transform on the internal zoom-animation
- * proxy element). Re-measuring after mount, and whenever the
- * container's actual size changes, fixes it for good.
+ * Re-measure Leaflet after mount and when the container changes size.
+ * This avoids incorrect map dimensions in dynamically rendered layouts.
  */
 function InvalidateSizeOnResize() {
   const map = useMap();
 
   useEffect(() => {
     const container = map.getContainer();
-
     const invalidate = () => map.invalidateSize();
 
     invalidate();
     const timeoutId = setTimeout(invalidate, 150);
-
     const observer = new ResizeObserver(invalidate);
     observer.observe(container);
 
@@ -169,6 +176,7 @@ export default function MapView({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
+      <MapCenterUpdater center={center} />
       <ClickHandler onMapClick={onMapClick} />
       <InvalidateSizeOnResize />
 
@@ -181,9 +189,8 @@ export default function MapView({
           key={`${marker.kind}-${marker.id}`}
           position={[marker.lat, marker.lng]}
           icon={
-            icons.get(
-              `${marker.kind}:${marker.visited ? "1" : "0"}`
-            ) ?? markerIcon(marker.kind, marker.visited)
+            icons.get(`${marker.kind}:${marker.visited ? "1" : "0"}`) ??
+            markerIcon(marker.kind, marker.visited)
           }
           eventHandlers={{
             click: () => onMarkerClick?.(marker),

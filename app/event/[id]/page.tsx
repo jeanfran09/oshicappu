@@ -199,20 +199,36 @@ export default function EventPage() {
   }, [eventId, user]);
 
   function renderDescription(text: string) {
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const urlRegex =
+      /((?:https?:\/\/|www\.)[^\s]+|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?:\/[^\s]*)?)/g;
 
     return text.split(urlRegex).map((part, index) => {
-      if (/^https?:\/\//.test(part)) {
+      const isUrl =
+        /^(https?:\/\/|www\.)/i.test(part) ||
+        /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?:\/.*)?$/.test(part);
+
+      if (isUrl) {
+        // Keep trailing punctuation outside the link.
+        const match = part.match(/^(.*?)([.,!?;:]*)$/);
+        const url = match?.[1] ?? part;
+        const punctuation = match?.[2] ?? "";
+
+        const href = /^https?:\/\//i.test(url)
+          ? url
+          : `https://${url}`;
+
         return (
-          <a
-            key={index}
-            href={part}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-accent-secondary underline"
-          >
-            {part}
-          </a>
+          <span key={index}>
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-accent-secondary underline break-all"
+            >
+              {url}
+            </a>
+            {punctuation}
+          </span>
         );
       }
 
@@ -228,6 +244,7 @@ export default function EventPage() {
       );
     });
   }
+
 
   async function applyRsvp(nextStatus: RSVPStatus) {
     if (!user) {
