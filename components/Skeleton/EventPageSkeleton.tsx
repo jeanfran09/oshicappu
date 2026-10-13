@@ -107,7 +107,7 @@ export default function EventPageSkeleton() {
           </div>
         </div>
 
-        {/* Who's Interested & Going */}
+        {/* Who's Interested & Going 
         <section className="mt-8">
           <h3 className="text-lg font-semibold">
             Who&apos;s interested & going
@@ -125,7 +125,7 @@ export default function EventPageSkeleton() {
               )
             )}
           </div>
-        </section>
+        </section>*/}
 
         {/* Description */}
         <section className="mt-8">
