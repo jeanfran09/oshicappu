@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -33,6 +34,18 @@ type EventCardProps = {
 };
 
 type RSVPStatus = "interested" | "going" | null;
+
+// Display a shortened location instead of the full address.
+function getPlaceName(location: string) {
+  if (!location) return "";
+
+  // Keep coordinate-only locations unchanged.
+  if (/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/.test(location)) {
+    return location;
+  }
+
+  return location.split(",")[0].trim();
+}
 
 async function saveRsvp(
   eventId: string,
@@ -184,33 +197,17 @@ export default function EventCard({ event }: EventCardProps) {
           <h3 className="truncate text-base font-semibold">
             {event.title}
           </h3>
-          {/** 
-          {event.fandomName && (
-            <span
-              role="link"
-              tabIndex={0}
-              onClick={(e) => {
-                e.stopPropagation();
-
-                if (event.fandomId) {
-                  router.push(`/fandom/${event.fandomId}`);
-                }
-              }}
-              className="mt-1.5 inline-block rounded-full bg-accent-secondary/70 px-2.5 py-1 text-xs font-medium"
-            >
-              {event.fandomName}
-            </span>
-          )}*/}
 
           <p className="mt-1.5 text-sm text-foreground/60">
             {event.date} at {event.time}
           </p>
 
+          {/* Shortened Location */}
           <div className="mt-3 flex items-center gap-1.5 text-sm text-foreground/60">
             <MapPin size={15} />
 
             <span className="truncate">
-              {event.location}
+              {getPlaceName(event.location)}
             </span>
           </div>
 
