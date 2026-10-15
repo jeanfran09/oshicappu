@@ -18,6 +18,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
 import MapErrorBoundary from "@/components/FandomMap/MapErrorBoundary";
+import EditEventSkeleton from "@/components/Skeleton/EditEventSkeleton";
 
 const MapView = dynamic(
   () => import("@/components/FandomMap/MapView"),
@@ -559,11 +560,7 @@ export default function EditEventPage() {
   }
 
   if (authLoading || loading) {
-    return (
-      <main className="md:hidden flex min-h-screen items-center justify-center bg-background">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-foreground/20 border-t-transparent" />
-      </main>
-    );
+    return <EditEventSkeleton/>;
   }
 
   if (!user) return null;
