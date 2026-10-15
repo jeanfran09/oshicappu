@@ -500,7 +500,7 @@ export default function CreateLandmarkPage() {
           <label htmlFor="description" className="text-sm font-semibold">{isEvent ? "Description" : "Notes"}</label>
           {isEvent ? (
             <div className="relative">
-              <textarea id="description" ref={textareaRef} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} placeholder="Describe your event..." rows={1} className="w-full resize-none overflow-hidden rounded-xl border border-foreground/25 bg-background p-4 pb-8 text-base outline-none transition focus:border-accent" />
+              <textarea id="description" ref={textareaRef} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} placeholder="Describe your event..." rows={1} className="w-full resize-none overflow-hidden rounded-xl border border-foreground/25 bg-background px-4 pt-3 pb-8 text-base outline-none transition focus:border-accent" />
               <span className="pointer-events-none absolute bottom-3 right-4 text-xs text-foreground/50">{description.length}/500</span>
             </div>
           ) : (

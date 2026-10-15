@@ -184,7 +184,7 @@ export default function EventCard({ event }: EventCardProps) {
           <h3 className="truncate text-base font-semibold">
             {event.title}
           </h3>
-
+          {/** 
           {event.fandomName && (
             <span
               role="link"
@@ -200,7 +200,7 @@ export default function EventCard({ event }: EventCardProps) {
             >
               {event.fandomName}
             </span>
-          )}
+          )}*/}
 
           <p className="mt-1.5 text-sm text-foreground/60">
             {event.date} at {event.time}

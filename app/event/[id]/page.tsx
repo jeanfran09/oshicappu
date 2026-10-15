@@ -11,6 +11,7 @@ import {
   Share2,
   Check,
   Camera,
+  Pencil,
 } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
@@ -453,7 +454,7 @@ export default function EventPage() {
   }
 
   if (isLoading) {
-    return <EventPageSkeleton />;
+    return <EventPageSkeleton userId={user?.id} organizerId={event?.organizerId}/>;
   }
 
   if (notFound || !event) {
@@ -507,14 +508,27 @@ export default function EventPage() {
           Event
         </h1>
 
-        <button
-          type="button"
-          onClick={handleShare}
-          className="ml-auto mr-3 flex h-9 w-9 items-center justify-center rounded-full"
-          aria-label="Share event"
-        >
-          <Share2 size={20} />
-        </button>
+        <div className="ml-auto mr-3 flex items-center gap-1">
+          <button
+            type="button"
+            onClick={handleShare}
+            className="flex h-9 w-9 items-center justify-center rounded-full"
+            aria-label="Share event"
+          >
+            <Share2 size={20} />
+          </button>
+
+          {user && event?.organizerId === user.id && (
+            <button
+              type="button"
+              onClick={() => router.push(`/event/${event.id}/edit`)}
+              className="flex h-9 w-9 items-center justify-center rounded-full"
+              aria-label="Edit event"
+            >
+              <Pencil size={20} />
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Event Image */}
@@ -584,8 +598,9 @@ export default function EventPage() {
           {event.title}
         </h2>
 
+         
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          {event.fandomName && (
+          {/**{event.fandomName && (
             <button
               type="button"
               onClick={() =>
@@ -596,7 +611,7 @@ export default function EventPage() {
             >
               {event.fandomName}
             </button>
-          )}
+          )}*/}
 
           {event.latitude != null &&
             event.longitude != null && (
