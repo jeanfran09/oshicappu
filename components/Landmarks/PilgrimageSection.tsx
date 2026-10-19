@@ -25,6 +25,7 @@ type PilgrimageRow = {
   title: string;
   description: string | null;
   image_url: string | null;
+  location: string;
   latitude: number;
   longitude: number;
   fandom_id: string | null;
@@ -90,6 +91,7 @@ export default function PilgrimageSection() {
           title,
           description,
           image_url,
+          location,
           latitude,
           longitude,
           fandom_id,
@@ -124,23 +126,16 @@ export default function PilgrimageSection() {
       const mapped: LoadedPilgrimage[] =
         rows.map((row) => ({
           id: row.id,
-          createdBy:
-            row.created_by,
+          createdBy: row.created_by,
           title: row.title,
-          description:
-            row.description,
+          description: row.description,
           image: row.image_url,
+          location: row.location,
           latitude: row.latitude,
-          longitude:
-            row.longitude,
-          fandomId:
-            row.fandom_id,
-          fandomName:
-            row.fandoms?.name ??
-            null,
-          yourPilgrimage:
-            row.created_by ===
-            user?.id,
+          longitude: row.longitude,
+          fandomId: row.fandom_id,
+          fandomName: row.fandoms?.name ?? null,
+          yourPilgrimage: row.created_by === user?.id,
         }));
 
       if (!isCancelled) {

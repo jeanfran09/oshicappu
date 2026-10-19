@@ -19,6 +19,7 @@ type PhotoSpotRow = {
   title: string;
   description: string | null;
   image_url: string | null;
+  location: string;
   latitude: number;
   longitude: number;
   fandom_id: string | null;
@@ -65,6 +66,7 @@ export default function PhotoSpotsSection() {
           title,
           description,
           image_url,
+          location,
           latitude,
           longitude,
           fandom_id,
@@ -102,6 +104,7 @@ export default function PhotoSpotsSection() {
           title: row.title,
           description: row.description,
           image: row.image_url,
+          location: row.location,
           latitude: row.latitude,
           longitude: row.longitude,
           fandomId: row.fandom_id,

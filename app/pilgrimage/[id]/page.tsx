@@ -18,6 +18,7 @@ type Pilgrimage = {
   title: string;
   description: string | null;
   image_url: string | null;
+  location: string | null;
   latitude: number | null;
   longitude: number | null;
   fandom_id: string | null;
@@ -63,6 +64,7 @@ export default function PilgrimagePage() {
           title,
           description,
           image_url,
+          location,
           latitude,
           longitude,
           fandom_id,
@@ -112,6 +114,7 @@ export default function PilgrimagePage() {
         title: data.title,
         description: data.description,
         image_url: data.image_url,
+        location: data.location,
         latitude: data.latitude,
         longitude: data.longitude,
         fandom_id: data.fandom_id,
@@ -273,8 +276,7 @@ export default function PilgrimagePage() {
                 </p>
 
                 <p className="text-sm font-medium">
-                  {pilgrimage.latitude.toFixed(6)},{" "}
-                  {pilgrimage.longitude.toFixed(6)}
+                  {pilgrimage.location}
                 </p>
               </div>
             </div>

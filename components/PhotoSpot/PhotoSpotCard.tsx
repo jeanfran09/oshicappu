@@ -6,6 +6,7 @@ import {
   MapPin,
   Share2,
 } from "lucide-react";
+import { getPlaceName } from "@/utils/getPlaceName";
 
 export type PhotoSpot = {
   id: string;
@@ -14,6 +15,7 @@ export type PhotoSpot = {
   image: string | null;
   latitude: number;
   longitude: number;
+  location: string;
   fandomId?: string | null;
   fandomName?: string | null;
   yourSpot?: boolean;
@@ -75,7 +77,7 @@ export default function PhotoSpotCard({
             {photoSpot.title}
           </h3>
 
-          {/* Fandom */}
+          {/* Fandom 
           {photoSpot.fandomName && (
             <span
               role="link"
@@ -107,7 +109,7 @@ export default function PhotoSpotCard({
             >
               {photoSpot.fandomName}
             </span>
-          )}
+          )}*/}
 
           {/* Description */}
           {photoSpot.description && (
@@ -124,8 +126,7 @@ export default function PhotoSpotCard({
             />
 
             <span className="truncate">
-              {photoSpot.latitude.toFixed(5)},{" "}
-              {photoSpot.longitude.toFixed(5)}
+              {getPlaceName(photoSpot.location)}
             </span>
           </div>
         </div>

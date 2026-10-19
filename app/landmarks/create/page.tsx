@@ -420,6 +420,7 @@ export default function CreateLandmarkPage() {
         description: description.trim() || null,
         latitude: coords!.lat,
         longitude: coords!.lng,
+        location: location.trim() || null,
         image_url: imageUrl,
       });
 
@@ -532,86 +533,88 @@ export default function CreateLandmarkPage() {
               <input id="capacity" type="number" min="1" value={capacity} onChange={(e) => setCapacity(e.target.value)} placeholder="Add capacity" className="w-full rounded-xl border border-foreground/25 bg-transparent px-4 py-3 text-base outline-none focus:border-accent" />
             </div>*/}
 
-            {/* Location */}
-            <div className="space-y-2">
-              <label htmlFor="location" className="text-sm font-semibold">Location</label>
-              <div className="flex gap-2">
-                <div className="relative min-w-0 flex-1">
-                  <MapPin
-                    size={18}
-                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-foreground/50"
-                  />
+            </>
+        )}
 
-                  <input
-                    id="location"
-                    type="text"
-                    value={location}
-                    onChange={(e) => {
-                      setLocation(e.target.value);
+        {/* Location */}
+          <div className="space-y-2">
+            <label htmlFor="location" className="text-sm font-semibold">Location</label>
+            <div className="flex gap-2">
+              <div className="relative min-w-0 flex-1">
+                <MapPin
+                  size={18}
+                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-foreground/50"
+                />
+
+                <input
+                  id="location"
+                  type="text"
+                  value={location}
+                  onChange={(e) => {
+                    setLocation(e.target.value);
+                    setPlaceResults([]);
+                    setLocationSearchError("");
+                    setCoords(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void handleSearchLocation();
+                    }
+                  }}
+                  placeholder="Search for a place"
+                  autoComplete="off"
+                  className="w-full rounded-xl border border-foreground/25 bg-transparent py-3 pl-11 pr-10 text-base outline-none focus:border-accent"
+                />
+
+                {location && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLocation("");
                       setPlaceResults([]);
                       setLocationSearchError("");
                       setCoords(null);
                     }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        void handleSearchLocation();
-                      }
-                    }}
-                    placeholder="Search for a place"
-                    autoComplete="off"
-                    className="w-full rounded-xl border border-foreground/25 bg-transparent py-3 pl-11 pr-10 text-base outline-none focus:border-accent"
-                  />
-
-                  {location && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setLocation("");
-                        setPlaceResults([]);
-                        setLocationSearchError("");
-                        setCoords(null);
-                      }}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/50 hover:text-foreground"
-                      aria-label="Clear location"
-                    >
-                      <X size={18} />
-                    </button>
-                  )}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => void handleSearchLocation()}
-                  disabled={searchingLocation}
-                  className="shrink-0 rounded-xl bg-accent px-4 py-3 text-sm font-semibold disabled:opacity-60"
-                  aria-label="Search location"
-                >
-                  {searchingLocation ? (
-                    <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                  ) : (
-                    <Search size={16} />
-                  )}
-                </button>
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/50 hover:text-foreground"
+                    aria-label="Clear location"
+                  >
+                    <X size={18} />
+                  </button>
+                )}
               </div>
 
-              {locationSearchError && <p className="text-xs text-foreground/60">{locationSearchError}</p>}
-
-              {placeResults.length > 0 && (
-                <div className="overflow-hidden rounded-xl border border-foreground/20">
-                  {placeResults.map((place) => (
-                    <button key={place.place_id} type="button" onClick={() => handleSelectPlace(place)} className="flex w-full items-start gap-3 border-b border-foreground/10 p-3 text-left last:border-b-0 hover:bg-foreground/5">
-                      <MapPin size={18} className="mt-0.5 shrink-0 text-foreground/60" />
-                      <span className="text-sm">{place.display_name}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              <p className="text-xs text-foreground/50">Search for a place and select a result, or tap the map to place a pin.</p>
+              <button
+                type="button"
+                onClick={() => void handleSearchLocation()}
+                disabled={searchingLocation}
+                className="shrink-0 rounded-xl bg-accent px-4 py-3 text-sm font-semibold disabled:opacity-60"
+                aria-label="Search location"
+              >
+                {searchingLocation ? (
+                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                ) : (
+                  <Search size={16} />
+                )}
+              </button>
             </div>
-          </>
-        )}
+
+            {locationSearchError && <p className="text-xs text-foreground/60">{locationSearchError}</p>}
+
+            {placeResults.length > 0 && (
+              <div className="overflow-hidden rounded-xl border border-foreground/20">
+                {placeResults.map((place) => (
+                  <button key={place.place_id} type="button" onClick={() => handleSelectPlace(place)} className="flex w-full items-start gap-3 border-b border-foreground/10 p-3 text-left last:border-b-0 hover:bg-foreground/5">
+                    <MapPin size={18} className="mt-0.5 shrink-0 text-foreground/60" />
+                    <span className="text-sm">{place.display_name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <p className="text-xs text-foreground/50">Search for a place and select a result, or tap the map to place a pin.</p>
+          </div>
+          
 
         {/* Map */}
         <div className="relative z-0 space-y-2 rounded-xl bg-foreground/5 p-3">

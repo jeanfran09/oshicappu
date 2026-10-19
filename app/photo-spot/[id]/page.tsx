@@ -17,6 +17,7 @@ type PhotoSpot = {
   image_url: string | null;
   latitude: number | null;
   longitude: number | null;
+  location: string | null;
   fandom_id: string | null;
   fandom_name: string | null;
   created_by: string;
@@ -64,6 +65,7 @@ export default function PhotoSpotPage() {
           image_url,
           latitude,
           longitude,
+          location,
           fandom_id,
           created_by,
           fandoms (
@@ -113,6 +115,7 @@ export default function PhotoSpotPage() {
         image_url: data.image_url,
         latitude: data.latitude,
         longitude: data.longitude,
+        location: data.location,
         fandom_id: data.fandom_id,
         fandom_name: fandom?.name ?? null,
         created_by: data.created_by,
@@ -272,8 +275,7 @@ export default function PhotoSpotPage() {
                 </p>
 
                 <p className="text-sm font-medium">
-                  {photoSpot.latitude.toFixed(6)},{" "}
-                  {photoSpot.longitude.toFixed(6)}
+                  {photoSpot.location}
                 </p>
               </div>
             </div>

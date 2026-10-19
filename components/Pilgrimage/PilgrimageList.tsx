@@ -5,6 +5,7 @@ export type Pilgrimage = {
   title: string;
   description?: string | null;
   image: string | null;
+  location: string;
   latitude: number;
   longitude: number;
   fandomId?: string | null;

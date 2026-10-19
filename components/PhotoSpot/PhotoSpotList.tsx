@@ -7,6 +7,7 @@ export type PhotoSpot = {
   image: string | null;
   latitude: number;
   longitude: number;
+  location: string;
   fandomId?: string | null;
   fandomName?: string | null;
   yourSpot?: boolean;

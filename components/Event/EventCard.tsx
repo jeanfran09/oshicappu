@@ -13,6 +13,7 @@ import {
 import { formatCount } from "@/utils/formatNumber";
 import { supabase } from "@/lib/supabase";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
+import { getPlaceName } from "@/utils/getPlaceName";
 
 export type Event = {
   id: string;
@@ -34,18 +35,6 @@ type EventCardProps = {
 };
 
 type RSVPStatus = "interested" | "going" | null;
-
-// Display a shortened location instead of the full address.
-function getPlaceName(location: string) {
-  if (!location) return "";
-
-  // Keep coordinate-only locations unchanged.
-  if (/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/.test(location)) {
-    return location;
-  }
-
-  return location.split(",")[0].trim();
-}
 
 async function saveRsvp(
   eventId: string,

@@ -6,12 +6,14 @@ import {
   MapPinned,
   Share2,
 } from "lucide-react";
+import { getPlaceName } from "@/utils/getPlaceName";
 
 export type Pilgrimage = {
   id: string;
   title: string;
   description?: string | null;
   image: string | null;
+  location: string;
   latitude: number;
   longitude: number;
   fandomId?: string | null;
@@ -77,7 +79,7 @@ export default function PilgrimageCard({
             {pilgrimage.title}
           </h3>
 
-          {/* Fandom */}
+          {/* Fandom 
           {pilgrimage.fandomName && (
             <span
               role="link"
@@ -111,7 +113,7 @@ export default function PilgrimageCard({
             >
               {pilgrimage.fandomName}
             </span>
-          )}
+          )}*/}
 
           {/* Description */}
           {pilgrimage.description && (
@@ -128,13 +130,7 @@ export default function PilgrimageCard({
             />
 
             <span className="truncate">
-              {pilgrimage.latitude.toFixed(
-                5
-              )}
-              ,{" "}
-              {pilgrimage.longitude.toFixed(
-                5
-              )}
+              {getPlaceName(pilgrimage.location)}
             </span>
           </div>
         </div>
