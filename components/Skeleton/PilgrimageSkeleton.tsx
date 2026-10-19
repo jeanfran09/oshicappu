@@ -24,24 +24,18 @@ export default function PilgrimagePageSkeleton() {
       <main className="px-4 pb-24 pt-5">
         <div className="h-7 w-3/4 rounded-md bg-foreground/10" />
 
-        <div className="mt-5 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent">
-            <MapPin size={19} />
-          </div>
+        {/* Location */}
+        <div className="flex items-center gap-3 mt-5">
+          <div className="h-10 w-10 shrink-0 animate-pulse rounded-full bg-foreground/10" />
 
-          <div>
-            <p className="text-sm text-foreground/50">
-              Location
-            </p>
-
-            <div className="mt-1 h-4 w-40 rounded bg-foreground/10" />
+          <div className="flex-1 space-y-2">
+            <div className="h-4 w-20 animate-pulse rounded bg-foreground/10" />
+            <div className="h-4 w-48 animate-pulse rounded bg-foreground/10" />
           </div>
         </div>
 
         <section className="mt-8">
-          <h3 className="text-lg font-semibold">
-            About this pilgrimage
-          </h3>
+          <div className="h-6 w-55 animate-pulse rounded bg-foreground/10" />
 
           <div className="mt-3 space-y-2">
             <div className="h-4 w-full rounded bg-foreground/10" />
@@ -51,9 +45,7 @@ export default function PilgrimagePageSkeleton() {
         </section>
 
         <section className="mt-8">
-          <h3 className="text-lg font-semibold">
-            Added by
-          </h3>
+          <div className="h-6 w-25 animate-pulse rounded bg-foreground/10" />
 
           <div className="mt-3 flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-foreground/10" />
