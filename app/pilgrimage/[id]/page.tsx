@@ -7,10 +7,12 @@ import {
   MapPin,
   MapPinned,
   Share2,
+  Pencil,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 
 import { supabase } from "@/lib/supabase";
+import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
 import PilgrimagePageSkeleton from "@/components/Skeleton/PilgrimageSkeleton";
 
 type Pilgrimage = {
@@ -37,6 +39,8 @@ export default function PilgrimagePage() {
   const params = useParams();
   const pilgrimageId = params.id as string;
 
+  const { user } = useSupabaseAuth();
+
   const [pilgrimage, setPilgrimage] =
     useState<Pilgrimage | null>(null);
 
@@ -58,8 +62,7 @@ export default function PilgrimagePage() {
 
       const { data, error } = await supabase
         .from("pilgrimage_locations")
-        .select(
-          `
+        .select(`
           id,
           title,
           description,
@@ -73,8 +76,7 @@ export default function PilgrimagePage() {
             id,
             name
           )
-          `
-        )
+        `)
         .eq("id", pilgrimageId)
         .maybeSingle();
 
@@ -98,14 +100,11 @@ export default function PilgrimagePage() {
         ? data.fandoms[0]
         : data.fandoms;
 
-      const { data: creatorData } =
-        await supabase
-          .from("profiles")
-          .select(
-            "username, display_name, avatar_url"
-          )
-          .eq("id", data.created_by)
-          .maybeSingle();
+      const { data: creatorData } = await supabase
+        .from("profiles")
+        .select("username, display_name, avatar_url")
+        .eq("id", data.created_by)
+        .maybeSingle();
 
       if (cancelled) return;
 
@@ -122,14 +121,11 @@ export default function PilgrimagePage() {
         created_by: data.created_by,
       });
 
-      setCreator(
-        creatorData ?? null
-      );
-
+      setCreator(creatorData ?? null);
       setIsLoading(false);
     }
 
-    loadPilgrimage();
+    void loadPilgrimage();
 
     return () => {
       cancelled = true;
@@ -196,14 +192,31 @@ export default function PilgrimagePage() {
           Pilgrimage
         </h1>
 
-        <button
-          type="button"
-          onClick={handleShare}
-          className="ml-auto mr-3 flex h-9 w-9 items-center justify-center rounded-full"
-          aria-label="Share pilgrimage"
-        >
-          <Share2 size={20} />
-        </button>
+        <div className="ml-auto mr-3 flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => void handleShare()}
+            className="flex h-9 w-9 items-center justify-center rounded-full"
+            aria-label="Share pilgrimage"
+          >
+            <Share2 size={20} />
+          </button>
+
+          {user && pilgrimage.created_by === user.id && (
+            <button
+              type="button"
+              onClick={() =>
+                router.push(
+                  `/pilgrimage/${pilgrimage.id}/edit`
+                )
+              }
+              className="flex h-9 w-9 items-center justify-center rounded-full"
+              aria-label="Edit pilgrimage"
+            >
+              <Pencil size={20} />
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Image */}
@@ -276,7 +289,7 @@ export default function PilgrimagePage() {
                 </p>
 
                 <p className="text-sm font-medium">
-                  {pilgrimage.location}
+                  {pilgrimage.location || "Location not specified"}
                 </p>
               </div>
             </div>

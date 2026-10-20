@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { ChevronLeft, MapPin, Share2, Camera } from "lucide-react";
+import { ChevronLeft, MapPin, Share2, Camera, Pencil } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 
 import { supabase } from "@/lib/supabase";
@@ -195,14 +195,27 @@ export default function PhotoSpotPage() {
           Photo Spot
         </h1>
 
-        <button
-          type="button"
-          onClick={handleShare}
-          className="ml-auto mr-3 flex h-9 w-9 items-center justify-center rounded-full"
-          aria-label="Share photo spot"
-        >
-          <Share2 size={20} />
-        </button>
+        <div className="ml-auto mr-3 flex items-center gap-1">
+          <button
+            type="button"
+            onClick={handleShare}
+            className="flex h-9 w-9 items-center justify-center rounded-full"
+            aria-label="Share photo spot"
+          >
+            <Share2 size={20} />
+          </button>
+
+          {user && photoSpot?.created_by === user.id && (
+            <button
+              type="button"
+              onClick={() => router.push(`/photo-spot/${photoSpot.id}/edit`)}
+              className="flex h-9 w-9 items-center justify-center rounded-full"
+              aria-label="Edit photo spot"
+            >
+              <Pencil size={20} />
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Image */}
