@@ -2,12 +2,16 @@ import { ChevronLeft, MapPin, Share2 } from "lucide-react";
 
 export default function PhotoSpotPageSkeleton() {
   return (
-    <div className="md:hidden min-h-screen bg-background animate-pulse">
+    <div className="md:hidden min-h-screen bg-background">
       <header className="sticky top-0 z-50 flex items-center border-b border-foreground/10 bg-background py-3">
-        <ChevronLeft
-          size={22}
-          className="ml-2"
-        />
+        <button
+          type="button"
+          disabled
+          className="flex h-9 w-9 items-center justify-center rounded-full"
+          aria-label="Go back"
+        >
+          <ChevronLeft size={22} />
+        </button>
 
         <h1 className="absolute left-1/2 -translate-x-1/2 text-lg font-semibold">
           Photo Spot
@@ -21,7 +25,7 @@ export default function PhotoSpotPageSkeleton() {
 
       <div className="aspect-[16/9] w-full bg-foreground/10" />
 
-      <main className="px-4 pb-24 pt-5">
+      <main className="px-4 pb-24 pt-5 animate-pulse">
         <div className="h-7 w-3/4 rounded-md bg-foreground/10" />
 
         {/* Location */}
