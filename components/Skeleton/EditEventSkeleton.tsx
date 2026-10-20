@@ -1,10 +1,7 @@
 "use client";
 
 import {
-  CalendarDays,
-  MapPin,
   MapPinned,
-  Search,
   X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -66,23 +63,10 @@ export default function EditEventSkeleton() {
             <div className="h-4 w-20 rounded bg-foreground/10" />
 
             <div className="flex gap-2">
-              <div className="flex h-12 min-w-0 flex-1 items-center gap-3 rounded-xl bg-foreground/5 px-4">
-                <MapPin
-                  size={18}
-                  className="shrink-0 text-foreground/20"
-                />
-                <div className="h-4 w-32 rounded bg-foreground/10" />
-              </div>
+              <div className="flex h-12 min-w-0 flex-1 items-center gap-3 rounded-xl bg-foreground/5 px-4"/>
 
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent">
-                <Search
-                  size={16}
-                  className="text-foreground/20"
-                />
-              </div>
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent"/>
             </div>
-
-            <div className="h-3 w-4/5 rounded bg-foreground/10" />
           </div>
 
           {/* Map */}

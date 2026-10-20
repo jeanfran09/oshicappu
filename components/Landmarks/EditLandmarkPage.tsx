@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
 import { getCurrentPosition } from "@/utils/geo";
 import MapErrorBoundary from "@/components/FandomMap/MapErrorBoundary";
+import EditLandmarkSkeleton from "../Skeleton/EditLandmarkSkeleton";
 
 const MapView = dynamic(
   () => import("@/components/FandomMap/MapView"),
@@ -363,11 +364,7 @@ export default function EditLandmarkPage({
   }
 
   if (authLoading || loading) {
-    return (
-      <main className="min-h-screen bg-background p-6 md:hidden">
-        Loading landmark...
-      </main>
-    );
+    return  <EditLandmarkSkeleton type={type} />;
   }
 
   if (!landmark) {
@@ -393,7 +390,11 @@ export default function EditLandmarkPage({
         <h1 className="text-xl font-bold">{pageTitle}</h1>
         <button
           type="button"
-          onClick={() => router.push("/landmarks")}
+          onClick={() => router.push(
+            type === "photo_spot"
+              ? `/photo-spot/${id}`
+              : `/pilgrimage/${id}`
+          )}
           className="flex h-10 w-10 items-center justify-center rounded-full bg-accent"
           aria-label="Close"
         >
