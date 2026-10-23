@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ChangeEvent,
@@ -12,6 +13,7 @@ import Link from "next/link";
 import {
   ChevronLeft,
   ImagePlus,
+  LoaderCircle,
   Reply as ReplyIcon,
   Send,
   User as UserIcon,
@@ -40,6 +42,7 @@ type Message = {
 };
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const MESSAGE_PAGE_SIZE = 30;
 
 function formatMessageTime(dateString: string) {
   const date = new Date(dateString);
@@ -47,6 +50,29 @@ function formatMessageTime(dateString: string) {
   return date.toLocaleTimeString([], {
     hour: "numeric",
     minute: "2-digit",
+  });
+}
+
+function formatMessageDate(dateString: string) {
+  const date = new Date(dateString);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+
+  const isSameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+
+  if (isSameDay(date, today)) return "Today";
+  if (isSameDay(date, yesterday)) return "Yesterday";
+
+  return date.toLocaleDateString([], {
+    month: "long",
+    day: "numeric",
+    ...(date.getFullYear() !== today.getFullYear() && {
+      year: "numeric",
+    }),
   });
 }
 
@@ -60,6 +86,7 @@ export default function ConversationPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useSupabaseAuth();
+  const userId = user?.id;
 
   const conversationId =
     typeof params.conversationId === "string"
@@ -75,6 +102,8 @@ export default function ConversationPage() {
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const [notAllowed, setNotAllowed] = useState(false);
 
   const [newMessageId, setNewMessageId] = useState<
@@ -126,6 +155,13 @@ export default function ConversationPage() {
   const messagesContainerRef =
     useRef<HTMLDivElement>(null);
 
+  const loadingOlderRef = useRef(false);
+
+  const pendingScrollRef = useRef<{
+    height: number;
+    top: number;
+  } | null>(null);
+
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -146,12 +182,16 @@ export default function ConversationPage() {
 
   // Load conversation.
   useEffect(() => {
-    if (!user || !conversationId) return;
+    if (!userId || !conversationId) return;
 
     let cancelled = false;
 
     async function load() {
       setLoading(true);
+      setMessages([]);
+      setHasMoreMessages(true);
+      loadingOlderRef.current = false;
+      pendingScrollRef.current = null;
 
       const { data: participants, error: participantsError } =
         await supabase
@@ -175,7 +215,7 @@ export default function ConversationPage() {
       }
 
       const isParticipant = participants.some(
-        (p: any) => p.user_id === user!.id
+        (p: any) => p.user_id === userId
       );
 
       if (!isParticipant) {
@@ -185,7 +225,7 @@ export default function ConversationPage() {
       }
 
       const other = participants.find(
-        (p: any) => p.user_id !== user!.id
+        (p: any) => p.user_id !== userId
       );
 
       if (other) {
@@ -211,7 +251,8 @@ export default function ConversationPage() {
           .from("messages")
           .select("*")
           .eq("conversation_id", conversationId!)
-          .order("created_at", { ascending: true });
+          .order("created_at", { ascending: false })
+          .limit(MESSAGE_PAGE_SIZE);
 
       if (cancelled) return;
 
@@ -221,7 +262,13 @@ export default function ConversationPage() {
           messagesError
         );
       } else {
-        setMessages(messageRows ?? []);
+        const initialMessages = (messageRows ?? [])
+          .reverse() as Message[];
+
+        setMessages(initialMessages);
+        setHasMoreMessages(
+          initialMessages.length === MESSAGE_PAGE_SIZE
+        );
       }
 
       setLoading(false);
@@ -232,7 +279,7 @@ export default function ConversationPage() {
           last_read_at: new Date().toISOString(),
         })
         .eq("conversation_id", conversationId!)
-        .eq("user_id", user!.id)
+        .eq("user_id", userId)
         .then(({ error }) => {
           if (error) {
             console.error(
@@ -248,11 +295,112 @@ export default function ConversationPage() {
     return () => {
       cancelled = true;
     };
-  }, [user, conversationId]);
+  }, [userId, conversationId]);
+
+  async function loadOlderMessages() {
+    if (
+      !conversationId ||
+      loadingOlderRef.current ||
+      !hasMoreMessages ||
+      messages.length === 0
+    ) {
+      return;
+    }
+
+    const container = messagesContainerRef.current;
+    const oldestMessage = messages[0];
+
+    if (!container || !oldestMessage) return;
+
+    loadingOlderRef.current = true;
+    setLoadingOlder(true);
+
+    // Capture the viewport before fetching. Apply this snapshot only
+    // when older messages are actually prepended, avoiding interference
+    // from live messages that may arrive while the request is pending.
+    const previousScroll = {
+      height: container.scrollHeight,
+      top: container.scrollTop,
+    };
+
+    try {
+      const { data, error } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("conversation_id", conversationId)
+        .lt("created_at", oldestMessage.created_at)
+        .order("created_at", { ascending: false })
+        .limit(MESSAGE_PAGE_SIZE);
+
+      if (error) throw error;
+
+      const olderMessages = (data ?? []).reverse() as Message[];
+
+      if (olderMessages.length < MESSAGE_PAGE_SIZE) {
+        setHasMoreMessages(false);
+      }
+
+      if (olderMessages.length > 0) {
+        pendingScrollRef.current = previousScroll;
+
+        setMessages((currentMessages) => {
+          const existingIds = new Set(
+            currentMessages.map((message) => message.id)
+          );
+
+          const uniqueOlderMessages = olderMessages.filter(
+            (message) => !existingIds.has(message.id)
+          );
+
+          if (uniqueOlderMessages.length === 0) {
+            pendingScrollRef.current = null;
+            return currentMessages;
+          }
+
+          return [...uniqueOlderMessages, ...currentMessages];
+        });
+      } else {
+        setHasMoreMessages(false);
+      }
+    } catch (error) {
+      pendingScrollRef.current = null;
+      console.error("Error loading older messages:", error);
+    } finally {
+      loadingOlderRef.current = false;
+      setLoadingOlder(false);
+    }
+  }
+
+  function handleMessagesScroll() {
+    const container = messagesContainerRef.current;
+
+    if (
+      container &&
+      container.scrollTop <= 40 &&
+      hasMoreMessages &&
+      !loadingOlderRef.current
+    ) {
+      void loadOlderMessages();
+    }
+  }
+
+  // Keep the same messages in view after older messages are prepended.
+  useLayoutEffect(() => {
+    const container = messagesContainerRef.current;
+    const previousScroll = pendingScrollRef.current;
+
+    if (!container || !previousScroll) return;
+
+    container.scrollTop =
+      previousScroll.top +
+      (container.scrollHeight - previousScroll.height);
+
+    pendingScrollRef.current = null;
+  }, [messages]);
 
   // Live updates for new messages.
   useEffect(() => {
-    if (!conversationId || !user) return;
+    if (!conversationId || !userId) return;
 
     const channel = supabase
       .channel(`messages:${conversationId}`)
@@ -279,14 +427,14 @@ export default function ConversationPage() {
             return [...prev, incoming];
           });
 
-          if (incoming.sender_id !== user.id) {
+          if (incoming.sender_id !== userId) {
             void supabase
               .from("conversation_participants")
               .update({
                 last_read_at: new Date().toISOString(),
               })
               .eq("conversation_id", conversationId)
-              .eq("user_id", user.id);
+              .eq("user_id", userId);
           }
         }
       )
@@ -295,7 +443,7 @@ export default function ConversationPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversationId, user]);
+  }, [conversationId, userId]);
 
   // Live updates for the other participant's read state.
   useEffect(() => {
@@ -666,8 +814,18 @@ export default function ConversationPage() {
       {/* Messages */}
       <div
         ref={messagesContainerRef}
-        className="flex-1 space-y-2 overflow-y-auto px-3 py-4 pb-18"
+        onScroll={handleMessagesScroll}
+        className="relative flex-1 space-y-2 overflow-y-auto px-3 py-4 pb-18"
       >
+        {loadingOlder && !loading && (
+          <div className="pointer-events-none absolute left-0 right-0 top-0 z-10 flex items-center justify-center gap-2 bg-background/90 py-3">
+            <LoaderCircle
+              size={30}
+              className="animate-spin text-foreground/50"
+            />
+          </div>
+        )}
+
         {loading ? (
           <ConversationSkeleton />
         ) : messages.length === 0 ? (
@@ -704,8 +862,19 @@ export default function ConversationPage() {
               ])
             );
 
-            return messages.map((message) => {
+            return messages.map((message, index) => {
               const isMine = message.sender_id === user?.id;
+              const messageDate = new Date(message.created_at);
+              const previousMessage = messages[index - 1];
+              const previousDate = previousMessage
+                ? new Date(previousMessage.created_at)
+                : null;
+
+              const showDate =
+                !previousDate ||
+                messageDate.getFullYear() !== previousDate.getFullYear() ||
+                messageDate.getMonth() !== previousDate.getMonth() ||
+                messageDate.getDate() !== previousDate.getDate();
 
               const showSeen =
                 isMine &&
@@ -753,6 +922,14 @@ export default function ConversationPage() {
                       : ""
                   }
                 >
+                  {showDate && (
+                    <div className="flex justify-center py-4">
+                      <span className="px-3 py-1 text-xs text-foreground/75">
+                        {formatMessageDate(message.created_at)}
+                      </span>
+                    </div>
+                  )}
+
                   {repliedMessage && (
                     <div
                       className={`mb-1 flex ${
