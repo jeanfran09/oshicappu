@@ -39,6 +39,7 @@ type LoadedEvent = Event & {
 
 export default function EventsSection() {
   const { user } = useSupabaseAuth();
+  const userId = user?.id;
 
   const [activeTab, setActiveTab] =
     useState<EventTab>("recommended");
@@ -96,14 +97,14 @@ export default function EventsSection() {
         "interested" | "going"
       >();
 
-      if (user && rows.length > 0) {
+      if (userId && rows.length > 0) {
         const {
           data: rsvpRows,
           error: rsvpError,
         } = await supabase
           .from("event_rsvps")
           .select("event_id, status")
-          .eq("user_id", user.id)
+          .eq("user_id", userId)
           .in(
             "event_id",
             rows.map((row) => row.id)
@@ -144,7 +145,7 @@ export default function EventsSection() {
           rsvpStatus:
             rsvpByEventId.get(row.id) ?? null,
           yourEvent:
-            row.organizer_id === user?.id,
+            row.organizer_id === userId,
           fandomId: row.fandom_id,
           fandomName: row.fandom_name,
         }));
@@ -160,13 +161,13 @@ export default function EventsSection() {
     return () => {
       isCancelled = true;
     };
-  }, [user]);
+  }, [userId]);
 
   const filteredEvents = useMemo(() => {
     const byTab = events.filter((event) =>
       activeTab === "your"
-        ? event.organizerId === user?.id
-        : event.organizerId !== user?.id
+        ? event.organizerId === userId
+        : event.organizerId !== userId
     );
 
     const query =
@@ -183,7 +184,7 @@ export default function EventsSection() {
     events,
     activeTab,
     searchQuery,
-    user?.id,
+    userId,
   ]);
 
   return (

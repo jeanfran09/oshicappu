@@ -24,6 +24,7 @@ import EventPageSkeleton from "@/components/Skeleton/EventPageSkeleton";
 import BottomSheet from "@/components/BottomSheet";
 
 type RSVPStatus = "interested" | "going" | null;
+
 type AttendeeListType = "interested" | "going" | null;
 
 type EventDetail = {
@@ -64,7 +65,6 @@ async function saveRsvp(
       .eq("event_id", eventId)
       .eq("user_id", userId);
   }
-
   return supabase
     .from("event_rsvps")
     .upsert(
@@ -77,34 +77,31 @@ export default function EventPage() {
   const router = useRouter();
   const params = useParams();
   const eventId = params.id as string;
-
   const { user } = useSupabaseAuth();
-
+  const userId = user?.id;
+  const loadedEventIdRef = useRef<string | null>(null);
   const [event, setEvent] = useState<EventDetail | null>(null);
   const [hashtags, setHashtags] = useState<string[]>([]);
   const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-
   const [rsvpStatus, setRsvpStatus] =
     useState<RSVPStatus>(null);
   const [interestedCount, setInterestedCount] = useState(0);
   const [goingCount, setGoingCount] = useState(0);
-
   const [attendeeListType, setAttendeeListType] =
     useState<AttendeeListType>(null);
-
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState("");
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let isCancelled = false;
-
     async function loadEvent() {
-      setIsLoading(true);
+      if (loadedEventIdRef.current !== eventId) {
+        setIsLoading(true);
+      }
       setNotFound(false);
-
       const { data: row, error: eventError } = await supabase
         .from("events_with_counts")
         .select(
@@ -112,43 +109,36 @@ export default function EventPage() {
         )
         .eq("id", eventId)
         .maybeSingle();
-
       if (eventError || !row) {
         if (eventError) {
           console.error("Error fetching event:", eventError);
         }
-
         if (!isCancelled) {
           setNotFound(true);
           setIsLoading(false);
         }
-
         return;
       }
-
       const { data: hashtagRows } = await supabase
         .from("event_hashtags")
         .select("hashtags(tag)")
         .eq("event_id", eventId);
-
       const { data: attendeeRows } = await supabase
         .from("event_attendees")
         .select(
           "user_id, status, username, display_name, avatar_url"
         )
         .eq("event_id", eventId);
-
-      const { data: rsvpRow } = user
+      const { data: rsvpRow } = userId
         ? await supabase
             .from("event_rsvps")
             .select("status")
             .eq("event_id", eventId)
-            .eq("user_id", user.id)
+            .eq("user_id", userId)
             .maybeSingle()
         : { data: null };
-
       if (isCancelled) return;
-
+      loadedEventIdRef.current = eventId;
       setEvent({
         id: row.id,
         title: row.title,
@@ -166,15 +156,12 @@ export default function EventPage() {
         latitude: row.latitude,
         longitude: row.longitude,
       });
-
       setInterestedCount(row.interested_count);
       setGoingCount(row.going_count);
       setAttendees((attendeeRows ?? []) as Attendee[]);
-
       const hashtagJoins = (hashtagRows ?? []) as unknown as {
         hashtags: { tag: string } | { tag: string }[] | null;
       }[];
-
       setHashtags(
         hashtagJoins
           .map((r) =>
@@ -184,40 +171,30 @@ export default function EventPage() {
           )
           .filter((tag): tag is string => Boolean(tag))
       );
-
       setRsvpStatus(
         (rsvpRow?.status as RSVPStatus) ?? null
       );
-
       setIsLoading(false);
     }
-
     loadEvent();
-
     return () => {
       isCancelled = true;
     };
-  }, [eventId, user]);
+  }, [eventId, userId]);
 
   function renderDescription(text: string) {
     const urlRegex =
       /((?:https?:\/\/|www\.)[^\s]+|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?:\/[^\s]*)?)/g;
-
     return text.split(urlRegex).map((part, index) => {
       const isUrl =
         /^(https?:\/\/|www\.)/i.test(part) ||
         /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?:\/.*)?$/.test(part);
-
       if (isUrl) {
         // Keep trailing punctuation outside the link.
         const match = part.match(/^(.*?)([.,!?;:]*)$/);
         const url = match?.[1] ?? part;
         const punctuation = match?.[2] ?? "";
-
-        const href = /^https?:\/\//i.test(url)
-          ? url
-          : `https://${url}`;
-
+        const href = /^https?:\/\//i.test(url) ? url : `https://${url}`;
         return (
           <span key={index}>
             <a
@@ -232,7 +209,6 @@ export default function EventPage() {
           </span>
         );
       }
-
       return (
         <span key={index}>
           {part.split("\n").map((line, lineIndex) => (
@@ -246,50 +222,41 @@ export default function EventPage() {
     });
   }
 
-
   async function applyRsvp(nextStatus: RSVPStatus) {
     if (!user) {
       router.push("/login");
       return;
     }
-
     const prevStatus = rsvpStatus;
     const prevAttendees = attendees;
     const prevInterestedCount = interestedCount;
     const prevGoingCount = goingCount;
-
     // Get the user's profile information for the attendee list
     let currentUserProfile: {
       username: string;
       display_name: string;
       avatar_url: string | null;
     } | null = null;
-
     if (nextStatus !== null) {
       const { data: profileData } = await supabase
         .from("profiles")
         .select("username, display_name, avatar_url")
         .eq("id", user.id)
         .maybeSingle();
-
       currentUserProfile = profileData;
     }
-
     // Optimistically update RSVP status
     setRsvpStatus(nextStatus);
-
     // Optimistically update attendee list
     setAttendees((prev) => {
       // Remove the user from their previous RSVP
       const withoutUser = prev.filter(
         (attendee) => attendee.user_id !== user.id
       );
-
       // User removed their RSVP
       if (nextStatus === null) {
         return withoutUser;
       }
-
       // Add user with their new RSVP
       return [
         ...withoutUser,
@@ -304,7 +271,6 @@ export default function EventPage() {
         },
       ];
     });
-
     // Optimistically update counts
     if (
       prevStatus === "interested" &&
@@ -314,7 +280,6 @@ export default function EventPage() {
         Math.max(0, prev - 1)
       );
     }
-
     if (
       prevStatus === "going" &&
       nextStatus !== "going"
@@ -323,30 +288,25 @@ export default function EventPage() {
         Math.max(0, prev - 1)
       );
     }
-
     if (
       nextStatus === "interested" &&
       prevStatus !== "interested"
     ) {
       setInterestedCount((prev) => prev + 1);
     }
-
     if (
       nextStatus === "going" &&
       prevStatus !== "going"
     ) {
       setGoingCount((prev) => prev + 1);
     }
-
     const { error } = await saveRsvp(
       eventId,
       user.id,
       nextStatus
     );
-
     if (error) {
       console.error("Failed to update RSVP:", error);
-
       // Restore previous state
       setRsvpStatus(prevStatus);
       setAttendees(prevAttendees);
@@ -369,7 +329,6 @@ export default function EventPage() {
 
   async function handleShare() {
     const url = `${window.location.origin}/event/${eventId}`;
-
     if (navigator.share) {
       await navigator.share({
         title: event?.title,
@@ -385,24 +344,18 @@ export default function EventPage() {
   ) {
     const file = e.target.files?.[0];
     e.target.value = "";
-
     if (!file || !user || !event) return;
-
     setPhotoError("");
     setIsUploadingPhoto(true);
-
     const previewUrl = URL.createObjectURL(file);
     const prevImageUrl = event.image_url;
-
     setEvent({
       ...event,
       image_url: previewUrl,
     });
-
     try {
       const ext = file.name.split(".").pop() || "jpg";
       const path = `${user.id}/${eventId}-${Date.now()}.${ext}`;
-
       const { error: uploadError } = await supabase.storage
         .from("events")
         .upload(path, file, {
@@ -410,26 +363,21 @@ export default function EventPage() {
           upsert: false,
           contentType: file.type || `image/${ext}`,
         });
-
       if (uploadError) {
         throw new Error(uploadError.message);
       }
-
       const {
         data: { publicUrl },
       } = supabase.storage
         .from("events")
         .getPublicUrl(path);
-
       const { error: updateError } = await supabase
         .from("events")
         .update({ image_url: publicUrl })
         .eq("id", eventId);
-
       if (updateError) {
         throw new Error(updateError.message);
       }
-
       setEvent((current) =>
         current
           ? { ...current, image_url: publicUrl }
@@ -437,11 +385,9 @@ export default function EventPage() {
       );
     } catch (err) {
       console.error("Error updating event photo:", err);
-
       setPhotoError(
         "Couldn't update the photo. Try again."
       );
-
       setEvent((current) =>
         current
           ? { ...current, image_url: prevImageUrl }
@@ -454,7 +400,7 @@ export default function EventPage() {
   }
 
   if (isLoading) {
-    return <EventPageSkeleton userId={user?.id} organizerId={event?.organizerId}/>;
+    return <EventPageSkeleton userId={userId} organizerId={event?.organizerId}/>;
   }
 
   if (notFound || !event) {
@@ -463,7 +409,6 @@ export default function EventPage() {
         <p className="text-sm text-foreground/40">
           This event couldn&apos;t be found.
         </p>
-
         <button
           type="button"
           onClick={() => router.push("/landmarks")}
@@ -490,9 +435,9 @@ export default function EventPage() {
     attendeeListType === "interested"
       ? "Interested"
       : "Going";
-
   return (
     <div className="md:hidden min-h-screen bg-background">
+
       {/* Header */}
       <header className="sticky top-0 z-50 flex items-center border-b border-foreground/10 bg-background py-3">
         <button
@@ -503,11 +448,9 @@ export default function EventPage() {
         >
           <ChevronLeft size={22} />
         </button>
-
         <h1 className="absolute left-1/2 -translate-x-1/2 text-lg font-semibold">
           Event
         </h1>
-
         <div className="ml-auto mr-3 flex items-center gap-1">
           <button
             type="button"
@@ -517,7 +460,6 @@ export default function EventPage() {
           >
             <Share2 size={20} />
           </button>
-
           {user && event?.organizerId === user.id && (
             <button
               type="button"
@@ -550,7 +492,6 @@ export default function EventPage() {
             />
           </div>
         )}
-
         {event.organizerId === user?.id && (
           <>
             <input
@@ -560,7 +501,6 @@ export default function EventPage() {
               hidden
               onChange={handlePhotoSelected}
             />
-
             {isUploadingPhoto && (
               <div className="absolute inset-0 flex items-center justify-center bg-background/40">
                 <p className="rounded-full bg-background/80 px-3 py-1.5 text-xs font-medium">
@@ -568,7 +508,6 @@ export default function EventPage() {
                 </p>
               </div>
             )}
-
             <button
               type="button"
               onClick={() => photoInputRef.current?.click()}
@@ -585,7 +524,6 @@ export default function EventPage() {
           </>
         )}
       </div>
-
       {photoError && (
         <p className="px-4 pt-2 text-xs text-red-500">
           {photoError}
@@ -597,10 +535,9 @@ export default function EventPage() {
         <h2 className="text-2xl font-bold">
           {event.title}
         </h2>
-
-         
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          {/**{event.fandomName && (
+
+          {/* {event.fandomName && (
             <button
               type="button"
               onClick={() =>
@@ -611,8 +548,7 @@ export default function EventPage() {
             >
               {event.fandomName}
             </button>
-          )}*/}
-
+          )} */}
           {event.latitude != null &&
             event.longitude != null && (
               <button
@@ -630,17 +566,16 @@ export default function EventPage() {
 
         {/* Event Details */}
         <div className="mt-5 space-y-4">
+
           {/* Date & Time */}
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent">
               <CalendarDays size={19} />
             </div>
-
             <div>
               <p className="text-sm text-foreground/50">
                 Date & Time
               </p>
-
               <p className="text-sm font-medium">
                 {event.date}
                 {event.time ? ` · ${event.time}` : ""}
@@ -653,12 +588,10 @@ export default function EventPage() {
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent">
               <MapPin size={19} />
             </div>
-
             <div>
               <p className="text-sm text-foreground/50">
                 Location
               </p>
-
               <p className="text-sm font-medium">
                 {event.location || "Location TBA"}
               </p>
@@ -671,12 +604,10 @@ export default function EventPage() {
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent">
                 <Users size={19} />
               </div>
-
               <div>
                 <p className="text-sm text-foreground/50">
                   Event Interest
                 </p>
-
                 <div className="flex items-center gap-1.5 text-sm font-medium">
                   {interestedCount > 0 && (
                     <button
@@ -689,14 +620,12 @@ export default function EventPage() {
                       {interestedCount} interested
                     </button>
                   )}
-
                   {interestedCount > 0 &&
                     goingCount > 0 && (
                       <span className="text-foreground/40">
                         •
                       </span>
                     )}
-
                   {goingCount > 0 && (
                     <button
                       type="button"
@@ -717,6 +646,7 @@ export default function EventPage() {
         {/* Event RSVP */}
         {event.organizerId !== user?.id && (
           <div className="mt-6 flex gap-3">
+
             {/* Interested */}
             <button
               type="button"
@@ -743,7 +673,6 @@ export default function EventPage() {
               {rsvpStatus === "interested" && (
                 <Check size={17} />
               )}
-
               Interested
             </button>
 
@@ -772,7 +701,6 @@ export default function EventPage() {
               {rsvpStatus === "going" && (
                 <Check size={17} />
               )}
-
               {rsvpStatus === "going"
                 ? "Going"
                 : "Join Event"}
@@ -780,14 +708,12 @@ export default function EventPage() {
           </div>
         )}
 
-
         {/* Description */}
         {event.description && (
           <section className="mt-8">
             <h3 className="text-lg font-semibold">
               About this event
             </h3>
-
             <p className="mt-2 text-sm leading-6 text-foreground/70">
               {renderDescription(event.description)}
             </p>
@@ -800,7 +726,6 @@ export default function EventPage() {
             <h3 className="text-lg font-semibold">
               Hashtags
             </h3>
-
             <div className="mt-3 flex flex-wrap gap-2">
               {hashtags.map((tag) => (
                 <span
@@ -819,7 +744,6 @@ export default function EventPage() {
           <h3 className="text-lg font-semibold">
             Organized by
           </h3>
-
           <button
             type="button"
             onClick={() =>
@@ -839,13 +763,11 @@ export default function EventPage() {
             ) : (
               <div className="h-10 w-10 rounded-full bg-accent" />
             )}
-
             <div>
               <p className="text-sm font-semibold">
                 {event.organizerDisplayName ??
                   "Event Organizer"}
               </p>
-
               <p className="text-xs text-foreground/50">
                 @{event.organizerUsername ?? "organizer"}
               </p>
@@ -886,12 +808,10 @@ export default function EventPage() {
                   ) : (
                     <div className="h-11 w-11 shrink-0 rounded-full bg-accent" />
                   )}
-
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-foreground">
                       {attendee.display_name}
                     </p>
-
                     <p className="truncate text-xs text-foreground/50">
                       @{attendee.username}
                     </p>

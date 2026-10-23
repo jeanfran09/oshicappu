@@ -42,6 +42,7 @@ type LoadedPilgrimage =
 
 export default function PilgrimageSection() {
   const { user } = useSupabaseAuth();
+  const userId = user?.id;
 
   const [
     activeTab,
@@ -75,8 +76,11 @@ export default function PilgrimageSection() {
     let isCancelled = false;
 
     async function loadPilgrimages() {
-      setIsLoading(true);
       setError("");
+      
+      if (pilgrimages.length === 0) {
+        setIsLoading(true);
+      }
 
       const {
         data: pilgrimageRows,
@@ -135,7 +139,7 @@ export default function PilgrimageSection() {
           longitude: row.longitude,
           fandomId: row.fandom_id,
           fandomName: row.fandoms?.name ?? null,
-          yourPilgrimage: row.created_by === user?.id,
+          yourPilgrimage: row.created_by === userId,
         }));
 
       if (!isCancelled) {
@@ -149,7 +153,9 @@ export default function PilgrimageSection() {
     return () => {
       isCancelled = true;
     };
-  }, [user]);
+    // Depend on the stable user ID rather than the user object.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   const filteredPilgrimages =
     useMemo(() => {
@@ -158,9 +164,9 @@ export default function PilgrimageSection() {
           (pilgrimage) =>
             activeTab === "your"
               ? pilgrimage.createdBy ===
-                user?.id
+                userId
               : pilgrimage.createdBy !==
-                user?.id
+                userId
         );
 
       const query =
@@ -192,7 +198,7 @@ export default function PilgrimageSection() {
       pilgrimages,
       activeTab,
       searchQuery,
-      user?.id,
+      userId,
     ]);
 
   return (

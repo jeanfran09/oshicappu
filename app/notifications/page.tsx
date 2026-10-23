@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import CreatePostButton from "@/components/CreatePostButton";
@@ -9,10 +9,7 @@ import Notification from "@/components/Notification";
 import PullToRefresh from "@/components/PullToRefresh";
 import { supabase } from "@/lib/supabase";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
-import {
-  formatTimeAgo,
-  parsePostImages,
-} from "@/utils/formatNumber";
+import { formatTimeAgo, parsePostImages } from "@/utils/formatNumber";
 import NotificationSkeleton from "@/components/Skeleton/NotificationSkeleton";
 
 type NotificationRow = {
@@ -40,25 +37,28 @@ type FeedNotification = {
 
 export default function NotifsPage() {
   const { user } = useSupabaseAuth();
+  const userId = user?.id;
   const router = useRouter();
 
-  const [notifications, setNotifications] = useState<
-    FeedNotification[]
-  >([]);
+  const [notifications, setNotifications] = useState<FeedNotification[]>([]);
   const [loading, setLoading] = useState(true);
+  const loadedUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (user) {
-      fetchNotifications();
+    if (userId) {
+      void fetchNotifications();
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [userId]);
 
   async function fetchNotifications() {
-    if (!user) return;
+    if (!userId) return;
 
-    setLoading(true);
+    // Keep existing notifications visible during refreshes and tab refocuses.
+    if (loadedUserIdRef.current !== userId) {
+      setLoading(true);
+    }
 
     const { data: rows, error } = await supabase
       .from("notifications")
@@ -77,19 +77,14 @@ export default function NotifsPage() {
         )
         `
       )
-      .eq("recipient_id", user.id)
-      .order("created_at", {
-        ascending: false,
-      })
+      .eq("recipient_id", userId)
+      .order("created_at", { ascending: false })
       .limit(50);
 
     if (error) {
-      console.error(
-        "Error fetching notifications:",
-        error
-      );
-
+      console.error("Error fetching notifications:", error);
       setNotifications([]);
+      loadedUserIdRef.current = userId;
       setLoading(false);
       return;
     }
@@ -99,162 +94,90 @@ export default function NotifsPage() {
         (rows ?? [])
           .filter(
             (row: any) =>
-              (row.type === "like" ||
-                row.type === "comment") &&
+              (row.type === "like" || row.type === "comment") &&
               row.entity_id
           )
-          .map(
-            (row: any) =>
-              row.entity_id as string
-          )
+          .map((row: any) => row.entity_id as string)
       )
     );
 
-    let postImageById = new Map<
-      string,
-      string | null
-    >();
+    let postImageById = new Map<string, string | null>();
 
     if (entityIds.length > 0) {
-      const {
-        data: postRows,
-        error: postError,
-      } = await supabase
+      const { data: postRows, error: postError } = await supabase
         .from("posts")
         .select("id, image_url")
         .in("id", entityIds);
 
       if (postError) {
-        console.error(
-          "Error fetching notification posts:",
-          postError
-        );
+        console.error("Error fetching notification posts:", postError);
       } else {
         postImageById = new Map(
           (postRows ?? []).map((post) => [
             post.id,
-            parsePostImages(
-              post.image_url
-            )[0] ?? null,
+            parsePostImages(post.image_url)[0] ?? null,
           ])
         );
       }
     }
 
-    const mapped: FeedNotification[] = (
-      rows ?? []
-    ).map((row: any) => ({
+    const mapped: FeedNotification[] = (rows ?? []).map((row: any) => ({
       id: row.id,
       type: row.type,
-
-      username:
-        row.sender?.username ?? "Someone",
-
-      avatar:
-        row.sender?.avatar_url ?? null,
-
-      content:
-        row.content ?? undefined,
-
-      time: formatTimeAgo(
-        row.created_at
-      ),
-
+      username: row.sender?.username ?? "Someone",
+      avatar: row.sender?.avatar_url ?? null,
+      content: row.content ?? undefined,
+      time: formatTimeAgo(row.created_at),
       image:
-        row.type === "like" ||
-        row.type === "comment"
-          ? postImageById.get(
-              row.entity_id
-            ) ?? null
+        row.type === "like" || row.type === "comment"
+          ? postImageById.get(row.entity_id) ?? null
           : null,
-
       read: row.read,
-
-      senderUsername:
-        row.sender?.username ?? null,
-
+      senderUsername: row.sender?.username ?? null,
       postId:
-        row.type === "like" ||
-        row.type === "comment"
+        row.type === "like" || row.type === "comment"
           ? row.entity_id
           : null,
     }));
 
     setNotifications(mapped);
+    loadedUserIdRef.current = userId;
     setLoading(false);
 
-    // Mark everything as read in the background
+    // Mark unread notifications as read in the background.
     const unreadIds = (rows ?? [])
-      .filter(
-        (row: any) => !row.read
-      )
-      .map(
-        (row: any) => row.id
-      );
+      .filter((row: any) => !row.read)
+      .map((row: any) => row.id);
 
     if (unreadIds.length > 0) {
       void supabase
         .from("notifications")
         .update({ read: true })
         .in("id", unreadIds)
-        .then(
-          ({
-            error: readError,
-          }) => {
-            if (readError) {
-              console.error(
-                "Error marking notifications as read:",
-                readError
-              );
-            }
+        .then(({ error: readError }) => {
+          if (readError) {
+            console.error("Error marking notifications as read:", readError);
           }
-        );
+        });
     }
   }
 
-  function handleNotificationClick(
-    notification: FeedNotification
-  ) {
-    /*
-     * Like notification
-     * → Open the post normally
-     */
-    if (
-      notification.type === "like" &&
-      notification.postId
-    ) {
-      router.push(
-        `/post/${notification.postId}`
-      );
+  function handleNotificationClick(notification: FeedNotification) {
+    // Like notifications open the post.
+    if (notification.type === "like" && notification.postId) {
+      router.push(`/post/${notification.postId}`);
       return;
     }
 
-    /*
-     * Comment notification
-     * → Open the post and automatically
-     *   open the CommentsSheet
-     */
-    if (
-      notification.type === "comment" &&
-      notification.postId
-    ) {
-      router.push(
-        `/post/${notification.postId}?comments=true`
-      );
+    // Comment notifications open the post with the comments sheet.
+    if (notification.type === "comment" && notification.postId) {
+      router.push(`/post/${notification.postId}?comments=true`);
       return;
     }
 
-    /*
-     * Follow notification
-     * → Open the sender's profile
-     */
-    if (
-      notification.type === "follow" &&
-      notification.senderUsername
-    ) {
-      router.push(
-        `/${notification.senderUsername}`
-      );
+    // Follow notifications open the sender's profile.
+    if (notification.type === "follow" && notification.senderUsername) {
+      router.push(`/${notification.senderUsername}`);
     }
   }
 
@@ -262,16 +185,11 @@ export default function NotifsPage() {
     <main>
       {/* Sticky Header */}
       <header className="sticky top-0 z-10 bg-background">
-        <h1 className="px-4 py-3 text-xl font-bold">
-          Notifications
-        </h1>
-
+        <h1 className="px-4 py-3 text-xl font-bold">Notifications</h1>
         <Divider />
       </header>
 
-      <PullToRefresh
-        onRefresh={fetchNotifications}
-      >
+      <PullToRefresh onRefresh={fetchNotifications}>
         <div className="min-h-[80vh] pb-16">
           {loading ? (
             <NotificationSkeleton />
@@ -280,33 +198,22 @@ export default function NotifsPage() {
               No notifications yet.
             </p>
           ) : (
-            notifications.map(
-              (
-                notification,
-                index
-              ) => (
-                <div key={notification.id}>
-                  <Notification
-                    type={notification.type}
-                    username={notification.username}
-                    avatar={notification.avatar}
-                    content={notification.content}
-                    image={notification.image}
-                    time={notification.time}
-                    read={notification.read}
-                    onClick={() =>
-                      handleNotificationClick(
-                        notification
-                      )
-                    }
-                  />
+            notifications.map((notification, index) => (
+              <div key={notification.id}>
+                <Notification
+                  type={notification.type}
+                  username={notification.username}
+                  avatar={notification.avatar}
+                  content={notification.content}
+                  image={notification.image}
+                  time={notification.time}
+                  read={notification.read}
+                  onClick={() => handleNotificationClick(notification)}
+                />
 
-                  {index < notifications.length - 1 && (
-                    <Divider />
-                  )}
-                </div>
-              )
-            )
+                {index < notifications.length - 1 && <Divider />}
+              </div>
+            ))
           )}
         </div>
       </PullToRefresh>

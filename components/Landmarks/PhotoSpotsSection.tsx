@@ -35,6 +35,7 @@ type LoadedPhotoSpot = PhotoSpot & {
 
 export default function PhotoSpotsSection() {
   const { user } = useSupabaseAuth();
+  const userId = user?.id;
 
   const [activeTab, setActiveTab] =
     useState<PhotoSpotTab>("recommended");
@@ -52,8 +53,11 @@ export default function PhotoSpotsSection() {
     let isCancelled = false;
 
     async function loadPhotoSpots() {
-      setIsLoading(true);
       setError("");
+      
+      if (photoSpots.length === 0) {
+        setIsLoading(true);
+      }
 
       const {
         data: photoSpotRows,
@@ -109,7 +113,7 @@ export default function PhotoSpotsSection() {
           longitude: row.longitude,
           fandomId: row.fandom_id,
           fandomName: row.fandoms?.name ?? null,
-          yourSpot: row.created_by === user?.id,
+          yourSpot: row.created_by === userId,
         })
       );
 
@@ -124,13 +128,15 @@ export default function PhotoSpotsSection() {
     return () => {
       isCancelled = true;
     };
-  }, [user]);
+    // Depend on the stable ID, not the potentially recreated user object.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   const filteredPhotoSpots = useMemo(() => {
     const byTab = photoSpots.filter((photoSpot) =>
       activeTab === "your"
-        ? photoSpot.createdBy === user?.id
-        : photoSpot.createdBy !== user?.id
+        ? photoSpot.createdBy === userId
+        : photoSpot.createdBy !== userId
     );
 
     const query = searchQuery.trim().toLowerCase();
@@ -152,7 +158,7 @@ export default function PhotoSpotsSection() {
     photoSpots,
     activeTab,
     searchQuery,
-    user?.id,
+    userId,
   ]);
 
   return (
