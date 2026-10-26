@@ -14,21 +14,17 @@ import PullToRefresh from "@/components/PullToRefresh";
 import CreatePostButton from "@/components/CreatePostButton";
 import CommentsSheet from "@/components/CommentsSheet";
 
-async function refreshFeed() {
-  // Connect this to the active feed's fetch function
-  // when pull-to-refresh support is added to the feed components.
-}
-
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<"following" | "foryou">(
     "foryou"
   );
+  const [followingRefreshKey, setFollowingRefreshKey] = useState(0);
+  const [forYouRefreshKey, setForYouRefreshKey] = useState(0);
+
   const { isLoggedIn, isLoading, user } = useSupabaseAuth();
   const router = useRouter();
 
-  const [selectedPostId, setSelectedPostId] = useState<string | null>(
-    null
-  );
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [selectedPostOwnerId, setSelectedPostOwnerId] = useState<
     string | null
   >(null);
@@ -58,10 +54,7 @@ export default function HomePage() {
       if (cancelled) return;
 
       if (error) {
-        console.error(
-          "Error fetching unread message count:",
-          error
-        );
+        console.error("Error fetching unread message count:", error);
       } else {
         setUnreadMessageCount(data ?? 0);
       }
@@ -73,6 +66,19 @@ export default function HomePage() {
       cancelled = true;
     };
   }, [userId]);
+
+  async function refreshFeed() {
+    if (activeTab === "following") {
+      setFollowingRefreshKey((previous) => previous + 1);
+    } else {
+      setForYouRefreshKey((previous) => previous + 1);
+    }
+  }
+
+  function openComments(postId: string, ownerId: string) {
+    setSelectedPostId(postId);
+    setSelectedPostOwnerId(ownerId);
+  }
 
   if (isLoading) {
     return (
@@ -86,11 +92,6 @@ export default function HomePage() {
     return null;
   }
 
-  function openComments(postId: string, ownerId: string) {
-    setSelectedPostId(postId);
-    setSelectedPostOwnerId(ownerId);
-  }
-
   return (
     <main className="pb-4">
       {/* Logo */}
@@ -101,16 +102,14 @@ export default function HomePage() {
 
         <Link
           href="/messages"
-          className="absolute right-4 top-1/2 -translate-y-1/2"
           aria-label="Messages"
+          className="absolute right-4 top-1/2 -translate-y-1/2"
         >
           <MessageCircleMore size={24} />
 
           {unreadMessageCount > 0 && (
             <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
-              {unreadMessageCount > 9
-                ? "9+"
-                : unreadMessageCount}
+              {unreadMessageCount > 9 ? "9+" : unreadMessageCount}
             </span>
           )}
         </Link>
@@ -158,26 +157,32 @@ export default function HomePage() {
       </div>
 
       {/* Feed */}
-      <div className="flex-1 overflow-y-auto pb-14">
+      <div className="pb-14">
         <PullToRefresh onRefresh={refreshFeed}>
           <div className="min-h-[70vh]">
-            {/* Keep both feeds mounted so switching tabs preserves their state. */}
             <div
               className={activeTab === "following" ? "block" : "hidden"}
               aria-hidden={activeTab !== "following"}
             >
-              <FollowingFeed onCommentClick={openComments} />
+              <FollowingFeed
+                onCommentClick={openComments}
+                refreshKey={followingRefreshKey}
+              />
             </div>
 
             <div
               className={activeTab === "foryou" ? "block" : "hidden"}
               aria-hidden={activeTab !== "foryou"}
             >
-              <ForYouFeed onCommentClick={openComments} />
+              <ForYouFeed
+                onCommentClick={openComments}
+                refreshKey={forYouRefreshKey}
+              />
             </div>
           </div>
         </PullToRefresh>
       </div>
+
       {selectedPostId && (
         <CommentsSheet
           postId={selectedPostId}
@@ -188,6 +193,7 @@ export default function HomePage() {
           }}
         />
       )}
+
       <CreatePostButton />
     </main>
   );

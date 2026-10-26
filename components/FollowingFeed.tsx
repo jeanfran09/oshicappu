@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import Divider from "./Divider";
 import Post from "./Post";
@@ -35,22 +35,17 @@ type PostData = {
 };
 
 type Props = {
-  onCommentClick: (
-    postId: string,
-    ownerId: string
-  ) => void;
+  onCommentClick: (postId: string, ownerId: string) => void;
+  refreshKey?: number;
 };
-
 
 function FollowingFeedSkeleton() {
   return (
     <div>
       <PostSkeleton />
       <Divider />
-
       <PostSkeleton />
       <Divider />
-
       <PostSkeleton />
     </div>
   );
@@ -58,30 +53,33 @@ function FollowingFeedSkeleton() {
 
 export default function FollowingFeed({
   onCommentClick,
+  refreshKey = 0,
 }: Props) {
   const [posts, setPosts] = useState<PostData[]>([]);
   const [loading, setLoading] = useState(true);
+  const hasLoadedRef = useRef(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function fetchFollowingPosts() {
-      setLoading(true);
+      if (!hasLoadedRef.current) {
+        setLoading(true);
+      }
 
       try {
-        /*
-         * Get the currently logged-in user
-         */
         const {
           data: { user },
+          error: userError,
         } = await supabase.auth.getUser();
 
+        if (userError) throw userError;
+
         if (!user) {
-          setPosts([]);
+          if (!cancelled) setPosts([]);
           return;
         }
 
-        /*
-         * Get users that the current user follows
-         */
         const {
           data: follows,
           error: followsError,
@@ -90,48 +88,28 @@ export default function FollowingFeed({
           .select("following_id")
           .eq("follower_id", user.id);
 
-        if (followsError) {
-          throw followsError;
-        }
+        if (followsError) throw followsError;
 
-        /*
-         * Include the current user's own ID
-         * along with the users they follow.
-         */
         const followingIds = [
           user.id,
-          ...(follows ?? []).map(
-            (follow) => follow.following_id
-          ),
+          ...(follows ?? []).map((follow) => follow.following_id),
         ];
 
-        /*
-         * Fetch posts from:
-         * - The current user
-         * - Users the current user follows
-         */
-        const {
-          data,
-          error,
-        } = await supabase
+        const { data, error } = await supabase
           .from("posts")
-          .select(
-            `
+          .select(`
             id,
             user_id,
             content,
             image_url,
             created_at,
             location,
-
             likes(count),
             comments(count),
-
             profiles:user_id (
               username,
               avatar_url
             ),
-
             post_oshis(
               oshis(
                 id,
@@ -139,115 +117,77 @@ export default function FollowingFeed({
                 image_url
               )
             ),
-
             post_fandoms(
               fandoms(
                 id,
                 name
               )
             ),
-
             post_hashtags(
               hashtags(
                 tag
               )
             )
-            `
-          )
+          `)
           .in("user_id", followingIds)
-          .order("created_at", {
-            ascending: false,
-          });
+          .order("created_at", { ascending: false });
 
-        if (error) {
-          throw error;
-        }
+        if (error) throw error;
 
-        const formattedPosts: PostData[] =
-          (data ?? []).map((post: any) => ({
-            id: post.id,
-            user_id: post.user_id,
-            content: post.content ?? "",
-            image_url: post.image_url,
-            created_at: post.created_at,
-            location: post.location,
+        const formattedPosts: PostData[] = (data ?? []).map((post: any) => ({
+          id: post.id,
+          user_id: post.user_id,
+          content: post.content ?? "",
+          image_url: post.image_url,
+          created_at: post.created_at,
+          location: post.location,
+          likes_count: post.likes?.[0]?.count ?? 0,
+          comments_count: post.comments?.[0]?.count ?? 0,
+          username: post.profiles?.username ?? "username",
+          avatar: post.profiles?.avatar_url ?? null,
+          oshis: (post.post_oshis ?? [])
+            .map((item: any) => item.oshis)
+            .filter(Boolean)
+            .map((oshi: any) => ({
+              id: oshi.id,
+              name: oshi.name,
+              image: oshi.image_url ?? "",
+            })),
+          fandoms: (post.post_fandoms ?? [])
+            .map((item: any) => item.fandoms)
+            .filter(Boolean)
+            .map((fandom: any) => ({
+              id: fandom.id,
+              name: fandom.name,
+            })),
+          hashtags: (post.post_hashtags ?? [])
+            .map((item: any) => item.hashtags?.tag)
+            .filter(Boolean),
+        }));
 
-            likes_count:
-              post.likes?.[0]?.count ?? 0,
-
-            comments_count:
-              post.comments?.[0]?.count ?? 0,
-
-            username:
-              post.profiles?.username ??
-              "username",
-
-            avatar:
-              post.profiles?.avatar_url ??
-              null,
-
-            oshis: (
-              post.post_oshis ?? []
-            )
-              .map(
-                (item: any) =>
-                  item.oshis
-              )
-              .filter(Boolean)
-              .map((oshi: any) => ({
-                id: oshi.id,
-                name: oshi.name,
-                image:
-                  oshi.image_url ??
-                  "",
-              })),
-
-            fandoms: (
-              post.post_fandoms ?? []
-            )
-              .map(
-                (item: any) =>
-                  item.fandoms
-              )
-              .filter(Boolean)
-              .map(
-                (fandom: any) => ({
-                  id: fandom.id,
-                  name: fandom.name,
-                })
-              ),
-
-            hashtags: (
-              post.post_hashtags ?? []
-            )
-              .map(
-                (item: any) =>
-                  item.hashtags?.tag
-              )
-              .filter(Boolean),
-          }));
-
-        setPosts(formattedPosts);
+        if (!cancelled) setPosts(formattedPosts);
       } catch (error) {
-        console.error(
-          "Error fetching following posts:",
-          error
-        );
-
-        setPosts([]);
+        console.error("Error fetching following posts:", error);
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          hasLoadedRef.current = true;
+          setLoading(false);
+        }
       }
     }
 
-    fetchFollowingPosts();
-  }, []);
+    void fetchFollowingPosts();
 
-  if (loading) {
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshKey]);
+
+  if (loading && !hasLoadedRef.current) {
     return <FollowingFeedSkeleton />;
   }
 
-  if (posts.length === 0) {
+  if (!loading && posts.length === 0) {
     return (
       <div className="flex h-40 items-center justify-center px-4 text-center">
         <p className="text-sm text-foreground/40">
@@ -266,35 +206,25 @@ export default function FollowingFeed({
             userId={post.user_id}
             username={post.username}
             avatar={post.avatar}
-            images={parsePostImages(
-              post.image_url
-            )}
+            images={parsePostImages(post.image_url)}
             caption={post.content}
             likes={post.likes_count}
             comments={post.comments_count}
-            time={formatTimeAgo(
-              post.created_at
-            )}
-            location={
-              post.location ?? undefined
-            }
+            time={formatTimeAgo(post.created_at)}
+            location={post.location ?? undefined}
             oshis={post.oshis}
             fandoms={post.fandoms}
             hashtags={post.hashtags}
-            onCommentClick={() =>
-              onCommentClick(post.id, post.user_id)
-            }
+            onCommentClick={() => onCommentClick(post.id, post.user_id)}
             onDeleted={(postId) =>
-              setPosts((prev) =>
-                prev.filter((p) => p.id !== postId)
+              setPosts((previous) =>
+                previous.filter((item) => item.id !== postId)
               )
             }
             priority={index === 0}
           />
 
-          {index < posts.length - 1 && (
-            <Divider />
-          )}
+          {index < posts.length - 1 && <Divider />}
         </div>
       ))}
     </div>
