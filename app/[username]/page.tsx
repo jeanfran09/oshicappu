@@ -588,6 +588,36 @@ export default function ProfilePage() {
     );
   };
 
+  const handleUnlike = (postId: string) => {
+    if (!isOwnProfile) return;
+
+    setLikedPosts((prev) => prev.filter((post) => post.id !== postId));
+  };
+
+  const handleUnsave = (postId: string) => {
+    if (!isOwnProfile) return;
+
+    setSavedPosts((prev) => prev.filter((post) => post.id !== postId));
+  };
+
+  // Add newly liked posts to the Liked tab without duplicates.
+  const handleLike = (post: ProfilePost) => {
+    if (!isOwnProfile) return;
+
+    setLikedPosts((prev) =>
+      prev.some((item) => item.id === post.id) ? prev : [post, ...prev]
+    );
+  };
+
+  // Add newly saved posts to the Saved tab without duplicates.
+  const handleSave = (post: ProfilePost) => {
+    if (!isOwnProfile) return;
+
+    setSavedPosts((prev) =>
+      prev.some((item) => item.id === post.id) ? prev : [post, ...prev]
+    );
+  };
+
   const handleFollowChange = (isFollowing: boolean) => {
     setFollowersCount((prev) =>
       isFollowing ? prev + 1 : Math.max(0, prev - 1)
@@ -977,6 +1007,13 @@ export default function ProfilePage() {
                 : profileFeedPosts
           }
           initialPostId={selectedPostId}
+          title={
+            isOwnProfile && activeTab === "saved"
+              ? "Saved Posts"
+              : isOwnProfile && activeTab === "liked"
+                ? "Liked Posts"
+                : profile.username
+          }
           username={
             isOwnProfile && activeTab === "liked"
               ? selectedLikedPost?.username ?? "username"
@@ -1000,6 +1037,10 @@ export default function ProfilePage() {
           }
           onClose={handleClosePost}
           onLikeChange={handleLikeChange}
+          onUnlike={handleUnlike}
+          onUnsave={handleUnsave}
+          onLike={handleLike}
+          onSave={handleSave}
           onPostDeleted={
             isOwnProfile
               ? (postId) => {

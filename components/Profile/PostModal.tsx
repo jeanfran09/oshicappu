@@ -36,23 +36,33 @@ export type ProfilePost = {
 type PostModalProps = {
   posts: ProfilePost[];
   initialPostId: string;
+  title?: string;
   username?: string;
   avatar?: string | null;
   ownerId?: string;
   onClose: () => void;
   onPostDeleted?: (postId: string) => void;
   onLikeChange?: (postId: string, likes: number) => void;
+  onUnlike?: (postId: string) => void;
+  onUnsave?: (postId: string) => void;
+  onLike?: (post: ProfilePost) => void;
+  onSave?: (post: ProfilePost) => void;
 };
 
 export default function PostModal({
   posts,
   initialPostId,
+  title = "Posts",
   username,
   avatar,
   ownerId,
   onClose,
   onPostDeleted,
   onLikeChange,
+  onUnlike,
+  onUnsave,
+  onLike,
+  onSave,
 }: PostModalProps) {
   const [modalPosts, setModalPosts] = useState<ProfilePost[]>(posts);
 
@@ -61,43 +71,30 @@ export default function PostModal({
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Keep modal posts in sync with the parent posts
+  // Keep modal posts in sync with the parent posts.
   useEffect(() => {
     setModalPosts(posts);
   }, [posts]);
 
-  // Update like count inside the modal
+  // Update the like count inside the modal and notify the parent.
   function handleLikeChange(postId: string, likes: number) {
     setModalPosts((prev) =>
-      prev.map((post) =>
-        post.id === postId
-          ? { ...post, likes }
-          : post
-      )
+      prev.map((post) => (post.id === postId ? { ...post, likes } : post))
     );
 
-    // Also update the parent if a callback was provided
     onLikeChange?.(postId, likes);
   }
 
-  // Jump straight to the selected post once the posts are rendered
+  // Jump straight to the selected post once posts are rendered.
   useEffect(() => {
     if (!initialPostId || modalPosts.length === 0) return;
 
-    const targetPost = modalPosts.find(
-      (post) => post.id === initialPostId
-    );
-
+    const targetPost = modalPosts.find((post) => post.id === initialPostId);
     if (!targetPost) return;
 
     requestAnimationFrame(() => {
-      const el = document.getElementById(
-        `profile-post-${initialPostId}`
-      );
-
-      el?.scrollIntoView({
-        block: "start",
-      });
+      const el = document.getElementById(`profile-post-${initialPostId}`);
+      el?.scrollIntoView({ block: "start" });
     });
   }, [initialPostId, modalPosts]);
 
@@ -115,15 +112,12 @@ export default function PostModal({
           </button>
 
           <p className="absolute left-1/2 -translate-x-1/2 text-lg font-semibold">
-            {username ?? "username"}
+            {title}
           </p>
         </div>
 
         {/* Scrollable posts */}
-        <div
-          ref={scrollRef}
-          className="flex-1 overflow-y-auto"
-        >
+        <div ref={scrollRef} className="flex-1 overflow-y-auto">
           {modalPosts.map((post, index) => (
             <div
               key={post.id}
@@ -144,13 +138,23 @@ export default function PostModal({
                 oshis={post.oshis}
                 fandoms={post.fandoms}
                 hashtags={post.hashtags}
-                onCommentClick={() =>
-                  setActiveCommentsPostId(post.id)
-                }
+                onCommentClick={() => setActiveCommentsPostId(post.id)}
                 onDeleted={onPostDeleted}
-                onLikeChange={(likes) =>
-                  handleLikeChange(post.id, likes)
-                }
+                onLikeChange={(likes) => handleLikeChange(post.id, likes)}
+                onLikeStatusChange={(isLiked) => {
+                  if (isLiked) {
+                    onLike?.(post);
+                  } else {
+                    onUnlike?.(post.id);
+                  }
+                }}
+                onSaveStatusChange={(isSaved) => {
+                  if (isSaved) {
+                    onSave?.(post);
+                  } else {
+                    onUnsave?.(post.id);
+                  }
+                }}
               />
 
               {index < modalPosts.length - 1 && <Divider />}
@@ -163,14 +167,9 @@ export default function PostModal({
         <CommentsSheet
           postId={activeCommentsPostId}
           postOwnerId={
-            modalPosts.find(
-              (post) =>
-                post.id === activeCommentsPostId
-            )?.userId ?? ownerId
+            modalPosts.find((post) => post.id === activeCommentsPostId)?.userId ?? ownerId
           }
-          onClose={() =>
-            setActiveCommentsPostId(null)
-          }
+          onClose={() => setActiveCommentsPostId(null)}
         />
       )}
     </>

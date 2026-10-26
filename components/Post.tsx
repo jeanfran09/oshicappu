@@ -50,6 +50,8 @@ type PostProps = {
   hashtags?: string[];
   onDeleted?: (postId: string) => void;
   onLikeChange?: (likes: number) => void;
+  onLikeStatusChange?: (isLiked: boolean) => void;
+  onSaveStatusChange?: (isSaved: boolean) => void;
 };
 
 export default function Post({
@@ -70,6 +72,8 @@ export default function Post({
   hashtags = [],
   onDeleted,
   onLikeChange,
+  onLikeStatusChange,
+  onSaveStatusChange,
 }: PostProps) {
   const { user } = useSupabaseAuth();
 
@@ -82,6 +86,12 @@ export default function Post({
   );
   const [likeSubmitting, setLikeSubmitting] =
     useState(false);
+
+  // Keep the displayed count in sync when the parent updates this post.
+  // This matters when a like count changes inside the profile modal.
+  useEffect(() => {
+    setLikeCount(likes ?? 0);
+  }, [likes]);
 
   const [saved, setSaved] = useState(false);
   const [saveSubmitting, setSaveSubmitting] =
@@ -204,6 +214,9 @@ export default function Post({
 
         if (error) throw error;
       }
+
+      // Notify the parent only after the database update succeeds.
+      onSaveStatusChange?.(nextSaved);
     } catch (error) {
       console.error(
         "Error updating saved status:",
@@ -276,6 +289,9 @@ export default function Post({
 
         if (error) throw error;
       }
+
+      // Notify the parent only after the database update succeeds.
+      onLikeStatusChange?.(nextLiked);
     } catch (error) {
       console.error(
         "Error updating like status:",
