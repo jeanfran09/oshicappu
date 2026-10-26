@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Search, X, User as UserIcon } from "lucide-react";
 import { motion } from "framer-motion";
@@ -31,6 +31,8 @@ export default function UserList({
 }: UserListProps) {
   const router = useRouter();
   const { user: currentUser } = useSupabaseAuth();
+  const currentUserId = currentUser?.id;
+  const loadedListKeyRef = useRef<string | null>(null);
 
   const [users, setUsers] = useState<User[]>([]);
   const [followingIds, setFollowingIds] = useState<Set<string>>(
@@ -43,13 +45,18 @@ export default function UserList({
   const [error, setError] = useState("");
 
   useEffect(() => {
+    const listKey = `${userId}:${type}:${currentUserId ?? ""}`;
+
     async function fetchUsers() {
       if (!userId) {
         setLoading(false);
         return;
       }
 
-      setLoading(true);
+      // Keep existing content visible when this same list is refreshed.
+      if (loadedListKeyRef.current !== listKey) {
+        setLoading(true);
+      }
       setError("");
 
       try {
@@ -107,7 +114,7 @@ export default function UserList({
         // --------------------------------
         // Fetch current user's follows
         // --------------------------------
-        if (currentUser) {
+        if (currentUserId) {
           const targetIds = formattedUsers.map(
             (profile) => profile.id
           );
@@ -119,7 +126,7 @@ export default function UserList({
             } = await supabase
               .from("follows")
               .select("following_id")
-              .eq("follower_id", currentUser.id)
+              .eq("follower_id", currentUserId)
               .in("following_id", targetIds);
 
             if (followError) {
@@ -142,6 +149,8 @@ export default function UserList({
         } else {
           setFollowingIds(new Set());
         }
+
+        loadedListKeyRef.current = listKey;
       } catch (err) {
         console.error(`Error fetching ${type}:`, err);
 
@@ -158,7 +167,7 @@ export default function UserList({
     }
 
     fetchUsers();
-  }, [userId, type, currentUser]);
+  }, [userId, type, currentUserId]);
 
   const handleUserClick = (username: string) => {
     router.push(`/${username}`);

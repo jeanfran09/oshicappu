@@ -4,30 +4,37 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { MessageCircleMore } from "lucide-react";
+
 import FollowingFeed from "@/components/FollowingFeed";
 import ForYouFeed from "@/components/ForYouFeed";
 import { useSupabaseAuth } from "@/components/SupabaseAuthContext";
 import { supabase } from "@/lib/supabase";
-import Divider from "@/components/Divider"
+import Divider from "@/components/Divider";
 import PullToRefresh from "@/components/PullToRefresh";
 import CreatePostButton from "@/components/CreatePostButton";
 import CommentsSheet from "@/components/CommentsSheet";
 
 async function refreshFeed() {
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  // fetch posts here
+  // Connect this to the active feed's fetch function
+  // when pull-to-refresh support is added to the feed components.
 }
 
 export default function HomePage() {
-  const [activeTab, setActiveTab] = useState<"following" | "foryou">("foryou");
+  const [activeTab, setActiveTab] = useState<"following" | "foryou">(
+    "foryou"
+  );
   const { isLoggedIn, isLoading, user } = useSupabaseAuth();
   const router = useRouter();
-  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(
+    null
+  );
   const [selectedPostOwnerId, setSelectedPostOwnerId] = useState<
     string | null
   >(null);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+
+  const userId = user?.id;
 
   useEffect(() => {
     if (!isLoading && !isLoggedIn) {
@@ -36,7 +43,7 @@ export default function HomePage() {
   }, [isLoggedIn, isLoading, router]);
 
   useEffect(() => {
-    if (!user) {
+    if (!userId) {
       setUnreadMessageCount(0);
       return;
     }
@@ -48,28 +55,28 @@ export default function HomePage() {
         "get_unread_message_count"
       );
 
-      if (!cancelled) {
-        if (error) {
-          console.error(
-            "Error fetching unread message count:",
-            error
-          );
-        } else {
-          setUnreadMessageCount(data ?? 0);
-        }
+      if (cancelled) return;
+
+      if (error) {
+        console.error(
+          "Error fetching unread message count:",
+          error
+        );
+      } else {
+        setUnreadMessageCount(data ?? 0);
       }
     }
 
-    fetchUnreadMessageCount();
+    void fetchUnreadMessageCount();
 
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [userId]);
 
   if (isLoading) {
     return (
-      <main className="pb-4 flex items-center justify-center min-h-screen">
+      <main className="flex min-h-screen items-center justify-center pb-4">
         <p className="text-foreground">Loading...</p>
       </main>
     );
@@ -88,13 +95,14 @@ export default function HomePage() {
     <main className="pb-4">
       {/* Logo */}
       <div className="relative p-4">
-        <h1 className="font-sacramento text-4xl text-center text-foreground">
+        <h1 className="text-center font-sacramento text-4xl text-foreground">
           OshiCappu
         </h1>
 
         <Link
           href="/messages"
           className="absolute right-4 top-1/2 -translate-y-1/2"
+          aria-label="Messages"
         >
           <MessageCircleMore size={24} />
 
@@ -112,48 +120,61 @@ export default function HomePage() {
       <div className="sticky top-0 z-10 bg-background">
         <div className="flex">
           <button
+            type="button"
             onClick={() => setActiveTab("following")}
-            className={`flex-1 py-3 relative ${
+            aria-pressed={activeTab === "following"}
+            className={`relative flex-1 py-3 text-lg font-bold ${
               activeTab === "following"
-                ? "font-bold text-foreground text-lg"
-                : "font-bold text-foreground/50 text-lg"
+                ? "text-foreground"
+                : "text-foreground/50"
             }`}
           >
             Following
 
             {activeTab === "following" && (
-              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-accent-secondary rounded-full" />
+              <span className="absolute bottom-0 left-1/2 h-1 w-12 -translate-x-1/2 rounded-full bg-accent-secondary" />
             )}
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveTab("foryou")}
-            className={`flex-1 py-3 relative ${
+            aria-pressed={activeTab === "foryou"}
+            className={`relative flex-1 py-3 text-lg font-bold ${
               activeTab === "foryou"
-                ? "font-bold text-foreground text-lg"
-                : "font-bold text-foreground/50 text-lg"
+                ? "text-foreground"
+                : "text-foreground/50"
             }`}
           >
             For You
 
             {activeTab === "foryou" && (
-              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-accent-secondary rounded-full" />
+              <span className="absolute bottom-0 left-1/2 h-1 w-12 -translate-x-1/2 rounded-full bg-accent-secondary" />
             )}
           </button>
         </div>
 
-        <Divider/>
+        <Divider />
       </div>
 
       {/* Feed */}
       <div className="flex-1 overflow-y-auto pb-14">
         <PullToRefresh onRefresh={refreshFeed}>
           <div className="min-h-[70vh]">
-            {activeTab === "following" ? (
-              <FollowingFeed onCommentClick={openComments}/>
-            ) : (
-              <ForYouFeed onCommentClick={openComments}/>
-            )}
+            {/* Keep both feeds mounted so switching tabs preserves their state. */}
+            <div
+              className={activeTab === "following" ? "block" : "hidden"}
+              aria-hidden={activeTab !== "following"}
+            >
+              <FollowingFeed onCommentClick={openComments} />
+            </div>
+
+            <div
+              className={activeTab === "foryou" ? "block" : "hidden"}
+              aria-hidden={activeTab !== "foryou"}
+            >
+              <ForYouFeed onCommentClick={openComments} />
+            </div>
           </div>
         </PullToRefresh>
       </div>
