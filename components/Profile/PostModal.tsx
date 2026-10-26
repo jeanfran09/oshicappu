@@ -85,18 +85,16 @@ export default function PostModal({
     onLikeChange?.(postId, likes);
   }
 
-  // Jump straight to the selected post once posts are rendered.
+  // Scroll to the selected post only when the selected post changes.
+  // Do not depend on modalPosts, because like-count updates also change it.
   useEffect(() => {
-    if (!initialPostId || modalPosts.length === 0) return;
-
-    const targetPost = modalPosts.find((post) => post.id === initialPostId);
-    if (!targetPost) return;
+    if (!initialPostId) return;
 
     requestAnimationFrame(() => {
       const el = document.getElementById(`profile-post-${initialPostId}`);
       el?.scrollIntoView({ block: "start" });
     });
-  }, [initialPostId, modalPosts]);
+  }, [initialPostId]);
 
   return (
     <>
