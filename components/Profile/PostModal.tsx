@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -65,11 +66,11 @@ export default function PostModal({
   onSave,
 }: PostModalProps) {
   const [modalPosts, setModalPosts] = useState<ProfilePost[]>(posts);
-
   const [activeCommentsPostId, setActiveCommentsPostId] =
     useState<string | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const hasInitialScrolledRef = useRef(false);
 
   // Keep modal posts in sync with the parent posts.
   useEffect(() => {
@@ -85,16 +86,39 @@ export default function PostModal({
     onLikeChange?.(postId, likes);
   }
 
-  // Scroll to the selected post only when the selected post changes.
-  // Do not depend on modalPosts, because like-count updates also change it.
+  // Reset the initial-scroll state when a different post is selected.
   useEffect(() => {
-    if (!initialPostId) return;
-
-    requestAnimationFrame(() => {
-      const el = document.getElementById(`profile-post-${initialPostId}`);
-      el?.scrollIntoView({ block: "start" });
-    });
+    hasInitialScrolledRef.current = false;
   }, [initialPostId]);
+
+  // Scroll to the selected post once it is present in the rendered modal.
+  useEffect(() => {
+    if (!initialPostId || modalPosts.length === 0) return;
+    if (hasInitialScrolledRef.current) return;
+
+    const frame = requestAnimationFrame(() => {
+      const container = scrollRef.current;
+      const postElement = document.getElementById(
+        `profile-post-${initialPostId}`
+      );
+
+      if (!container || !postElement || !container.contains(postElement)) {
+        return;
+      }
+
+      const containerTop = container.getBoundingClientRect().top;
+      const postTop = postElement.getBoundingClientRect().top;
+
+      container.scrollTo({
+        top: container.scrollTop + postTop - containerTop,
+        behavior: "instant",
+      });
+
+      hasInitialScrolledRef.current = true;
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [initialPostId, modalPosts]);
 
   return (
     <>
@@ -105,6 +129,7 @@ export default function PostModal({
             type="button"
             onClick={onClose}
             className="flex h-9 w-9 items-center justify-center rounded-full"
+            aria-label="Close posts"
           >
             <ChevronLeft size={22} />
           </button>
@@ -165,7 +190,8 @@ export default function PostModal({
         <CommentsSheet
           postId={activeCommentsPostId}
           postOwnerId={
-            modalPosts.find((post) => post.id === activeCommentsPostId)?.userId ?? ownerId
+            modalPosts.find((post) => post.id === activeCommentsPostId)
+              ?.userId ?? ownerId
           }
           onClose={() => setActiveCommentsPostId(null)}
         />

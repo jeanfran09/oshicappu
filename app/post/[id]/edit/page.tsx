@@ -11,9 +11,7 @@ import CaptionInput from "@/components/CreatePost/CaptionInput";
 import LocationInput from "@/components/CreatePost/LocationInput";
 import TagInput from "@/components/CreatePost/TagInput";
 import ThumbnailStrip from "@/components/CreatePost/ThumbnailStrip";
-import OshiPicker, {
-  type Oshi,
-} from "@/components/CreatePost/OshiPicker";
+import OshiPicker, { type Oshi } from "@/components/CreatePost/OshiPicker";
 import EditPostSkeleton from "@/components/Skeleton/EditPostSkeleton";
 import type { CropData } from "@/types/crop";
 
@@ -23,12 +21,13 @@ type PostData = {
   content: string | null;
   image_url: string | null;
   location: string | null;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 export default function EditPostPage() {
   const params = useParams();
   const router = useRouter();
-
   const postId = params.id as string;
 
   const {
@@ -43,43 +42,26 @@ export default function EditPostPage() {
 
   const [caption, setCaption] = useState("");
   const [location, setLocation] = useState("");
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
 
   const [hashtags, setHashtags] = useState<string[]>([]);
   const [fandoms, setFandoms] = useState<string[]>([]);
   const [selectedOshis, setSelectedOshis] = useState<string[]>([]);
 
-  /*
-   * File[] is the source of truth for image order.
-   *
-   * imageUrlMap keeps each File associated with
-   * the URL belonging to that image.
-   */
   const [images, setImages] = useState<File[]>([]);
-  const [imageUrlMap, setImageUrlMap] =
-    useState<Map<File, string>>(new Map());
-
-  /*
-   * ThumbnailStrip requires these states.
-   */
-  const [originalImages, setOriginalImages] =
-    useState<File[]>([]);
-
-  const [cropData, setCropData] =
-    useState<CropData[]>([]);
-
+  const [imageUrlMap, setImageUrlMap] = useState<Map<File, string>>(
+    new Map()
+  );
+  const [originalImages, setOriginalImages] = useState<File[]>([]);
+  const [cropData, setCropData] = useState<CropData[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const [oshis, setOshis] = useState<Oshi[]>([]);
-
   const [loading, setLoading] = useState(false);
 
-  /*
-   * Load existing post
-   */
   useEffect(() => {
-    if (authLoading) {
-      return;
-    }
+    if (authLoading) return;
 
     if (!isLoggedIn || !user) {
       router.push("/login");
@@ -99,27 +81,17 @@ export default function EditPostPage() {
       setError("");
 
       try {
-        /*
-         * Get post
-         */
-        const {
-          data: post,
-          error: postError,
-        } = await supabase
+        const { data: post, error: postError } = await supabase
           .from("posts")
           .select(
-            "id, user_id, content, image_url, location"
+            "id, user_id, content, image_url, location, latitude, longitude"
           )
           .eq("id", postId)
           .eq("user_id", currentUser.id)
           .single();
 
         if (postError) {
-          console.error(
-            "Error fetching post:",
-            postError
-          );
-
+          console.error("Error fetching post:", postError);
           setError(postError.message);
           return;
         }
@@ -131,89 +103,45 @@ export default function EditPostPage() {
 
         const postData = post as PostData;
 
-        /*
-         * Existing caption
-         */
         setCaption(postData.content ?? "");
-
-        /*
-         * Existing location
-         */
         setLocation(postData.location ?? "");
+        setLatitude(postData.latitude ?? null);
+        setLongitude(postData.longitude ?? null);
 
-        /*
-         * Existing images
-         */
         let parsedImages: string[] = [];
 
         if (postData.image_url) {
           try {
-            const parsed = JSON.parse(
-              postData.image_url
-            );
+            const parsed = JSON.parse(postData.image_url);
 
-            if (Array.isArray(parsed)) {
-              parsedImages = parsed;
-            } else {
-              parsedImages = [
-                postData.image_url,
-              ];
-            }
+            parsedImages = Array.isArray(parsed)
+              ? parsed
+              : [postData.image_url];
           } catch {
-            parsedImages = [
-              postData.image_url,
-            ];
+            parsedImages = [postData.image_url];
           }
         }
 
-        /*
-         * Convert image URLs into Files.
-         *
-         * Each File is immediately associated with
-         * its original URL.
-         */
         const imageFiles: File[] = [];
         const urlMap = new Map<File, string>();
 
-        for (
-          let i = 0;
-          i < parsedImages.length;
-          i++
-        ) {
+        for (let i = 0; i < parsedImages.length; i++) {
           try {
-            const response = await fetch(
-              parsedImages[i]
-            );
+            const response = await fetch(parsedImages[i]);
 
             if (!response.ok) {
-              throw new Error(
-                `Failed to fetch image ${i + 1}`
-              );
+              throw new Error(`Failed to fetch image ${i + 1}`);
             }
 
             const blob = await response.blob();
-
-            const file = new File(
-              [blob],
-              `post-image-${i + 1}.jpg`,
-              {
-                type:
-                  blob.type ||
-                  "image/jpeg",
-              }
-            );
+            const file = new File([blob], `post-image-${i + 1}.jpg`, {
+              type: blob.type || "image/jpeg",
+            });
 
             imageFiles.push(file);
-
-            urlMap.set(
-              file,
-              parsedImages[i]
-            );
+            urlMap.set(file, parsedImages[i]);
           } catch (imageError) {
-            console.error(
-              "Error loading post image:",
-              imageError
-            );
+            console.error("Error loading post image:", imageError);
           }
         }
 
@@ -221,143 +149,68 @@ export default function EditPostPage() {
         setImageUrlMap(urlMap);
         setOriginalImages(imageFiles);
 
-        /*
-         * Existing hashtags
-         */
-        const {
-          data: hashtagRows,
-          error: hashtagError,
-        } = await supabase
+        const { data: hashtagRows, error: hashtagError } = await supabase
           .from("post_hashtags")
-          .select(
-            `
-              hashtags (
-                tag
-              )
-            `
-          )
+          .select("hashtags(tag)")
           .eq("post_id", postId);
 
         if (hashtagError) {
-          console.error(
-            "Error fetching hashtags:",
-            hashtagError
-          );
+          console.error("Error fetching hashtags:", hashtagError);
         } else {
           setHashtags(
             (hashtagRows ?? [])
-              .map(
-                (row: any) =>
-                  row.hashtags?.tag
-              )
+              .map((row: any) => row.hashtags?.tag)
               .filter(Boolean)
           );
         }
 
-        /*
-         * Existing fandoms
-         */
-        const {
-          data: fandomRows,
-          error: fandomError,
-        } = await supabase
+        const { data: fandomRows, error: fandomError } = await supabase
           .from("post_fandoms")
-          .select(
-            `
-              fandoms (
-                name
-              )
-            `
-          )
+          .select("fandoms(name)")
           .eq("post_id", postId);
 
         if (fandomError) {
-          console.error(
-            "Error fetching fandoms:",
-            fandomError
-          );
+          console.error("Error fetching fandoms:", fandomError);
         } else {
           setFandoms(
             (fandomRows ?? [])
-              .map(
-                (row: any) =>
-                  row.fandoms?.name
-              )
+              .map((row: any) => row.fandoms?.name)
               .filter(Boolean)
           );
         }
 
-        /*
-         * Existing Oshis
-         */
-        const {
-          data: oshiRows,
-          error: oshiError,
-        } = await supabase
+        const { data: oshiRows, error: oshiError } = await supabase
           .from("post_oshis")
           .select("oshi_id")
           .eq("post_id", postId);
 
         if (oshiError) {
-          console.error(
-            "Error fetching oshis:",
-            oshiError
-          );
+          console.error("Error fetching oshis:", oshiError);
         } else {
-          setSelectedOshis(
-            (oshiRows ?? []).map(
-              (row) => row.oshi_id
-            )
-          );
+          setSelectedOshis((oshiRows ?? []).map((row) => row.oshi_id));
         }
 
-        /*
-         * User's Oshis
-         */
-        const {
-          data: oshiData,
-          error: oshisError,
-        } = await supabase
+        const { data: oshiData, error: oshisError } = await supabase
           .from("oshis")
-          .select(
-            "id, name, image_url"
-          )
-          .eq(
-            "user_id",
-            currentUser.id
-          )
-          .order("created_at", {
-            ascending: true,
-          });
+          .select("id, name, image_url")
+          .eq("user_id", currentUser.id)
+          .order("created_at", { ascending: true });
 
         if (oshisError) {
-          console.error(
-            "Error fetching user's oshis:",
-            oshisError
-          );
+          console.error("Error fetching user's oshis:", oshisError);
         } else {
           setOshis(
-            (oshiData ?? []).map(
-              (oshi) => ({
-                id: oshi.id,
-                name: oshi.name,
-                image:
-                  oshi.image_url ??
-                  "",
-              })
-            )
+            (oshiData ?? []).map((oshi) => ({
+              id: oshi.id,
+              name: oshi.name,
+              image: oshi.image_url ?? "",
+            }))
           );
         }
       } catch (err) {
-        console.error(
-          "Error loading post:",
-          err
-        );
-
+        console.error("Error loading post:", err);
         setError(
-          err instanceof Error
-            ? err.message
-            : "Failed to load post."
+          err instanceof Error ? err.message : "Failed to load post."
         );
       } finally {
         setPageLoading(false);
@@ -365,378 +218,191 @@ export default function EditPostPage() {
     }
 
     loadPost();
-  }, [
-    authLoading,
-    isLoggedIn,
-    user,
-    postId,
-    router,
-  ]);
+  }, [authLoading, isLoggedIn, user, postId, router]);
 
-  /*
-   * Authentication loading
-   */
-  if (authLoading) {
-    return (
-      <div className="md:hidden flex min-h-screen items-center justify-center">
-        Loading...
-      </div>
-    );
-  }
-
-  /*
-   * Redirecting
-   */
-  if (!isLoggedIn || !user) {
-    return null;
-  }
-
-  /*
-   * Post loading
-   */
-  if (pageLoading) {
-    return <EditPostSkeleton />;
-  }
-
-  /*
-   * Insert hashtags
-   */
-  async function insertHashtags(
-    postId: string
-  ) {
+  async function insertHashtags(postId: string) {
     for (const rawTag of hashtags) {
-      const tag =
-        rawTag.trim().toLowerCase();
-
+      const tag = rawTag.trim().toLowerCase();
       if (!tag) continue;
 
-      let hashtagId: string;
-
-      const {
-        data: existing,
-        error: lookupError,
-      } = await supabase
+      const { data: existing, error: lookupError } = await supabase
         .from("hashtags")
         .select("id")
         .eq("tag", tag)
         .maybeSingle();
 
       if (lookupError) {
-        console.error(
-          "Error looking up hashtag:",
-          lookupError
-        );
+        console.error("Error looking up hashtag:", lookupError);
         continue;
       }
+
+      let hashtagId: string;
 
       if (existing) {
         hashtagId = existing.id;
       } else {
-        const {
-          data: created,
-          error: createError,
-        } = await supabase
+        const { data: created, error: createError } = await supabase
           .from("hashtags")
           .insert({ tag })
           .select("id")
           .single();
 
-        if (
-          createError ||
-          !created
-        ) {
-          console.error(
-            "Error creating hashtag:",
-            createError
-          );
+        if (createError || !created) {
+          console.error("Error creating hashtag:", createError);
           continue;
         }
 
         hashtagId = created.id;
       }
 
-      const {
-        error: linkError,
-      } = await supabase
+      const { error: linkError } = await supabase
         .from("post_hashtags")
-        .insert({
-          post_id: postId,
-          hashtag_id: hashtagId,
-        });
+        .insert({ post_id: postId, hashtag_id: hashtagId });
 
       if (linkError) {
-        console.error(
-          "Error linking hashtag to post:",
-          linkError
-        );
+        console.error("Error linking hashtag to post:", linkError);
       }
     }
   }
 
-  /*
-   * Insert fandoms
-   */
-  async function insertFandoms(
-    postId: string
-  ) {
+  async function insertFandoms(postId: string) {
     for (const rawFandom of fandoms) {
-      const name =
-        rawFandom.trim();
-
+      const name = rawFandom.trim();
       if (!name) continue;
 
-      let fandomId: string;
-
-      const {
-        data: existing,
-        error: lookupError,
-      } = await supabase
+      const { data: existing, error: lookupError } = await supabase
         .from("fandoms")
         .select("id")
         .ilike("name", name)
         .maybeSingle();
 
       if (lookupError) {
-        console.error(
-          "Error looking up fandom:",
-          lookupError
-        );
+        console.error("Error looking up fandom:", lookupError);
         continue;
       }
+
+      let fandomId: string;
 
       if (existing) {
         fandomId = existing.id;
       } else {
-        const {
-          data: created,
-          error: createError,
-        } = await supabase
+        const { data: created, error: createError } = await supabase
           .from("fandoms")
           .insert({ name })
           .select("id")
           .single();
 
-        if (
-          createError ||
-          !created
-        ) {
-          console.error(
-            "Error creating fandom:",
-            createError
-          );
+        if (createError || !created) {
+          console.error("Error creating fandom:", createError);
           continue;
         }
 
         fandomId = created.id;
       }
 
-      const {
-        error: linkError,
-      } = await supabase
+      const { error: linkError } = await supabase
         .from("post_fandoms")
-        .insert({
-          post_id: postId,
-          fandom_id: fandomId,
-        });
+        .insert({ post_id: postId, fandom_id: fandomId });
 
       if (linkError) {
-        console.error(
-          "Error linking fandom to post:",
-          linkError
-        );
+        console.error("Error linking fandom to post:", linkError);
       }
     }
   }
 
-  /*
-   * Insert Oshi tags
-   */
-  async function insertOshiTags(
-    postId: string
-  ) {
-    if (
-      selectedOshis.length === 0
-    ) {
-      return;
-    }
+  async function insertOshiTags(postId: string) {
+    if (selectedOshis.length === 0) return;
 
-    const rows =
-      selectedOshis.map(
-        (oshiId) => ({
-          post_id: postId,
-          oshi_id: oshiId,
-        })
-      );
+    const rows = selectedOshis.map((oshiId) => ({
+      post_id: postId,
+      oshi_id: oshiId,
+    }));
 
-    const {
-      error: oshiLinkError,
-    } = await supabase
+    const { error: oshiLinkError } = await supabase
       .from("post_oshis")
       .insert(rows);
 
     if (oshiLinkError) {
-      console.error(
-        "Error linking oshis to post:",
-        oshiLinkError
-      );
+      console.error("Error linking oshis to post:", oshiLinkError);
     }
   }
 
-  /*
-   * Save changes to the post.
-   */
   async function handleSave() {
-    if (!user || loading) {
-      return;
-    }
+    if (!user || loading) return;
 
     setLoading(true);
     setError("");
 
     try {
-      /*
-       * Build the URL array from the CURRENT
-       * File order.
-       */
-      const orderedImageUrls =
-        images
-          .map((file) =>
-            imageUrlMap.get(file)
-          )
-          .filter(
-            (url): url is string =>
-              Boolean(url)
-          );
+      const orderedImageUrls = images
+        .map((file) => imageUrlMap.get(file))
+        .filter((url): url is string => Boolean(url));
 
-      /*
-       * Update the post.
-       */
-      const {
-        error: updateError,
-      } = await supabase
+      const { error: updateError } = await supabase
         .from("posts")
         .update({
           content: caption.trim(),
-          location:
-            location.trim() || null,
+          location: location.trim() || null,
+          latitude,
+          longitude,
           image_url:
             orderedImageUrls.length > 0
-              ? JSON.stringify(
-                  orderedImageUrls
-                )
+              ? JSON.stringify(orderedImageUrls)
               : null,
         })
         .eq("id", postId)
         .eq("user_id", user.id);
 
-      if (updateError) {
-        throw updateError;
-      }
+      if (updateError) throw updateError;
 
-      /*
-       * Clear existing tag links.
-       */
       await Promise.all([
-        supabase
-          .from("post_hashtags")
-          .delete()
-          .eq("post_id", postId),
-
-        supabase
-          .from("post_fandoms")
-          .delete()
-          .eq("post_id", postId),
-
-        supabase
-          .from("post_oshis")
-          .delete()
-          .eq("post_id", postId),
+        supabase.from("post_hashtags").delete().eq("post_id", postId),
+        supabase.from("post_fandoms").delete().eq("post_id", postId),
+        supabase.from("post_oshis").delete().eq("post_id", postId),
       ]);
 
-      /*
-       * Reinsert current tag links.
-       */
       await Promise.all([
         insertHashtags(postId),
         insertFandoms(postId),
         insertOshiTags(postId),
       ]);
 
-      /*
-       * Go to the new unified profile route.
-       */
       if (profile?.username) {
-        router.replace(
-            `/${profile.username}?post=${postId}`
-        );
-        } else {
-        router.replace(
-            `/post/${postId}`
-        );
-        }
+        router.replace(`/${profile.username}?post=${postId}`);
+      } else {
+        router.replace(`/post/${postId}`);
+      }
     } catch (err) {
-      console.error(
-        "Error saving post:",
-        err
-      );
-
+      console.error("Error saving post:", err);
       setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to save changes."
+        err instanceof Error ? err.message : "Failed to save changes."
       );
     } finally {
       setLoading(false);
     }
   }
 
-  /*
-   * Adding images is currently disabled
-   * on the edit page.
-   */
-  function handleSelectImages(
-    e: React.ChangeEvent<HTMLInputElement>
-  ) {
+  function handleSelectImages(e: React.ChangeEvent<HTMLInputElement>) {
     e.target.value = "";
   }
 
-  /*
-   * Handle thumbnail deletion/reordering.
-   *
-   * The File itself is used as the identity,
-   * so its URL stays attached to it regardless
-   * of where it moves in the array.
-   */
-  function handleSetImages(
-    newImages: React.SetStateAction<File[]>
-  ) {
+  function handleSetImages(newImages: React.SetStateAction<File[]>) {
     setImages((previousImages) => {
       const updatedImages =
         typeof newImages === "function"
           ? newImages(previousImages)
           : newImages;
 
-      /*
-       * Remove URL mappings for deleted files.
-       *
-       * Reordered files remain in the map.
-       */
-      const currentFiles =
-        new Set(updatedImages);
+      const currentFiles = new Set(updatedImages);
 
       setImageUrlMap((previousMap) => {
-        const updatedMap =
-          new Map(previousMap);
+        const updatedMap = new Map(previousMap);
 
-        updatedMap.forEach(
-          (_, file) => {
-            if (
-              !currentFiles.has(file)
-            ) {
-              updatedMap.delete(file);
-            }
+        updatedMap.forEach((_, file) => {
+          if (!currentFiles.has(file)) {
+            updatedMap.delete(file);
           }
-        );
+        });
 
         return updatedMap;
       });
@@ -745,120 +411,71 @@ export default function EditPostPage() {
     });
   }
 
-  return (
-    <div className="md:hidden min-h-screen flex flex-col">
-      {/* Header */}
-      <header
-        className="
-          sticky
-          top-0
-          z-50
-          flex
-          items-center
-          justify-between
-          border-b
-          border-foreground/30
-          bg-background
-          px-4
-          pb-3
-          pt-4
-        "
-      >
-        <h1 className="text-xl font-bold">
-          Edit Post
-        </h1>
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center md:hidden">
+        Loading...
+      </div>
+    );
+  }
 
+  if (!isLoggedIn || !user) return null;
+
+  if (pageLoading) return <EditPostSkeleton />;
+
+  return (
+    <div className="flex min-h-screen flex-col md:hidden">
+      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-foreground/30 bg-background px-4 pb-3 pt-4">
+        <h1 className="text-xl font-bold">Edit Post</h1>
         <button
           type="button"
           onClick={() => router.back()}
-          className="
-            flex
-            h-10
-            w-10
-            items-center
-            justify-center
-            rounded-full
-            bg-accent
-          "
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-accent"
+          aria-label="Close"
         >
           <X size={20} />
         </button>
       </header>
 
-      {/* Main */}
       <main className="flex-1 overflow-y-auto px-4 pb-24">
         <div className="mt-4">
-          {/* Main Image */}
           {images.length > 0 && (
             <div className="mb-4">
-              <div
-                className="
-                  relative
-                  aspect-square
-                  w-full
-                  overflow-hidden
-                  rounded-xl
-                "
-              >
+              <div className="relative aspect-square w-full overflow-hidden rounded-xl">
                 <img
-                  src={
-                    imageUrlMap.get(
-                      images[currentIndex]
-                    ) ?? ""
-                  }
-                  alt={`Post image ${
-                    currentIndex + 1
-                  }`}
-                  className="
-                    h-full
-                    w-full
-                    object-cover
-                  "
+                  src={imageUrlMap.get(images[currentIndex]) ?? ""}
+                  alt={`Post image ${currentIndex + 1}`}
+                  className="h-full w-full object-cover"
                 />
               </div>
             </div>
           )}
 
-          {/* Thumbnail Strip */}
           {images.length > 0 && (
             <div className="mb-5">
               <ThumbnailStrip
                 images={images}
                 currentIndex={currentIndex}
-                setCurrentIndex={
-                  setCurrentIndex
-                }
-                setImages={
-                  handleSetImages
-                }
-                setOriginalImages={
-                  setOriginalImages
-                }
-                setCropData={
-                  setCropData
-                }
-                onSelectImages={
-                  handleSelectImages
-                }
+                setCurrentIndex={setCurrentIndex}
+                setImages={handleSetImages}
+                setOriginalImages={setOriginalImages}
+                setCropData={setCropData}
+                onSelectImages={handleSelectImages}
                 showAddButton={false}
                 lockFirstImage={true}
               />
             </div>
           )}
 
-          {/* Caption */}
-          <CaptionInput
-            caption={caption}
-            setCaption={setCaption}
-          />
+          <CaptionInput caption={caption} setCaption={setCaption} />
 
-          {/* Location */}
           <LocationInput
             location={location}
             setLocation={setLocation}
+            setLatitude={setLatitude}
+            setLongitude={setLongitude}
           />
 
-          {/* Hashtags */}
           <TagInput
             label="Hashtags"
             placeholder="Add a hashtag"
@@ -868,90 +485,34 @@ export default function EditPostPage() {
             prefix="#"
           />
 
-          {/* Fandoms */}
-          <TagInput
-            label="Fandoms"
-            placeholder="Add a fandom"
-            items={fandoms}
-            setItems={setFandoms}
-            maxItems={5}
-          />
-
-          {/* Oshis */}
           {oshis.length > 0 && (
             <OshiPicker
               oshis={oshis}
-              selected={
-                selectedOshis
-              }
-              setSelected={
-                setSelectedOshis
-              }
+              selected={selectedOshis}
+              setSelected={setSelectedOshis}
               onAdd={() => {
                 // Not implemented yet
               }}
             />
           )}
 
-          {/* Error */}
           {error && (
-            <div
-              className="
-                mt-4
-                rounded-xl
-                border
-                border-red-500
-                bg-red-500/10
-                p-3
-              "
-            >
-              <p className="text-sm text-red-500">
-                {error}
-              </p>
+            <div className="mt-4 rounded-xl border border-red-500 bg-red-500/10 p-3">
+              <p className="text-sm text-red-500">{error}</p>
             </div>
           )}
         </div>
       </main>
 
-      {/* Save button */}
-      <div
-        className="
-          fixed
-          bottom-0
-          left-0
-          right-0
-          z-50
-          border-t
-          border-foreground/30
-          bg-background
-          p-4
-        "
-      >
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-foreground/30 bg-background p-4">
         <button
           type="button"
           onClick={handleSave}
           disabled={loading}
-          className="
-            flex
-            h-12
-            w-full
-            items-center
-            justify-center
-            rounded-full
-            bg-accent-secondary
-            font-semibold
-            text-foreground
-            transition
-            active:scale-[0.98]
-            disabled:cursor-not-allowed
-            disabled:opacity-50
-          "
+          className="flex h-12 w-full items-center justify-center rounded-full bg-accent-secondary font-semibold text-foreground transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? (
-            <Loader2
-              size={20}
-              className="animate-spin"
-            />
+            <Loader2 size={20} className="animate-spin" />
           ) : (
             "Save Changes"
           )}
