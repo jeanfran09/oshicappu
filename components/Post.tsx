@@ -406,25 +406,13 @@ export default function Post({
               </p>
 
               {location && (
-                <span
-                  role="link"
-                  tabIndex={0}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    router.push(`/location/${encodeURIComponent(location)}`);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      router.push(`/location/${encodeURIComponent(location)}`);
-                    }
-                  }}
+                <Link
+                  href={`/location/${encodeURIComponent(location)}`}
+                  onClick={(e) => e.stopPropagation()}
                   className="block text-xs text-gray-500 hover:underline"
                 >
                   {location}
-                </span>
+                </Link>
               )}
             </div>
           </Link>
